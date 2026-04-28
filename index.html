@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sandvik Machining 销售预测系统原型</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <section id="login-view" class="view active">
+        <div class="login-shell">
+          <aside class="login-brand-panel">
+            <img
+              src="https://www.home.sandvik/logo/logo_dark.svg"
+              alt="Sandvik Logo"
+              class="brand-logo"
+            />
+            <h1>China Division Sales Forecast Tool</h1>
+            <ul>
+              <li>Supports multi-tier approval and refined data review for sales forecasting.</li>
+              <li>Implements role-based access control with product-level permission limits.</li>
+              <li>Provides configurable and flexible forecast submission windows.</li>
+              <li>Delivers data analysis and visualization through PowerBI reports.</li>
+              <li>Automates data aggregation and enhances sales forecasting efficiency.</li>
+            </ul>
+          </aside>
+
+          <main class="login-card">
+            <h2>统一身份登录</h2>
+            <p class="subtitle">通过 Microsoft 365 单点登录进入系统</p>
+
+            <button class="sso-btn primary" data-domain="sandvik">
+              使用 SSO 登录（sandvik 域）
+            </button>
+            <button class="sso-btn secondary" data-domain="AHNO">
+              使用 SSO 登录（AHNO 域）
+            </button>
+
+            <a href="#" class="forgot-link">忘记密码？联系 IT Service Desk</a>
+
+            <div class="disclaimer">
+              <p>登录即代表您同意公司信息安全与数据合规政策。</p>
+            </div>
+          </main>
+        </div>
+        <footer class="login-footer">
+          © 2026 Sandvik AB. All rights reserved.
+        </footer>
+      </section>
+
+      <section id="main-view" class="view">
+        <header class="topbar">
+          <div class="topbar-left">
+            <img
+              src="https://www.home.sandvik/logo/logo_dark.svg"
+              alt="Sandvik Logo"
+              class="topbar-logo"
+            />
+            <div>
+              <h3>China Division Sales Forecast Tool</h3>
+            </div>
+          </div>
+          <div class="topbar-right">
+            <button class="top-user-btn" type="button" aria-label="我的">
+              <span class="top-avatar">我</span>
+              <span>我的</span>
+              <span class="top-caret">▾</span>
+            </button>
+            <button id="logout-btn" class="ghost-btn top-logout-btn">退出</button>
+          </div>
+        </header>
+
+        <div class="layout">
+          <aside class="sidebar">
+            <div class="sidebar-title">功能导航</div>
+            <nav id="menu-tree" class="menu-tree"></nav>
+          </aside>
+
+          <main class="content">
+            <span id="active-module" class="visually-hidden">欢迎页</span>
+
+            <section id="overview-hero" class="hero-card">
+              <h2 id="module-title">欢迎使用 Sandvik Forecast Tool</h2>
+              <p id="module-desc">
+                当前为高保真交互原型，已搭建系统总框架、角色入口与功能菜单。
+              </p>
+              <div class="hero-actions">
+                <button class="primary" id="simulate-flow-btn">模拟业务流程</button>
+                <button class="secondary" id="open-detail-btn">查看模块说明</button>
+              </div>
+            </section>
+
+            <section id="forecast-periods" class="forecast-workbench hidden">
+              <div class="periods-header">
+                <div>
+                  <h3 class="section-title">销售预测填报</h3>
+                  <p class="section-desc">展示所有历史和开放中的FC Version，支持按条件筛选并进入预测填报明细。</p>
+                </div>
+              </div>
+
+              <div class="forecast-filters periods-filters">
+                <label>FC状态
+                  <select id="period-status-filter">
+                    <option value="all">全部</option>
+                    <option value="open">开放中</option>
+                    <option value="history">已关闭</option>
+                  </select>
+                </label>
+                <label>关键词
+                  <input id="period-keyword" type="text" placeholder="输入FC Version或月份…" />
+                </label>
+                <div class="period-filter-actions">
+                  <button id="period-reset-btn" type="button" class="ghost-btn">重置筛选</button>
+                </div>
+              </div>
+
+              <div class="table-wrap periods-table-wrap">
+                <table class="forecast-table periods-table">
+                  <thead>
+                    <tr>
+                      <th>FC Name</th>
+                      <th>开放填报时间</th>
+                      <th>开放月份</th>
+                      <th>窗口状态</th>
+                      <th>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody id="periods-body"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section id="forecast-workbench" class="forecast-workbench hidden">
+              <div class="forecast-toolbar">
+                <div class="toolbar-left">
+                  <button id="back-to-periods" class="back-btn" type="button">
+                    <span class="back-icon">←</span>
+                    返回周期列表
+                  </button>
+                  <div class="detail-title">
+                    <div class="detail-kicker">销售预测填报 · 明细</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="forecast-filters">
+                <label>客户
+                  <select id="customer-filter"></select>
+                </label>
+                <label>开票公司
+                  <select id="invoice-filter"></select>
+                </label>
+                <label>业绩归属
+                  <select id="performance-filter"></select>
+                </label>
+                <label>销售大区
+                  <select id="region-filter"></select>
+                </label>
+                <div class="forecast-filter-product-line">
+                  <label>PA
+                    <select id="pa-filter"></select>
+                  </label>
+                  <label>Sub PA-1
+                    <select id="subpa1-filter"></select>
+                  </label>
+                  <label>Sub PA-2
+                    <select id="subpa2-filter"></select>
+                  </label>
+                  <label>Sub PA-3
+                    <select id="subpa3-filter"></select>
+                  </label>
+                  <label>Sub PA-4
+                    <select id="subpa4-filter"></select>
+                  </label>
+                </div>
+                <div class="forecast-filter-actions">
+                  <div class="forecast-query-actions">
+                    <button id="query-btn" class="secondary" type="button">查询</button>
+                    <button id="reset-query-btn" class="ghost-btn" type="button">条件重置</button>
+                  </div>
+                  <div class="forecast-tools-actions">
+                    <button id="download-template-btn" class="secondary" type="button">下载上传模板</button>
+                    <button id="upload-btn" class="secondary" type="button">批量上传</button>
+                    <button id="add-row-btn" class="secondary" type="button">单笔添加</button>
+                    <button id="copy-last-period-btn" class="secondary" type="button">复制上期预测数据</button>
+                    <button id="save-draft-btn" class="secondary">保存草稿</button>
+                    <button id="submit-btn" class="primary">提交审批</button>
+                  </div>
+                </div>
+              </div>
+
+              <div id="forecast-message" class="forecast-message"></div>
+              <input id="upload-input" type="file" accept=".csv" class="hidden-file-input" />
+              <div class="forecast-table-toolbar">
+                <div class="view-mode-switch" role="group" aria-label="明细视图模式">
+                  <button
+                    id="compact-view-btn"
+                    class="mode-btn active"
+                    type="button"
+                    title="精简版视图"
+                    aria-label="精简版视图"
+                  >
+                    <span aria-hidden="true">▤</span>
+                  </button>
+                  <button
+                    id="detail-view-btn"
+                    class="mode-btn"
+                    type="button"
+                    title="明细版视图"
+                    aria-label="明细版视图"
+                  >
+                    <span aria-hidden="true">☷</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="table-wrap">
+                <table id="forecast-table" class="forecast-table compact-view">
+                  <colgroup id="forecast-colgroup"></colgroup>
+                  <thead id="forecast-head"></thead>
+                  <tbody id="forecast-body"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section id="approval-workbench" class="approval-workbench hidden">
+              <section id="approval-list-page">
+                <div class="forecast-toolbar">
+                  <div class="toolbar-left">
+                    <h3 class="section-title">销售预测数据审批</h3>
+                  </div>
+                </div>
+
+                <div class="approval-filters">
+                  <label>FC Name
+                    <select id="approval-period-filter"></select>
+                  </label>
+                  <label>区域总监
+                    <select id="approval-director-filter"></select>
+                  </label>
+                  <label>销售人员
+                    <select id="approval-sales-filter"></select>
+                  </label>
+                <label>审批状态
+                  <select id="approval-status-filter">
+                    <option value="all">全部</option>
+                    <option value="draft">草稿</option>
+                    <option value="submitted_director">已提交区总待审批</option>
+                    <option value="submitted_finance">已提交财务待审批</option>
+                    <option value="approved">已完成</option>
+                    <option value="rejected">已退回</option>
+                  </select>
+                </label>
+                  <div class="approval-filter-actions">
+                    <button id="approval-query-btn" class="secondary" type="button">查询</button>
+                    <button id="approval-reset-btn" class="ghost-btn" type="button">条件重置</button>
+                  </div>
+                </div>
+                <div class="table-wrap">
+                  <table class="forecast-table approval-list-table">
+                    <thead>
+                      <tr>
+                        <th>FC Name</th>
+                        <th>区域总监</th>
+                        <th>销售人员</th>
+                        <th>订单总量</th>
+                        <th>开票总量</th>
+                        <th>订单金额</th>
+                        <th>开票金额</th>
+                        <th>审批状态</th>
+                        <th>操作</th>
+                      </tr>
+                    </thead>
+                    <tbody id="approval-list-body"></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section id="approval-detail-page" class="approval-detail hidden">
+                <div class="approval-detail-header">
+                  <div class="toolbar-left">
+                    <button id="approval-back-btn" class="back-btn" type="button">
+                      <span class="back-icon">←</span>
+                      返回审批列表
+                    </button>
+                    <h4 id="approval-detail-title">审批明细</h4>
+                  </div>
+                  <div class="approval-actions-wrap">
+                    <div class="approval-adjust-box">
+                      <label for="approval-adjust-amount">Total调整金额</label>
+                      <input id="approval-adjust-amount" type="number" step="0.01" value="0" />
+                      <small>如需调整到明细产品，请退回给销售人员修改。</small>
+                    </div>
+                    <div class="approval-actions">
+                      <button id="approval-pass-btn" class="primary" type="button">通过</button>
+                      <button id="approval-reject-btn" class="ghost-btn" type="button">退回</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="approval-summary-tabs">
+                  <button id="summary-by-customer" class="summary-tab active" type="button">按客户汇总</button>
+                  <button id="summary-by-performance" class="summary-tab" type="button">按业绩归属汇总</button>
+                  <button id="summary-by-region" class="summary-tab" type="button">按销售大区汇总</button>
+                  <button id="summary-detail-tab" class="summary-tab" type="button">预测明细</button>
+                </div>
+
+                <div id="approval-customer-panel">
+                  <div class="table-wrap">
+                    <table class="forecast-table approval-summary-table">
+                      <thead id="approval-summary-customer-head"></thead>
+                      <tbody id="approval-summary-by-customer-body"></tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div id="approval-detail-data-panel" class="hidden">
+                  <div class="table-wrap">
+                    <table class="forecast-table approval-detail-table">
+                      <thead id="approval-detail-head"></thead>
+                      <tbody id="approval-detail-body"></tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div id="approval-summary-panel" class="hidden">
+                  <div class="table-wrap">
+                    <table class="forecast-table approval-summary-table">
+                      <thead id="approval-summary-head"></thead>
+                      <tbody id="approval-summary-body"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+            </section>
+
+            <section id="fc-version-workbench" class="forecast-workbench hidden">
+              <div class="forecast-toolbar">
+                <div class="toolbar-left">
+                  <h3 class="section-title">预测周期管理</h3>
+                </div>
+                <div class="toolbar-right">
+                  <button id="fc-version-add-btn" class="primary" type="button">新增FC Version</button>
+                </div>
+              </div>
+
+              <div class="table-wrap">
+                <table class="forecast-table fc-version-table">
+                  <thead>
+                    <tr>
+                      <th>预测周期名称</th>
+                      <th>销售预测周期</th>
+                      <th>填报时间</th>
+                      <th>延期填报人员</th>
+                      <th>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody id="fc-version-body"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section id="base-data-workbench" class="forecast-workbench hidden">
+              <div class="forecast-toolbar">
+                <div class="toolbar-left">
+                  <h3 id="base-data-title" class="section-title">基础数据维护</h3>
+                </div>
+                <div class="toolbar-right">
+                  <button id="base-data-add-btn" class="primary" type="button">新增</button>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table class="forecast-table">
+                  <thead id="base-data-head"></thead>
+                  <tbody id="base-data-body"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section id="dashboard-workbench" class="forecast-workbench hidden">
+              <div class="dashboard-meta">
+                <div class="dashboard-meta-item">
+                  <span class="dashboard-meta-label">当前FC Name</span>
+                  <strong id="dashboard-current-period" class="dashboard-meta-value">-</strong>
+                </div>
+                <div class="dashboard-meta-item">
+                  <span class="dashboard-meta-label">开放填报时间</span>
+                  <strong id="dashboard-current-window" class="dashboard-meta-value">-</strong>
+                </div>
+                <div class="dashboard-meta-item">
+                  <span class="dashboard-meta-label">开放月份</span>
+                  <strong id="dashboard-current-months" class="dashboard-meta-value">-</strong>
+                </div>
+              </div>
+
+              <div class="dashboard-kpis">
+                <article class="kpi-card">
+                  <div class="kpi-label">订单总金额</div>
+                  <div id="kpi-order-amt" class="kpi-value">0.00</div>
+                  <div id="kpi-order-qty-sub" class="kpi-sub">数量：0</div>
+                  <div id="kpi-order-yoy" class="kpi-sub">同比：0%</div>
+                </article>
+                <article class="kpi-card">
+                  <div class="kpi-label">开票总金额</div>
+                  <div id="kpi-inv-amt" class="kpi-value">0.00</div>
+                  <div id="kpi-inv-qty-sub" class="kpi-sub">数量：0</div>
+                  <div id="kpi-inv-yoy" class="kpi-sub">同比：0%</div>
+                </article>
+                <article class="kpi-card">
+                  <div class="kpi-label">填报完成比率</div>
+                  <div id="kpi-completion" class="kpi-value">0%</div>
+                  <div id="kpi-completion-sub" class="kpi-sub">0/0</div>
+                </article>
+                <article class="kpi-card">
+                  <div class="kpi-label">待审批数</div>
+                  <div id="kpi-pending" class="kpi-value">0</div>
+                  <div id="kpi-pending-sub" class="kpi-sub">区总0 / 财务0</div>
+                </article>
+              </div>
+
+              <div class="dashboard-switch">
+                <button id="dashboard-order-tab" class="summary-tab active" type="button">订单分析</button>
+                <button id="dashboard-invoice-tab" class="summary-tab" type="button">开票分析</button>
+              </div>
+
+              <div class="dashboard-chart-grid">
+                <div class="dashboard-chart-card">
+                  <h4 id="dashboard-trend-title">月度趋势（订单）</h4>
+                  <div id="dashboard-trend-chart" class="dashboard-chart"></div>
+                </div>
+                <div class="dashboard-chart-card">
+                  <h4 id="dashboard-region-share-title">销售大区金额占比</h4>
+                  <div id="dashboard-region-share-chart" class="dashboard-chart"></div>
+                </div>
+                <div class="dashboard-chart-card">
+                  <h4 id="dashboard-share-title">PA 金额占比</h4>
+                  <div id="dashboard-share-chart" class="dashboard-chart"></div>
+                </div>
+                <div class="dashboard-chart-card">
+                  <h4 id="dashboard-company-title">按公司 TOP 5（订单）</h4>
+                  <div id="dashboard-company-chart" class="dashboard-chart"></div>
+                </div>
+                <div class="dashboard-chart-card">
+                  <h4 id="dashboard-product-title">按客户 TOP 5（订单）</h4>
+                  <div id="dashboard-product-chart" class="dashboard-chart"></div>
+                </div>
+                <div class="dashboard-chart-card">
+                  <h4 id="dashboard-sales-title">按销售人员 TOP 5（订单）</h4>
+                  <div id="dashboard-sales-chart" class="dashboard-chart"></div>
+                </div>
+              </div>
+            </section>
+          </main>
+        </div>
+      </section>
+    </div>
+
+    <dialog id="info-dialog">
+      <h3 id="dialog-title">模块说明</h3>
+      <p id="dialog-content"></p>
+      <button id="close-dialog-btn" class="primary">关闭</button>
+    </dialog>
+
+    <dialog id="add-forecast-dialog" class="add-forecast-dialog">
+      <div class="add-dialog-header">
+        <h3>新增销售预测</h3>
+        <p>先选择客户与归属信息，再选择产品层级并填写订单数量/开票数量。</p>
+      </div>
+
+      <div class="add-dialog-form-grid">
+        <label>客户
+          <select id="add-customer"></select>
+        </label>
+        <label>开票公司
+          <select id="add-invoice"></select>
+        </label>
+        <label>业绩归属
+          <select id="add-performance"></select>
+        </label>
+        <label>销售大区
+          <select id="add-region"></select>
+        </label>
+      </div>
+
+      <div class="add-dialog-product-grid">
+        <label>PA
+          <select id="add-pa"></select>
+        </label>
+        <label>Sub PA-1
+          <select id="add-subpa1"></select>
+        </label>
+        <label>Sub PA-2
+          <select id="add-subpa2"></select>
+        </label>
+        <label>Sub PA-3
+          <select id="add-subpa3"></select>
+        </label>
+        <label>Sub PA-4
+          <input id="add-subpa4" type="text" list="add-subpa4-list" placeholder="输入关键字模糊搜索并选择" />
+          <datalist id="add-subpa4-list"></datalist>
+        </label>
+      </div>
+
+      <div id="add-month-metrics" class="add-dialog-metrics"></div>
+
+      <div class="add-dialog-actions">
+        <button id="add-dialog-cancel" class="ghost-btn" type="button">取消</button>
+        <button id="add-dialog-save" class="primary" type="button">保存</button>
+      </div>
+    </dialog>
+
+    <dialog id="fc-version-dialog" class="add-forecast-dialog">
+      <div class="add-dialog-header">
+        <h3 id="fc-version-dialog-title">新增预测周期</h3>
+      </div>
+      <div class="add-dialog-form-grid">
+        <label>预测周期名称
+          <input id="fc-version-name" type="text" placeholder="例如：2026FC3" />
+        </label>
+        <label>销售预测周期开始年月
+          <input id="fc-sales-start-month" type="month" />
+        </label>
+        <label>销售预测周期结束年月
+          <input id="fc-sales-end-month" type="month" />
+        </label>
+      </div>
+
+      <div class="add-dialog-form-grid">
+        <label>填报开始时间
+          <input id="fc-open-start" type="datetime-local" />
+        </label>
+        <label>填报结束时间
+          <input id="fc-open-end" type="datetime-local" />
+        </label>
+      </div>
+
+      <div class="add-dialog-form-grid">
+        <label>延期填报开始时间
+          <input id="fc-delay-start" type="datetime-local" />
+        </label>
+        <label>延期填报结束时间
+          <input id="fc-delay-end" type="datetime-local" />
+        </label>
+      </div>
+
+      <div class="add-dialog-form-grid" style="grid-column: 1 / -1;">
+        <label style="margin-bottom: 8px;">延期填报人员（可搜索、多选）</label>
+        <input id="fc-sales-search" type="text" placeholder="输入人名搜索..." style="margin-bottom: 8px; padding: 6px 10px; border: 1px solid #E5E7EB; border-radius: 4px; width: 100%;" />
+        <div id="fc-sales-pickers" style="max-height: 200px; overflow-y: auto; border: 1px solid #E5E7EB; border-radius: 4px; padding: 8px;"></div>
+        <div id="fc-sales-selected-tags" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px;"></div>
+      </div>
+
+      <div class="add-dialog-actions">
+        <button id="fc-version-cancel-btn" class="ghost-btn" type="button">取消</button>
+        <button id="fc-version-save-btn" class="primary" type="button">保存</button>
+      </div>
+    </dialog>
+
+    <dialog id="approval-opinion-dialog" class="add-forecast-dialog">
+      <div class="add-dialog-header">
+        <h3 id="approval-opinion-title">填写审批意见</h3>
+      </div>
+      <div class="add-dialog-form-grid">
+        <label>审批意见
+          <textarea id="approval-opinion-input" rows="4" placeholder="请输入审批意见"></textarea>
+        </label>
+      </div>
+      <div class="add-dialog-actions">
+        <button id="approval-opinion-cancel-btn" class="ghost-btn" type="button">取消</button>
+        <button id="approval-opinion-confirm-btn" class="primary" type="button">提交</button>
+      </div>
+    </dialog>
+
+    <dialog id="approval-history-dialog" class="add-forecast-dialog">
+      <div class="add-dialog-header">
+        <h3 id="approval-history-title">审批历史</h3>
+      </div>
+      <div id="approval-history-body" class="approval-history-timeline"></div>
+      <div class="add-dialog-actions">
+        <button id="approval-history-close-btn" class="primary" type="button">关闭</button>
+      </div>
+    </dialog>
+
+    <dialog id="base-data-dialog" class="add-forecast-dialog">
+      <div class="add-dialog-header">
+        <h3 id="base-data-dialog-title">新增</h3>
+      </div>
+      <div id="base-data-form" class="add-dialog-form-grid"></div>
+      <div class="add-dialog-actions">
+        <button id="base-data-cancel-btn" class="ghost-btn" type="button">取消</button>
+        <button id="base-data-save-btn" class="primary" type="button">保存</button>
+      </div>
+    </dialog>
+
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>销售预测填报 - Sandvik Sales Forecast Tool</title>
+  <script type="importmap">
+  {
+    "imports": {
+      "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js",
+      "ant-design-vue": "https://unpkg.com/ant-design-vue@4.2.6/dist/ant-design-vue.esm.js",
+      "ant-design-vue/icons": "https://unpkg.com/@ant-design/icons-vue/dist/icons.esm.js",
+      "dayjs": "https://unpkg.com/dayjs/dayjs.min.js"
+    }
+  }
+  </script>
+  <link rel="stylesheet" href="https://unpkg.com/ant-design-vue/dist/reset.css">
+  <style>
+    :root {
+      --sandvik-blue: #0D3D92;
+      --sandvik-orange: #F5A623;
+      --bg-color: #F5F7FA;
+      --content-bg: #FFFFFF;
+      --text-primary: #1F2937;
+      --text-secondary: #6B7280;
+      --border-color: #E5E7EB;
+      --success-color: #52C41A;
+      --warning-color: #FAAD14;
+      --error-color: #FF4D4F;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    #app {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .page-header {
+      background: var(--sandvik-blue);
+      color: #fff;
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(13, 61, 146, 0.3);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .fc-version-select .ant-select-selector {
+      background: rgba(255,255,255,0.15) !important;
+      border: 1px solid rgba(255,255,255,0.4) !important;
+      color: #fff !important;
+      height: 34px !important;
+    }
+
+    .fc-version-select .ant-select-selection-placeholder,
+    .fc-version-select .ant-select-selection-item {
+      color: #fff !important;
+      line-height: 32px !important;
+    }
+
+    .fc-version-select .ant-select-arrow {
+      color: rgba(255,255,255,0.7) !important;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .header-actions .ant-btn {
+      font-size: 13px;
+      border-radius: 4px;
+    }
+
+    .header-actions .ant-btn-default {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.35);
+      color: #fff;
+    }
+
+    .header-actions .ant-btn-default:hover {
+      background: rgba(255,255,255,0.25);
+      border-color: rgba(255,255,255,0.6);
+      color: #fff;
+    }
+
+    .header-actions .ant-btn-primary {
+      background: var(--sandvik-orange);
+      border-color: var(--sandvik-orange);
+      color: #fff;
+      font-weight: 500;
+    }
+
+    .header-actions .ant-btn-primary:hover {
+      background: #e8961a;
+      border-color: #e8961a;
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      padding: 20px 32px;
+      max-width: 1600px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Filter Bar */
+    .filter-section {
+      margin-bottom: 16px;
+    }
+
+    .filter-collapse .ant-collapse-header {
+      font-size: 14px;
+      color: var(--text-secondary);
+      padding: 0 0 8px 0 !important;
+    }
+
+    .filter-collapse .ant-collapse-content-box {
+      padding: 12px 16px !important;
+      background: var(--content-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+    }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+    }
+
+    .filter-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .filter-item label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .filter-actions {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .filter-actions .ant-btn {
+      border-radius: 4px;
+    }
+
+    /* Data Table */
+    .table-section {
+      background: var(--content-bg);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    .table-container .ant-table {
+      font-size: 13px;
+    }
+
+    .table-container .ant-table-thead > tr > th {
+      background: var(--sandvik-blue) !important;
+      color: #fff !important;
+      font-weight: 600;
+      font-size: 12px;
+      text-align: center;
+      padding: 10px 8px;
+      border: none;
+      white-space: nowrap;
+    }
+
+    .table-container .ant-table-thead > tr > th::before {
+      display: none !important;
+    }
+
+    .table-container .ant-table-tbody > tr > td {
+      padding: 8px 6px;
+      text-align: center;
+      border-color: var(--border-color);
+      color: var(--text-primary);
+      font-size: 12px;
+    }
+
+    .table-container .ant-table-tbody > tr:nth-child(even) {
+      background: #FAFBFF;
+    }
+
+    .table-container .ant-table-tbody > tr:hover > td {
+      background: #EEF4FF !important;
+    }
+
+    .customer-cell {
+      text-align: left !important;
+      font-weight: 500;
+      color: var(--sandvik-blue);
+    }
+
+    .company-cell {
+      text-align: left !important;
+      color: var(--text-secondary);
+    }
+
+    .product-cell {
+      text-align: left !important;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .ant-input-number {
+      width: 80px;
+      font-size: 12px;
+    }
+
+    .ant-input-number-input {
+      text-align: center;
+    }
+
+    .action-cell .ant-btn {
+      padding: 2px 8px;
+      font-size: 12px;
+      border-radius: 3px;
+    }
+
+    .action-cell .ant-btn-text {
+      color: var(--text-secondary);
+    }
+
+    .action-cell .ant-btn-text:hover {
+      color: var(--sandvik-blue);
+    }
+
+    /* Table Footer */
+    .table-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #FAFBFF;
+    }
+
+    .selection-info {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .selection-info strong {
+      color: var(--sandvik-blue);
+    }
+
+    .footer-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .footer-actions .ant-btn {
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .footer-actions .ant-btn-default {
+      border-color: var(--border-color);
+      color: var(--text-secondary);
+    }
+
+    .footer-actions .ant-btn-default:hover {
+      border-color: var(--sandvik-blue);
+      color: var(--sandvik-blue);
+    }
+
+    .footer-actions .ant-btn-primary {
+      background: var(--sandvik-blue);
+      border-color: var(--sandvik-blue);
+    }
+
+    .footer-actions .ant-btn-primary:hover {
+      background: #0a3278;
+      border-color: #0a3278;
+    }
+
+    .pagination-wrapper {
+      display: flex;
+      align-items: center;
+    }
+
+    /* Month Header Groups */
+    .month-header-group {
+      display: flex;
+      gap: 2px;
+    }
+
+    .month-group-label {
+      font-size: 11px;
+      padding: 4px;
+      color: rgba(255,255,255,0.85);
+    }
+
+    /* Status tags */
+    .status-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .status-draft {
+      background: #F0F0F0;
+      color: var(--text-secondary);
+    }
+
+    .status-submitted {
+      background: #E6F4FF;
+      color: var(--sandvik-blue);
+    }
+
+    .status-approved {
+      background: #F6FFED;
+      color: var(--success-color);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1200px) {
+      .filter-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .page-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+      }
+
+      .header-actions {
+        flex-wrap: wrap;
+      }
+
+      .main-content {
+        padding: 16px;
+      }
+    }
+
+    /* Ant Design overrides */
+    .ant-select-selector {
+      border-radius: 4px !important;
+    }
+
+    .ant-table-wrapper {
+      overflow-x: auto;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #C0C0C0;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #F0F0F0;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-left">
+        <h1 class="page-title">销售预测填报</h1>
+        <a-select
+          v-model:value="fcVersion"
+          class="fc-version-select"
+          style="width: 140px;"
+          :dropdown-match-select-width="false"
+        >
+          <a-select-option value="2026FC1">2026FC1</a-select-option>
+          <a-select-option value="2026FC2">2026FC2</a-select-option>
+        </a-select>
+      </div>
+      <div class="header-actions">
+        <a-button @click="downloadTemplate">
+          <template #icon><download-outlined /></template>
+          下载模板
+        </a-button>
+        <a-button @click="batchUpload">
+          <template #icon><upload-outlined /></template>
+          批量上传
+        </a-button>
+        <a-button type="primary" @click="addSingle">
+          <template #icon><plus-outlined /></template>
+          单笔添加
+        </a-button>
+        <a-button @click="copyLastPeriod">
+          <template #icon><copy-outlined /></template>
+          复制上期
+        </a-button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Filter Bar -->
+      <div class="filter-section">
+        <a-collapse v-model:activeKey="filterActiveKey" class="filter-collapse" :ghost="true">
+          <a-collapse-panel key="1" :header="collapseHeaderText">
+            <div class="filter-grid">
+              <div class="filter-item">
+                <label>客户</label>
+                <a-select
+                  v-model:value="filters.customer"
+                  placeholder="全部"
+                  style="width: 100%"
+                  allow-clear
+                  show-search
+                  :filter-option="filterOption"
+                >
+                  <a-select-option value="">全部</a-select-option>
+                  <a-select-option v-for="c in customers" :key="c" :value="c">{{ c }}</a-select-option>
+                </a-select>
+              </div>
+              <div class="filter-item">
+                <label>开票公司</label>
+                <a-select
+                  v-model:value="filters.company"
+                  placeholder="全部"
+                  style="width: 100%"
+                  allow-clear
+                  show-search
+                  :filter-option="filterOption"
+                >
+                  <a-select-option value="">全部</a-select-option>
+                  <a-select-option v-for="c in companies" :key="c" :value="c">{{ c }}</a-select-option>
+                </a-select>
+              </div>
+              <div class="filter-item">
+                <label>业绩归属</label>
+                <a-select
+                  v-model:value="filters.attribution"
+                  placeholder="全部"
+                  style="width: 100%"
+                  allow-clear
+                >
+                  <a-select-option value="">全部</a-select-option>
+                  <a-select-option v-for="a in attributions" :key="a" :value="a">{{ a }}</a-select-option>
+                </a-select>
+              </div>
+              <div class="filter-item">
+                <label>销售大区</label>
+                <a-select
+                  v-model:value="filters.region"
+                  placeholder="全部"
+                  style="width: 100%"
+                  allow-clear
+                >
+                  <a-select-option value="">全部</a-select-option>
+                  <a-select-option v-for="r in regions" :key="r" :value="r">{{ r }}</a-select-option>
+                </a-select>
+              </div>
+              <div class="filter-item">
+                <label>PA产品线</label>
+                <a-select
+                  v-model:value="filters.pa"
+                  placeholder="全部"
+                  style="width: 100%"
+                  allow-clear
+                >
+                  <a-select-option value="">全部</a-select-option>
+                  <a-select-option v-for="p in paLines" :key="p" :value="p">{{ p }}</a-select-option>
+                </a-select>
+              </div>
+              <div class="filter-item">
+                <label>Sub PA</label>
+                <a-select
+                  v-model:value="filters.subPa"
+                  placeholder="全部"
+                  style="width: 100%"
+                  allow-clear
+                >
+                  <a-select-option value="">全部</a-select-option>
+                  <a-select-option v-for="s in subPas" :key="s" :value="s">{{ s }}</a-select-option>
+                </a-select>
+              </div>
+            </div>
+            <div style="margin-top: 12px; display: flex; justify-content: flex-end;">
+              <div class="filter-actions">
+                <a-button type="primary" @click="handleQuery">查询</a-button>
+                <a-button type="text" @click="handleReset">重置</a-button>
+              </div>
+            </div>
+          </a-collapse-panel>
+        </a-collapse>
+      </div>
+
+      <!-- Data Table -->
+      <div class="table-section">
+        <div class="table-container">
+          <a-table
+            :columns="tableColumns"
+            :data-source="tableData"
+            :pagination="false"
+            :row-selection="rowSelection"
+            :scroll="{ x: 1600 }"
+            size="small"
+          >
+            <template #bodyCell="{ column, record, text }">
+              <template v-if="column.key === 'customer'">
+                <span class="customer-cell">{{ text }}</span>
+              </template>
+              <template v-else-if="column.key === 'company'">
+                <span class="company-cell">{{ text }}</span>
+              </template>
+              <template v-else-if="column.key === 'product'">
+                <span class="product-cell">
+                  <div>{{ record.pa }}</div>
+                  <div style="color: #9CA3AF; font-size: 10px;">{{ record.subPa }}</div>
+                </span>
+              </template>
+              <template v-else-if="column.dataIndex && isForecastCol(column.dataIndex)">
+                <a-input-number
+                  v-model:value="record[column.dataIndex]"
+                  :min="0"
+                  :precision="0"
+                  size="small"
+                  style="width: 72px;"
+                />
+              </template>
+              <template v-else-if="column.dataIndex && isInvoiceCol(column.dataIndex)">
+                <a-input-number
+                  v-model:value="record[column.dataIndex]"
+                  :min="0"
+                  :precision="0"
+                  size="small"
+                  style="width: 72px;"
+                />
+              </template>
+              <template v-else-if="column.key === 'action'">
+                <div class="action-cell">
+                  <a-button type="text" size="small" @click="editRow(record)">
+                    <template #icon><edit-outlined /></template>
+                    编辑
+                  </a-button>
+                  <a-button type="text" size="small" danger @click="deleteRow(record)">
+                    <template #icon><delete-outlined /></template>
+                    删除
+                  </a-button>
+                </div>
+              </template>
+            </template>
+          </a-table>
+        </div>
+
+        <!-- Table Footer -->
+        <div class="table-footer">
+          <div class="selection-info">
+            已选择 <strong>{{ selectedRowKeys.length }}</strong> 条记录
+            <span v-if="selectedRowKeys.length > 0" style="margin-left: 8px; color: #9CA3AF;">
+              (合计预测: {{ totalForecast }} | 合计实际: {{ totalInvoice }})
+            </span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 20px;">
+            <div class="footer-actions">
+              <a-button @click="saveDraft">保存草稿</a-button>
+              <a-button type="primary" @click="submitForApproval">提交审批</a-button>
+            </div>
+            <div class="pagination-wrapper">
+              <a-pagination
+                v-model:current="pagination.current"
+                v-model:pageSize="pagination.pageSize"
+                :total="pagination.total"
+                :show-size-changer="true"
+                :show-total="showTotal"
+                :page-size-options="['10', '20', '50', '100']"
+                @change="handlePageChange"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createApp, ref, computed, reactive } from 'vue';
+    import antd from 'ant-design-vue';
+    import { DownOutlined, DownloadOutlined, UploadOutlined, PlusOutlined, CopyOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from 'ant-design-vue/icons';
+
+    const app = createApp({
+      setup() {
+        const fcVersion = ref('2026FC1');
+        const filterActiveKey = ref(['1']);
+        const selectedRowKeys = ref([]);
+
+        const filters = reactive({
+          customer: '',
+          company: '',
+          attribution: '',
+          region: '',
+          pa: '',
+          subPa: ''
+        });
+
+        const customers = ['昆山智造', '无锡锐虎', '苏州精密', '上海重机', '宁波协力'];
+        const companies = ['苏州阿诺', '常熟阿诺', '无锡阿诺', '上海阿诺', '宁波阿诺'];
+        const attributions = ['华东区', '华南区', '华北区', '华中区', '西南区'];
+        const regions = ['东区', '南区', '北区', '西区'];
+        const paLines = ['Holemaking', 'Milling', 'Turning'];
+        const subPas = {
+          'Holemaking': ['钻头', '镗刀', '铰刀'],
+          'Milling': ['立铣刀', '面铣刀', '玉米铣刀'],
+          'Turning': ['车刀', '切槽刀', '螺纹刀']
+        };
+
+        const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+        const monthLabels = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+
+        const mockData = [
+          { key: '1', customer: '昆山智造', company: '苏州阿诺', pa: 'Holemaking', subPa: '钻头', status: 'draft', jan_fc: 1234, jan_inv: 1100, feb_fc: 1456, feb_inv: 1320, mar_fc: 1380, mar_inv: 1250, apr_fc: 1520, apr_inv: 1400, may_fc: 1600, may_inv: 1480, jun_fc: 1550, jun_inv: 1420, jul_fc: 1480, jul_inv: 1350, aug_fc: 1620, aug_inv: 1500, sep_fc: 1580, sep_inv: 1450, oct_fc: 1700, oct_inv: 1600, nov_fc: 1650, nov_inv: 1520, dec_fc: 1800, dec_inv: 1680 },
+          { key: '2', customer: '无锡锐虎', company: '常熟阿诺', pa: 'Milling', subPa: '立铣刀', status: 'draft', jan_fc: 890, jan_inv: 920, feb_fc: 1020, feb_inv: 980, mar_fc: 1100, mar_inv: 1050, apr_fc: 980, apr_inv: 940, may_fc: 1150, may_inv: 1100, jun_fc: 1200, jun_inv: 1150, jul_fc: 1080, jul_inv: 1020, aug_fc: 1250, aug_inv: 1200, sep_fc: 1180, sep_inv: 1120, oct_fc: 1300, oct_inv: 1250, nov_fc: 1350, nov_inv: 1280, dec_fc: 1400, dec_inv: 1320 },
+          { key: '3', customer: '苏州精密', company: '无锡阿诺', pa: 'Turning', subPa: '车刀', status: 'submitted', jan_fc: 2340, jan_inv: 2180, feb_fc: 2500, feb_inv: 2380, mar_fc: 2650, mar_inv: 2520, apr_fc: 2700, apr_inv: 2580, may_fc: 2800, may_inv: 2680, jun_fc: 2900, jun_inv: 2780, jul_fc: 2750, jul_inv: 2620, aug_fc: 3000, aug_inv: 2880, sep_fc: 2950, sep_inv: 2820, oct_fc: 3100, oct_inv: 2980, nov_fc: 3200, nov_inv: 3050, dec_fc: 3300, dec_inv: 3150 },
+          { key: '4', customer: '上海重机', company: '上海阿诺', pa: 'Holemaking', subPa: '镗刀', status: 'draft', jan_fc: 560, jan_inv: 520, feb_fc: 620, feb_inv: 580, mar_fc: 680, mar_inv: 640, apr_fc: 720, apr_inv: 680, may_fc: 750, may_inv: 700, jun_fc: 780, jun_inv: 740, jul_fc: 800, jul_inv: 760, aug_fc: 820, aug_inv: 780, sep_fc: 850, sep_inv: 800, oct_fc: 880, oct_inv: 840, nov_fc: 920, nov_inv: 870, dec_fc: 960, dec_inv: 910 },
+          { key: '5', customer: '宁波协力', company: '宁波阿诺', pa: 'Milling', subPa: '面铣刀', status: 'approved', jan_fc: 1780, jan_inv: 1680, feb_fc: 1920, feb_inv: 1820, mar_fc: 2050, mar_inv: 1950, apr_fc: 2100, apr_inv: 2000, may_fc: 2200, may_inv: 2100, jun_fc: 2300, jun_inv: 2200, jul_fc: 2250, jul_inv: 2150, aug_fc: 2350, aug_inv: 2250, sep_fc: 2400, sep_inv: 2300, oct_fc: 2500, oct_inv: 2400, nov_fc: 2580, nov_inv: 2480, dec_fc: 2700, dec_inv: 2580 },
+          { key: '6', customer: '昆山智造', company: '苏州阿诺', pa: 'Turning', subPa: '切槽刀', status: 'draft', jan_fc: 450, jan_inv: 420, feb_fc: 520, feb_inv: 480, mar_fc: 580, mar_inv: 540, apr_fc: 600, apr_inv: 560, may_fc: 650, may_inv: 600, jun_fc: 680, jun_inv: 640, jul_fc: 700, jul_inv: 660, aug_fc: 720, aug_inv: 680, sep_fc: 750, sep_inv: 710, oct_fc: 780, oct_inv: 740, nov_fc: 820, nov_inv: 780, dec_fc: 860, dec_inv: 820 },
+          { key: '7', customer: '无锡锐虎', company: '常熟阿诺', pa: 'Holemaking', subPa: '铰刀', status: 'draft', jan_fc: 320, jan_inv: 300, feb_fc: 380, feb_inv: 360, mar_fc: 420, mar_inv: 400, apr_fc: 450, apr_inv: 420, may_fc: 480, may_inv: 450, jun_fc: 520, jun_inv: 490, jul_fc: 540, jul_inv: 510, aug_fc: 560, aug_inv: 530, sep_fc: 600, sep_inv: 570, oct_fc: 620, oct_inv: 590, nov_fc: 660, nov_inv: 620, dec_fc: 700, dec_inv: 660 },
+          { key: '8', customer: '苏州精密', company: '无锡阿诺', pa: 'Milling', subPa: '玉米铣刀', status: 'submitted', jan_fc: 680, jan_inv: 640, feb_fc: 750, feb_inv: 710, mar_fc: 820, mar_inv: 780, apr_fc: 880, apr_inv: 840, may_fc: 920, may_inv: 870, jun_fc: 980, jun_inv: 930, jul_fc: 1020, jul_inv: 970, aug_fc: 1050, aug_inv: 1000, sep_fc: 1100, sep_inv: 1050, oct_fc: 1150, oct_inv: 1100, nov_fc: 1200, nov_inv: 1150, dec_fc: 1280, dec_inv: 1220 },
+          { key: '9', customer: '上海重机', company: '上海阿诺', pa: 'Turning', subPa: '螺纹刀', status: 'draft', jan_fc: 280, jan_inv: 260, feb_fc: 320, feb_inv: 300, mar_fc: 360, mar_inv: 340, apr_fc: 400, apr_inv: 380, may_fc: 420, may_inv: 400, jun_fc: 450, jun_inv: 420, jul_fc: 480, jul_inv: 450, aug_fc: 500, aug_inv: 470, sep_fc: 530, sep_inv: 500, oct_fc: 560, oct_inv: 530, nov_fc: 590, nov_inv: 560, dec_fc: 620, dec_inv: 590 },
+          { key: '10', customer: '宁波协力', company: '宁波阿诺', pa: 'Holemaking', subPa: '钻头', status: 'draft', jan_fc: 1100, jan_inv: 1020, feb_fc: 1250, feb_inv: 1180, mar_fc: 1380, mar_inv: 1300, apr_fc: 1450, apr_inv: 1380, may_fc: 1520, may_inv: 1450, jun_fc: 1600, jun_inv: 1520, jul_fc: 1680, jul_inv: 1600, aug_fc: 1750, aug_inv: 1680, sep_fc: 1820, sep_inv: 1750, oct_fc: 1900, oct_inv: 1820, nov_fc: 1980, nov_inv: 1900, dec_fc: 2100, dec_inv: 2000 }
+        ];
+
+        const tableData = ref([...mockData]);
+
+        const baseColumns = [
+          { title: '客户名称', dataIndex: 'customer', key: 'customer', width: 130, fixed: 'left' },
+          { title: '开票公司', dataIndex: 'company', key: 'company', width: 120, fixed: 'left' },
+          { title: '产品线', key: 'product', width: 130, fixed: 'left' }
+        ];
+
+        const monthColumns = months.flatMap((m, i) => [
+          { title: monthLabels[i] + '预测', dataIndex: m + '_fc', key: m + '_fc', width: 80 },
+          { title: monthLabels[i] + '实际', dataIndex: m + '_inv', key: m + '_inv', width: 80 }
+        ]);
+
+        const actionColumn = [
+          { title: '操作', key: 'action', width: 140, fixed: 'right', align: 'center' }
+        ];
+
+        const tableColumns = [...baseColumns, ...monthColumns, ...actionColumn];
+
+        const pagination = reactive({
+          current: 1,
+          pageSize: 10,
+          total: 58
+        });
+
+        const rowSelection = reactive({
+          selectedRowKeys,
+          onChange: (keys) => {
+            selectedRowKeys.value = keys;
+          },
+          getCheckboxProps: (record) => ({
+            name: record.key
+          })
+        });
+
+        const collapseHeaderText = computed(() => {
+          const hasFilters = Object.values(filters).some(v => v && v !== '');
+          return hasFilters ? `筛选条件 (已启用)` : '筛选条件';
+        });
+
+        const isForecastCol = (col) => col.endsWith('_fc');
+        const isInvoiceCol = (col) => col.endsWith('_inv');
+
+        const totalForecast = computed(() => {
+          if (selectedRowKeys.value.length === 0) return 0;
+          const selected = tableData.value.filter(r => selectedRowKeys.value.includes(r.key));
+          return selected.reduce((sum, r) => {
+            return sum + months.reduce((s, m) => s + (r[m + '_fc'] || 0), 0);
+          }, 0).toLocaleString();
+        });
+
+        const totalInvoice = computed(() => {
+          if (selectedRowKeys.value.length === 0) return 0;
+          const selected = tableData.value.filter(r => selectedRowKeys.value.includes(r.key));
+          return selected.reduce((sum, r) => {
+            return sum + months.reduce((s, m) => s + (r[m + '_inv'] || 0), 0);
+          }, 0).toLocaleString();
+        });
+
+        const showTotal = (total, range) => `共 ${total} 条`;
+
+        const filterOption = (input, option) => {
+          return option.children?.[0]?.children?.toLowerCase().indexOf(input.toLowerCase()) >= 0;
+        };
+
+        const handleQuery = () => {
+          console.log('Query with filters:', filters);
+          antd.message.info('查询中...');
+        };
+
+        const handleReset = () => {
+          Object.keys(filters).forEach(key => filters[key] = '');
+          antd.message.success('筛选条件已重置');
+        };
+
+        const handlePageChange = (page, pageSize) => {
+          pagination.current = page;
+          pagination.pageSize = pageSize;
+          console.log('Page changed:', page, pageSize);
+        };
+
+        const downloadTemplate = () => {
+          antd.message.success('模板下载中...');
+        };
+
+        const batchUpload = () => {
+          antd.message.info('批量上传功能开发中');
+        };
+
+        const addSingle = () => {
+          antd.message.info('单笔添加功能开发中');
+        };
+
+        const copyLastPeriod = () => {
+          antd.message.success('已复制上期数据');
+        };
+
+        const saveDraft = () => {
+          antd.message.success('草稿保存成功');
+        };
+
+        const submitForApproval = () => {
+          if (selectedRowKeys.value.length === 0) {
+            antd.message.warning('请先选择要提交的数据');
+            return;
+          }
+          antd.modal.confirm({
+            title: '确认提交',
+            content: `确定要提交选中的 ${selectedRowKeys.value.length} 条记录吗？`,
+            onOk() {
+              antd.message.success('提交成功，审批流程已启动');
+            }
+          });
+        };
+
+        const editRow = (record) => {
+          antd.message.info(`编辑: ${record.customer} - ${record.pa}`);
+        };
+
+        const deleteRow = (record) => {
+          antd.modal.confirm({
+            title: '确认删除',
+            content: `确定要删除 ${record.customer} 的数据吗？`,
+            okText: '确定',
+            cancelText: '取消',
+            onOk() {
+              tableData.value = tableData.value.filter(r => r.key !== record.key);
+              antd.message.success('删除成功');
+            }
+          });
+        };
+
+        return {
+          fcVersion,
+          filterActiveKey,
+          filters,
+          customers,
+          companies,
+          attributions,
+          regions,
+          paLines,
+          subPas,
+          tableColumns,
+          tableData,
+          pagination,
+          rowSelection,
+          selectedRowKeys,
+          collapseHeaderText,
+          totalForecast,
+          totalInvoice,
+          showTotal,
+          isForecastCol,
+          isInvoiceCol,
+          filterOption,
+          handleQuery,
+          handleReset,
+          handlePageChange,
+          downloadTemplate,
+          batchUpload,
+          addSingle,
+          copyLastPeriod,
+          saveDraft,
+          submitForApproval,
+          editRow,
+          deleteRow
+        };
+      }
+    });
+
+    app.use(antd);
+    app.mount('#app');
+  </script>
+</body>
+</html>

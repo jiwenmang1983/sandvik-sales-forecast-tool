@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sandvik 销售预测仪表盘</title>
+  <!-- Local Resources -->
+  <script src="./lib/vue.global.prod.js"></script>
+  <script src="./lib/dayjs.min.js"></script>
+  <script src="./lib/dayjs-plugin-advancedFormat.js"></script>
+  <script src="./lib/dayjs-plugin-customParseFormat.js"></script>
+  <script src="./lib/dayjs-plugin-localeData.js"></script>
+  <script src="./lib/dayjs-plugin-quarterOfYear.js"></script>
+  <script src="./lib/dayjs-plugin-weekOfYear.js"></script>
+  <script src="./lib/dayjs-plugin-weekYear.js"></script>
+  <script src="./lib/dayjs-plugin-weekday.js"></script>
+  <link rel="stylesheet" href="./lib/reset.css">
+  <script src="./lib/antd.min.js"></script>
+  <script src="./lib/echarts.min.js"></script>
+  <style>
+    :root {
+      --primary: #0D3D92;
+      --secondary: #F5A623;
+      --bg: #F5F7FA;
+      --card-bg: #FFFFFF;
+      --text-primary: #1F2937;
+      --text-secondary: #6B7280;
+      --border: #E5E7EB;
+      --success: #52C41A;
+      --warning: #FAAD14;
+      --error: #FF4D4F;
+      --info: #1890FF;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    .dashboard-container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* Page Header */
+    .page-header {
+      margin-bottom: 32px;
+    }
+
+    .page-header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    .page-header p {
+      font-size: 15px;
+      color: var(--text-secondary);
+    }
+
+    /* KPI Cards Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 1200px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      .kpi-grid { grid-template-columns: 1fr; }
+    }
+
+    .kpi-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      transition: box-shadow 0.3s ease;
+    }
+
+    .kpi-card:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .kpi-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+
+    .kpi-icon.blue { background: rgba(13, 61, 146, 0.1); color: var(--primary); }
+    .kpi-icon.green { background: rgba(82, 196, 26, 0.1); color: var(--success); }
+    .kpi-icon.orange { background: rgba(245, 166, 35, 0.1); color: var(--warning); }
+    .kpi-icon.red { background: rgba(255, 77, 79, 0.1); color: var(--error); }
+
+    .kpi-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .kpi-label {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .kpi-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+
+    .kpi-sub {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .kpi-sub .trend-up { color: var(--success); font-weight: 600; }
+    .kpi-sub .trend-down { color: var(--error); font-weight: 600; }
+
+    /* Charts Grid */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    @media (max-width: 1024px) {
+      .charts-grid { grid-template-columns: 1fr; }
+    }
+
+    .chart-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .chart-card.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .chart-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .chart-container {
+      width: 100%;
+      height: 320px;
+    }
+
+    .chart-container.tall {
+      height: 360px;
+    }
+
+    .gauge-svg {
+      width: 180px;
+      height: 180px;
+      transform: rotate(-90deg);
+    }
+    .gauge-bg {
+      fill: none;
+      stroke: #E5E7EB;
+      stroke-width: 14;
+    }
+    .gauge-fill {
+      fill: none;
+      stroke: #0D3D92;
+      stroke-width: 14;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s ease;
+    }
+    .gauge-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 320px;
+      gap: 16px;
+      position: relative;
+    }
+    .gauge-label {
+      font-size: 14px;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+    .gauge-label .gauge-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1F2937;
+    }
+    .gauge-label .gauge-sub {
+      margin-top: 4px;
+    }
+
+    /* Loading state */
+    .loading-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 320px;
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="dashboard-container">
+      <!-- Page Header -->
+      <div class="page-header">
+        <h1>销售预测仪表盘</h1>
+        <p>实时监控销售预测数据与业务指标</p>
+      </div>
+
+      <!-- KPI Cards Row -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon blue">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+          </div>
+          <div class="kpi-content">
+            <div class="kpi-label">订单总金额</div>
+            <div class="kpi-value">¥12,345,678</div>
+            <div class="kpi-sub"><span class="trend-up">↑12%</span> 同比</div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon green">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12h6M9 16h6M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/>
+              <path d="M13 3v5h5"/>
+            </svg>
+          </div>
+          <div class="kpi-content">
+            <div class="kpi-label">开票总金额</div>
+            <div class="kpi-value">¥9,876,543</div>
+            <div class="kpi-sub"><span class="trend-up">↑8%</span> 同比</div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon orange">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+          </div>
+          <div class="kpi-content">
+            <div class="kpi-label">填报完成比率</div>
+            <div class="kpi-value">78%</div>
+            <div class="kpi-sub">45/58 销售</div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon red">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 8v4M12 16h.01"/>
+            </svg>
+          </div>
+          <div class="kpi-content">
+            <div class="kpi-label">待审批数</div>
+            <div class="kpi-value">12</div>
+            <div class="kpi-sub">区总5 / 财务7</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Grid -->
+      <div class="charts-grid">
+        <!-- 月度趋势预测对比 -->
+        <div class="chart-card">
+          <div class="chart-title">月度趋势预测对比</div>
+          <div class="chart-container" id="line-chart-monthly"></div>
+        </div>
+
+        <!-- 销售大区金额占比 -->
+        <div class="chart-card">
+          <div class="chart-title">销售大区金额占比</div>
+          <div class="chart-container" id="pie-chart-region"></div>
+        </div>
+
+        <!-- PA产品线预测金额 -->
+        <div class="chart-card">
+          <div class="chart-title">PA 产品线预测金额</div>
+          <div class="chart-container" id="bar-chart-product"></div>
+        </div>
+
+        <!-- 客户 TOP 5 -->
+        <div class="chart-card">
+          <div class="chart-title">客户 TOP 5</div>
+          <div class="chart-container" id="bar-chart-customer"></div>
+        </div>
+
+        <!-- 预测完成率进度 -->
+        <div class="chart-card">
+          <div class="chart-title">预测完成率进度</div>
+          <div class="gauge-wrapper">
+            <svg class="gauge-svg" viewBox="0 0 180 180">
+              <circle class="gauge-bg" cx="90" cy="90" r="75" />
+              <circle class="gauge-fill" cx="90" cy="90" r="75" 
+                stroke-dasharray="471.24" stroke-dashoffset="103.67" />
+            </svg>
+            <div class="gauge-label">
+              <div class="gauge-value">78%</div>
+              <div class="gauge-sub">45/58 销售填报已完成</div>
+            </div>
+          </div>
+            <div class="gauge-label">
+              <div style="font-size:18px;font-weight:700;color:#1F2937;">45 / 58</div>
+              <div style="margin-top:4px;">销售填报已完成</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 预测准确率趋势 -->
+        <div class="chart-card">
+          <div class="chart-title">预测准确率趋势</div>
+          <div class="chart-container" id="line-chart-accuracy"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, onMounted } = Vue;
+
+    const app = createApp({
+      setup() {
+        onMounted(() => {
+          initCharts();
+        });
+
+        function initCharts() {
+          initMonthlyLineChart();
+          initRegionPieChart();
+          initProductBarChart();
+          initCustomerBarChart();
+          initAccuracyLineChart();
+        }
+
+        // 1. 月度趋势预测对比 - Line Chart (ECharts)
+        function initMonthlyLineChart() {
+          const chart = echarts.init(document.getElementById('line-chart-monthly'));
+          const monthlyData = [
+            { month: '1月', value: 820, type: '预测金额' },
+            { month: '1月', value: 780, type: '实际金额' },
+            { month: '2月', value: 950, type: '预测金额' },
+            { month: '2月', value: 890, type: '实际金额' },
+            { month: '3月', value: 1100, type: '预测金额' },
+            { month: '3月', value: 1050, type: '实际金额' },
+            { month: '4月', value: 980, type: '预测金额' },
+            { month: '4月', value: 920, type: '实际金额' },
+            { month: '5月', value: 1150, type: '预测金额' },
+            { month: '5月', value: 1080, type: '实际金额' },
+            { month: '6月', value: 1280, type: '预测金额' },
+            { month: '6月', value: 1190, type: '实际金额' },
+            { month: '7月', value: 1350, type: '预测金额' },
+            { month: '7月', value: 1300, type: '实际金额' },
+            { month: '8月', value: 1200, type: '预测金额' },
+            { month: '8月', value: 1150, type: '实际金额' },
+            { month: '9月', value: 1420, type: '预测金额' },
+            { month: '9月', value: 1380, type: '实际金额' },
+            { month: '10月', value: 1550, type: '预测金额' },
+            { month: '10月', value: 1490, type: '实际金额' },
+            { month: '11月', value: 1620, type: '预测金额' },
+            { month: '11月', value: 1580, type: '实际金额' },
+            { month: '12月', value: 1700, type: '预测金额' },
+            { month: '12月', value: null, type: '实际金额' },
+          ];
+          const months = [...new Set(monthlyData.map(d => d.month))];
+          const predictData = monthlyData.filter(d => d.type === '预测金额').map(d => d.value);
+          const actualData = monthlyData.filter(d => d.type === '实际金额').map(d => d.value);
+          chart.setOption({
+            color: ['#0D3D92', '#F5A623'],
+            tooltip: { trigger: 'axis' },
+            legend: { data: ['预测金额', '实际金额'], top: 0 },
+            grid: { left: 60, right: 20, top: 40, bottom: 30 },
+            xAxis: { type: 'category', data: months },
+            yAxis: { type: 'value', axisLabel: { formatter: v => v + '万' } },
+            series: [
+              { name: '预测金额', type: 'line', smooth: true, data: predictData, lineStyle: { width: 2.5 }, symbol: 'circle', symbolSize: 6 },
+              { name: '实际金额', type: 'line', smooth: true, data: actualData, lineStyle: { width: 2.5 }, symbol: 'circle', symbolSize: 6 }
+            ]
+          });
+          window.addEventListener('resize', () => chart.resize());
+        }
+
+        // 2. 销售大区金额占比 - Pie Chart (ECharts)
+        function initRegionPieChart() {
+          const chart = echarts.init(document.getElementById('pie-chart-region'));
+          const regionData = [
+            { name: '东部大区', value: 4200 },
+            { name: '南部大区', value: 3100 },
+            { name: '西部大区', value: 2800 },
+            { name: '北部大区', value: 1900 },
+            { name: '其他', value: 600 },
+          ];
+          chart.setOption({
+            tooltip: { trigger: 'item', formatter: '{b}: {c}万 ({d}%)' },
+            legend: { orient: 'vertical', right: 10, top: 'center' },
+            color: ['#0D3D92', '#2E6BD8', '#5A8FE8', '#F5A623', '#52C41A'],
+            series: [{
+              type: 'pie',
+              radius: ['55%', '80%'],
+              center: ['40%', '50%'],
+              avoidLabelOverlap: false,
+              label: { show: false },
+              emphasis: {
+                label: { show: true, fontSize: 14, fontWeight: 'bold' }
+              },
+              data: regionData
+            }]
+          });
+          window.addEventListener('resize', () => chart.resize());
+        }
+
+        // 3. PA产品线预测金额 - Bar Chart (ECharts)
+        function initProductBarChart() {
+          const chart = echarts.init(document.getElementById('bar-chart-product'));
+          const productData = [
+            { product: '刀具', amount: 3800 },
+            { product: '铣刀', amount: 3200 },
+            { product: '车刀', amount: 2700 },
+            { product: '螺纹', amount: 2100 },
+            { product: '系统', amount: 1500 },
+          ];
+          chart.setOption({
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            grid: { left: 80, right: 20, top: 10, bottom: 30 },
+            xAxis: { type: 'value', axisLabel: { formatter: v => v + '万' } },
+            yAxis: { type: 'category', data: productData.map(d => d.product).reverse() },
+            series: [{
+              type: 'bar',
+              data: productData.map(d => d.amount).reverse(),
+              barMaxWidth: 24,
+              itemStyle: { color: '#0D3D92', borderRadius: [0, 4, 4, 0] },
+              label: { show: true, position: 'right', formatter: v => v.value + '万', fontSize: 12, color: '#6B7280' }
+            }]
+          });
+          window.addEventListener('resize', () => chart.resize());
+        }
+
+        // 4. 客户 TOP 5 - Bar Chart (ECharts)
+        function initCustomerBarChart() {
+          const chart = echarts.init(document.getElementById('bar-chart-customer'));
+          const customerData = [
+            { customer: '三一重工股份有限公司', amount: 1850 },
+            { customer: '中联重科股份有限公司', amount: 1620 },
+            { customer: '徐工集团工程机械有限公司', amount: 1380 },
+            { customer: '卡特彼勒(中国)投资有限公司', amount: 1150 },
+            { customer: '小松(中国)投资有限公司', amount: 980 },
+          ];
+          chart.setOption({
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            grid: { left: 200, right: 20, top: 10, bottom: 30 },
+            xAxis: { type: 'value', axisLabel: { formatter: v => v + '万' } },
+            yAxis: { type: 'category', data: customerData.map(d => d.customer).reverse(), axisLabel: { formatter: v => v.length > 8 ? v.substring(0, 8) + '...' : v } },
+            series: [{
+              type: 'bar',
+              data: customerData.map((d, i) => ({
+                value: d.amount,
+                itemStyle: { color: ['#0D3D92', '#2E6BD8', '#5A8FE8', '#7EABEF', '#A8C5F5'][i], borderRadius: [0, 4, 4, 0] }
+              })).reverse(),
+              barMaxWidth: 24,
+              label: { show: true, position: 'right', formatter: v => v.value + '万', fontSize: 12, color: '#6B7280' }
+            }]
+          });
+          window.addEventListener('resize', () => chart.resize());
+        }
+
+        // 5. 预测准确率趋势 - Line Chart (ECharts)
+        function initAccuracyLineChart() {
+          const chart = echarts.init(document.getElementById('line-chart-accuracy'));
+          const accuracyData = [
+            { month: '11月', accuracy: 94 },
+            { month: '12月', accuracy: 91 },
+            { month: '1月', accuracy: 97 },
+            { month: '2月', accuracy: 93 },
+            { month: '3月', accuracy: 96 },
+            { month: '4月', accuracy: 98 },
+          ];
+          chart.setOption({
+            color: ['#0D3D92'],
+            tooltip: { trigger: 'axis', formatter: '{b}: {c}%' },
+            grid: { left: 60, right: 20, top: 10, bottom: 30 },
+            xAxis: { type: 'category', data: accuracyData.map(d => d.month) },
+            yAxis: { type: 'value', min: 80, max: 100, axisLabel: { formatter: v => v + '%' } },
+            series: [{
+              type: 'line',
+              smooth: true,
+              data: accuracyData.map(d => d.accuracy),
+              lineStyle: { width: 2.5 },
+              symbol: 'circle',
+              symbolSize: 8,
+              itemStyle: { color: '#0D3D92', borderColor: '#fff', borderWidth: 2 },
+              markLine: {
+                silent: true,
+                lineStyle: { color: '#52C41A', type: 'dashed', width: 1.5 },
+                data: [{ yAxis: 100 }]
+              }
+            }]
+          });
+          window.addEventListener('resize', () => chart.resize());
+        }
+
+        return {};
+      }
+    });
+
+    app.use(antd);
+    app.mount('#app');
+  </script>
+</body>
+</html>

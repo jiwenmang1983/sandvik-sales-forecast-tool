@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>销售预测审批 - Sandvik Sales Forecast</title>
+  <link rel="stylesheet" href="https://unpkg.com/ant-design-vue/dist/reset.css" />
+  <link rel="stylesheet" href="https://unpkg.com/ant-design-vue/dist/antd.min.css" />
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://unpkg.com/dayjs/dayjs.min.js"></script>
+  <script src="https://unpkg.com/ant-design-vue/dist/antd.min.js"></script>
+  <script src="https://unpkg.com/@ant-design/icons-vue/dist/antd-icons.min.js"></script>
+  <style>
+    :root {
+      --sandvik-blue: #0D3D92;
+      --sandvik-orange: #F5A623;
+      --bg: #F5F7FA;
+      --content-bg: #FFFFFF;
+      --text-primary: #1F2937;
+      --text-secondary: #6B7280;
+      --border: #E5E7EB;
+      --success: #52C41A;
+      --warning: #FAAD14;
+      --error: #FF4D4F;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      color: var(--text-primary);
+    }
+
+    .page-wrapper {
+      min-height: 100vh;
+      padding: 24px 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Page Header */
+    .page-header {
+      margin-bottom: 24px;
+    }
+
+    .page-header .ant-typography {
+      color: var(--sandvik-blue);
+    }
+
+    .page-subtitle {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    /* Status Tabs */
+    .status-tabs {
+      background: var(--content-bg);
+      border-radius: 8px;
+      padding: 0 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    .status-tabs .ant-tabs-nav {
+      margin-bottom: 0;
+    }
+
+    .status-tabs .ant-tabs-tab {
+      padding: 12px 4px;
+    }
+
+    .tab-badge {
+      display: inline-block;
+      margin-left: 6px;
+      font-size: 12px;
+      padding: 0 6px;
+      border-radius: 10px;
+      min-width: 20px;
+      text-align: center;
+      line-height: 18px;
+    }
+
+    .tab-badge-warning { background: #FFF7E6; color: var(--warning); }
+    .tab-badge-success { background: #F6FFED; color: var(--success); }
+    .tab-badge-error { background: #FFF2F0; color: var(--error); }
+    .tab-badge-default { background: #F3F4F6; color: var(--text-secondary); }
+
+    /* Filter Bar */
+    .filter-bar {
+      margin-bottom: 16px;
+    }
+
+    .filter-bar .ant-card-body {
+      padding: 16px 20px;
+    }
+
+    .filter-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .filter-label {
+      color: var(--text-secondary);
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .filter-select {
+      min-width: 140px;
+    }
+
+    .filter-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    /* Approval Card List */
+    .approval-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .approval-card {
+      background: var(--content-bg);
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      transition: box-shadow 0.2s ease;
+      cursor: pointer;
+    }
+
+    .approval-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+    }
+
+    .approval-card .ant-card-body {
+      padding: 0;
+    }
+
+    .card-inner {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 20px;
+    }
+
+    .card-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .card-header-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .fc-icon {
+      color: var(--sandvik-blue);
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .fc-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--sandvik-blue);
+    }
+
+    .fc-submitter {
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .card-info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 6px 24px;
+      margin-bottom: 8px;
+    }
+
+    .info-item {
+      display: flex;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .info-item .info-label {
+      width: 70px;
+      flex-shrink: 0;
+    }
+
+    .info-item .info-value {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .card-footer-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .submit-time {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .card-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .status-tag {
+      font-size: 12px;
+      padding: 2px 10px;
+      border-radius: 4px;
+    }
+
+    .tag-pending {
+      background: #FFF7E6;
+      color: #D46B08;
+      border: 1px solid #FFE58D;
+    }
+
+    .tag-approved {
+      background: #F6FFED;
+      color: #389E0D;
+      border: 1px solid #B7EB8F;
+    }
+
+    .tag-rejected {
+      background: #FFF2F0;
+      color: #CF1322;
+      border: 1px solid #FFCCC7;
+    }
+
+    .tag-completed {
+      background: #F6FFED;
+      color: #389E0D;
+      border: 1px solid #B7EB8F;
+    }
+
+    .btn-approve {
+      background: var(--success);
+      border-color: var(--success);
+      color: #fff;
+      font-size: 13px;
+      padding: 0 14px;
+      height: 30px;
+      border-radius: 4px;
+    }
+
+    .btn-reject {
+      background: #fff;
+      border-color: var(--error);
+      color: var(--error);
+      font-size: 13px;
+      padding: 0 14px;
+      height: 30px;
+      border-radius: 4px;
+    }
+
+    .btn-approve:hover {
+      background: #3cb614;
+      border-color: #3cb614;
+      color: #fff;
+    }
+
+    .btn-reject:hover {
+      background: var(--error);
+      color: #fff;
+    }
+
+    .btn-detail {
+      color: var(--sandvik-blue);
+      font-size: 13px;
+      padding: 0 4px;
+      height: auto;
+    }
+
+    /* Pagination */
+    .pagination-wrapper {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 48px 0;
+      color: var(--text-secondary);
+    }
+
+    .empty-state .anticon {
+      font-size: 48px;
+      color: var(--border);
+      margin-bottom: 16px;
+    }
+
+    /* Modal overrides */
+    .approval-modal .ant-modal-header {
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+    }
+
+    .approval-modal .ant-modal-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--sandvik-blue);
+    }
+
+    .approval-modal .ant-modal-body {
+      padding: 0;
+    }
+
+    .detail-tabs .ant-tabs-nav {
+      padding: 0 24px;
+      margin-bottom: 0;
+      background: #FAFBFC;
+    }
+
+    .detail-tabs .ant-tabs-content {
+      padding: 16px 24px;
+    }
+
+    .detail-table .ant-table {
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="page-wrapper">
+
+      <!-- Page Header -->
+      <div class="page-header">
+        <a-typography-title :level="3" style="margin-bottom:4px;">
+          <span style="color:#0D3D92">📋 销售预测审批</span>
+        </a-typography-title>
+        <p class="page-subtitle">区域总监/财务对销售预测数据进行审批</p>
+      </div>
+
+      <!-- Status Tabs -->
+      <div class="status-tabs">
+        <a-tabs v-model:activeKey="activeTab" @change="onTabChange">
+          <a-tab-pane key="all">
+            <template #tab>
+              全部 <span :class="['tab-badge', 'tab-badge-default']">{{ counts.all }}</span>
+            </template>
+          </a-tab-pane>
+          <a-tab-pane key="pending">
+            <template #tab>
+              待我审批 <span :class="['tab-badge', 'tab-badge-warning']">{{ counts.pending }}</span>
+            </template>
+          </a-tab-pane>
+          <a-tab-pane key="approved">
+            <template #tab>
+              已通过 <span :class="['tab-badge', 'tab-badge-success']">{{ counts.approved }}</span>
+            </template>
+          </a-tab-pane>
+          <a-tab-pane key="rejected">
+            <template #tab>
+              已退回 <span :class="['tab-badge', 'tab-badge-error']">{{ counts.rejected }}</span>
+            </template>
+          </a-tab-pane>
+          <a-tab-pane key="completed">
+            <template #tab>
+              已完成 <span :class="['tab-badge', 'tab-badge-success']">{{ counts.completed }}</span>
+            </template>
+          </a-tab-pane>
+        </a-tabs>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <a-card :bordered="false" :body-style="{ padding: '12px 20px' }">
+          <a-row :gutter="16" align="middle">
+            <a-col flex="auto">
+              <a-row :gutter="12" align="middle" style="flex-wrap:wrap">
+                <a-col>
+                  <div class="filter-item">
+                    <span class="filter-label">FC Version</span>
+                    <a-select v-model:value="filters.fcVersion" class="filter-select" placeholder="请选择">
+                      <a-select-option value="all">全部</a-select-option>
+                      <a-select-option value="2026FC1">2026FC1</a-select-option>
+                      <a-select-option value="2026FC2">2026FC2</a-select-option>
+                    </a-select>
+                  </div>
+                </a-col>
+                <a-col>
+                  <div class="filter-item">
+                    <span class="filter-label">区域总监</span>
+                    <a-select v-model:value="filters.director" class="filter-select" placeholder="请选择">
+                      <a-select-option value="all">全部</a-select-option>
+                      <a-select-option value="李华东">李华东</a-select-option>
+                      <a-select-option value="陈志远">陈志远</a-select-option>
+                    </a-select>
+                  </div>
+                </a-col>
+                <a-col>
+                  <div class="filter-item">
+                    <span class="filter-label">销售人员</span>
+                    <a-select v-model:value="filters.salesperson" class="filter-select" placeholder="请选择">
+                      <a-select-option value="all">全部</a-select-option>
+                      <a-select-option value="张伟">张伟</a-select-option>
+                      <a-select-option value="李娜">李娜</a-select-option>
+                      <a-select-option value="王强">王强</a-select-option>
+                      <a-select-option value="赵敏">赵敏</a-select-option>
+                    </a-select>
+                  </div>
+                </a-col>
+              </a-row>
+            </a-col>
+            <a-col flex="none">
+              <div class="filter-actions">
+                <a-button type="primary" @click="handleQuery">查询</a-button>
+                <a-button type="text" @click="handleReset">重置</a-button>
+              </div>
+            </a-col>
+          </a-row>
+        </a-card>
+      </div>
+
+      <!-- Approval Card List -->
+      <div class="approval-list">
+        <template v-if="filteredList.length > 0">
+          <a-card
+            v-for="item in paginatedList"
+            :key="item.id"
+            class="approval-card"
+            :bordered="false"
+          >
+            <div class="card-inner">
+              <div class="card-main">
+                <div class="card-header-row">
+                  <span class="fc-name">{{ item.fcVersion }}</span>
+                  <span class="fc-submitter">— {{ item.submitter }} 提交</span>
+                  <a-tag :class="getStatusClass(item.status)">{{ getStatusText(item.status) }}</a-tag>
+                </div>
+
+                <div class="card-info-grid">
+                  <div class="info-item">
+                    <span class="info-label">客户：</span>
+                    <span class="info-value">{{ item.customer }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">开票公司：</span>
+                    <span class="info-value">{{ item.billingCompany }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">订单数量：</span>
+                    <span class="info-value">{{ formatNumber(item.orderQty) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">订单金额：</span>
+                    <span class="info-value">{{ formatCurrency(item.orderAmount) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">区域总监：</span>
+                    <span class="info-value">{{ item.director }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">预测周期：</span>
+                    <span class="info-value">{{ item.forecastPeriod }}</span>
+                  </div>
+                </div>
+
+                <div class="card-footer-row">
+                  <span class="submit-time">提交时间：{{ item.submitTime }}</span>
+                  <a-button type="link" class="btn-detail" @click.stop="openDetail(item)">
+                    查看明细
+                  </a-button>
+                </div>
+              </div>
+
+              <div class="card-actions" v-if="item.status === 'pending'">
+                <a-button class="btn-approve" @click.stop="approveItem(item)">
+                  通过
+                </a-button>
+                <a-button class="btn-reject" @click.stop="rejectItem(item)">
+                  退回
+                </a-button>
+              </div>
+              <div class="card-actions" v-else-if="item.status === 'approved' || item.status === 'completed'">
+                <a-button type="link" class="btn-detail" @click.stop="openDetail(item)">
+                  查看明细
+                </a-button>
+              </div>
+            </div>
+          </a-card>
+        </template>
+
+        <div v-else class="empty-state">
+          <div>
+            <p style="font-size:48px;margin:0;">📭</p>
+            <p style="margin-top:16px;font-size:15px;">暂无待审批数据</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-wrapper" v-if="filteredList.length > 0">
+        <a-pagination
+          v-model:current="pagination.current"
+          :page-size="pagination.pageSize"
+          :total="filteredList.length"
+          show-quick-jumper
+          show-size-changer
+          :page-size-options="['5', '10', '20']"
+        >
+          <template #showTotal="{ total }">
+            共 {{ total }} 条
+          </template>
+        </a-pagination>
+      </div>
+
+      <!-- Detail Modal -->
+      <a-modal
+        v-model:open="modal.visible"
+        :title="modal.title"
+        width="900px"
+        class="approval-modal"
+        :footer="null"
+        @cancel="modal.visible = false"
+      >
+        <a-tabs v-model:activeKey="modal.activeTab" class="detail-tabs">
+          <a-tab-pane key="byCustomer" tab="按客户汇总">
+            <a-table
+              :columns="modal.columns.byCustomer"
+              :data-source="modal.data.byCustomer"
+              :pagination="{ pageSize: 10 }"
+              size="small"
+              bordered
+              class="detail-table"
+            />
+          </a-tab-pane>
+          <a-tab-pane key="byProductLine" tab="按产品线汇总">
+            <a-table
+              :columns="modal.columns.byProductLine"
+              :data-source="modal.data.byProductLine"
+              :pagination="{ pageSize: 10 }"
+              size="small"
+              bordered
+              class="detail-table"
+            />
+          </a-tab-pane>
+          <a-tab-pane key="detail" tab="预测明细">
+            <a-table
+              :columns="modal.columns.detail"
+              :data-source="modal.data.detail"
+              :pagination="{ pageSize: 10 }"
+              size="small"
+              bordered
+              class="detail-table"
+            />
+          </a-tab-pane>
+        </a-tabs>
+      </a-modal>
+
+      <!-- Reject Confirm Modal -->
+      <a-modal
+        v-model:open="rejectModal.visible"
+        title="退回原因"
+        @ok="confirmReject"
+        ok-text="确认退回"
+        cancel-text="取消"
+        :ok-button-props="{ style: { background: '#FF4D4F', borderColor: '#FF4D4F', color: '#fff' } }"
+      >
+        <a-textarea
+          v-model:value="rejectModal.reason"
+          placeholder="请输入退回原因..."
+          :rows="4"
+        />
+      </a-modal>
+
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, computed, reactive } = Vue;
+
+    const app = createApp({
+      setup() {
+        const activeTab = ref('pending');
+
+        const counts = ref({
+          all: 58,
+          pending: 12,
+          approved: 25,
+          rejected: 8,
+          completed: 45,
+        });
+
+        const filters = reactive({
+          fcVersion: 'all',
+          director: 'all',
+          salesperson: 'all',
+        });
+
+        const pagination = reactive({
+          current: 1,
+          pageSize: 5,
+        });
+
+        const mockData = ref([
+          {
+            id: 1,
+            fcVersion: '2026FC1',
+            submitter: '张伟',
+            customer: '昆山智造',
+            billingCompany: '苏州阿诺',
+            orderQty: 5234,
+            orderAmount: 1234567,
+            director: '李华东',
+            forecastPeriod: '2026-Q3',
+            submitTime: '2026-04-25 14:30',
+            status: 'pending',
+          },
+          {
+            id: 2,
+            fcVersion: '2026FC1',
+            submitter: '李娜',
+            customer: '深圳精密',
+            billingCompany: '上海戴科尔',
+            orderQty: 8920,
+            orderAmount: 2345678,
+            director: '李华东',
+            forecastPeriod: '2026-Q3',
+            submitTime: '2026-04-24 09:15',
+            status: 'pending',
+          },
+          {
+            id: 3,
+            fcVersion: '2026FC2',
+            submitter: '王强',
+            customer: '杭州汽配',
+            billingCompany: '苏州阿诺',
+            orderQty: 3200,
+            orderAmount: 876540,
+            director: '陈志远',
+            forecastPeriod: '2026-Q4',
+            submitTime: '2026-04-23 16:45',
+            status: 'pending',
+          },
+          {
+            id: 4,
+            fcVersion: '2026FC1',
+            submitter: '赵敏',
+            customer: '成都机械',
+            billingCompany: '无锡汉高',
+            orderQty: 4500,
+            orderAmount: 1567000,
+            director: '陈志远',
+            forecastPeriod: '2026-Q3',
+            submitTime: '2026-04-22 11:20',
+            status: 'approved',
+          },
+          {
+            id: 5,
+            fcVersion: '2026FC2',
+            submitter: '张伟',
+            customer: '宁波机电',
+            billingCompany: '上海戴科尔',
+            orderQty: 6800,
+            orderAmount: 1980000,
+            director: '李华东',
+            forecastPeriod: '2026-Q4',
+            submitTime: '2026-04-21 08:30',
+            status: 'pending',
+          },
+          {
+            id: 6,
+            fcVersion: '2026FC1',
+            submitter: '李娜',
+            customer: '天津重工',
+            billingCompany: '苏州阿诺',
+            orderQty: 2100,
+            orderAmount: 567890,
+            director: '李华东',
+            forecastPeriod: '2026-Q3',
+            submitTime: '2026-04-20 15:00',
+            status: 'rejected',
+          },
+        ]);
+
+        const filteredList = computed(() => {
+          return mockData.value.filter(item => {
+            if (activeTab.value === 'all') return true;
+            if (activeTab.value === 'pending') return item.status === 'pending';
+            if (activeTab.value === 'approved') return item.status === 'approved';
+            if (activeTab.value === 'rejected') return item.status === 'rejected';
+            if (activeTab.value === 'completed') return item.status === 'completed' || item.status === 'approved';
+            return true;
+          });
+        });
+
+        const paginatedList = computed(() => {
+          const start = (pagination.current - 1) * pagination.pageSize;
+          return filteredList.value.slice(start, start + pagination.pageSize);
+        });
+
+        const modal = reactive({
+          visible: false,
+          title: '预测明细',
+          activeTab: 'byCustomer',
+          currentItem: null,
+          columns: {
+            byCustomer: [
+              { title: '客户名称', dataIndex: 'customer', key: 'customer' },
+              { title: '产品线', dataIndex: 'productLine', key: 'productLine' },
+              { title: '预测数量', dataIndex: 'qty', key: 'qty', align: 'right' },
+              { title: '预测金额 (¥)', dataIndex: 'amount', key: 'amount', align: 'right' },
+            ],
+            byProductLine: [
+              { title: '产品线', dataIndex: 'productLine', key: 'productLine' },
+              { title: '客户数', dataIndex: 'customerCount', key: 'customerCount', align: 'right' },
+              { title: '预测数量', dataIndex: 'qty', key: 'qty', align: 'right' },
+              { title: '预测金额 (¥)', dataIndex: 'amount', key: 'amount', align: 'right' },
+              { title: '占比', dataIndex: 'ratio', key: 'ratio', align: 'right' },
+            ],
+            detail: [
+              { title: '客户', dataIndex: 'customer', key: 'customer', width: 120 },
+              { title: '产品', dataIndex: 'product', key: 'product' },
+              { title: '规格型号', dataIndex: 'spec', key: 'spec', width: 100 },
+              { title: 'Q3预测', dataIndex: 'q3', key: 'q3', align: 'right', width: 80 },
+              { title: 'Q4预测', dataIndex: 'q4', key: 'q4', align: 'right', width: 80 },
+              { title: 'Q1预测(2027)', dataIndex: 'q1next', key: 'q1next', align: 'right', width: 90 },
+              { title: 'Q2预测(2027)', dataIndex: 'q2next', key: 'q2next', align: 'right', width: 90 },
+              { title: '金额 (¥)', dataIndex: 'amount', key: 'amount', align: 'right', width: 110 },
+            ],
+          },
+          data: {
+            byCustomer: [
+              { customer: '昆山智造', productLine: '刀具', qty: 5234, amount: 1234567 },
+              { customer: '昆山智造', productLine: '数控', qty: 1200, amount: 456000 },
+            ],
+            byProductLine: [
+              { productLine: '刀具', customerCount: 12, qty: 25000, amount: 8900000, ratio: '45%' },
+              { productLine: '数控', customerCount: 8, qty: 12000, amount: 5600000, ratio: '28%' },
+              { productLine: '精密件', customerCount: 6, qty: 8000, amount: 3200000, ratio: '16%' },
+              { productLine: '服务', customerCount: 15, qty: 0, amount: 2100000, ratio: '11%' },
+            ],
+            detail: [
+              { customer: '昆山智造', product: '铣刀片', spec: 'APKT1604', q3: 2000, q4: 1800, q1next: 2200, q2next: 2400, amount: 520000 },
+              { customer: '昆山智造', product: '钻头套装', spec: 'DSS-8-30', q3: 1500, q4: 1400, q1next: 1600, q2next: 1700, amount: 380000 },
+              { customer: '昆山智造', product: '刀柄', spec: 'BT50-32', q3: 1000, q4: 900, q1next: 1000, q2next: 1100, amount: 334567 },
+              { customer: '深圳精密', product: '铣刀片', spec: 'SEKT1204', q3: 3500, q4: 3200, q1next: 3800, q2next: 4000, amount: 780000 },
+              { customer: '深圳精密', product: '丝锥', spec: 'M6-M20', q3: 2200, q4: 2000, q1next: 2400, q2next: 2600, amount: 456000 },
+            ],
+          },
+        });
+
+        const rejectModal = reactive({
+          visible: false,
+          reason: '',
+          currentItem: null,
+        });
+
+        function getStatusClass(status) {
+          if (status === 'pending') return 'tag-pending';
+          if (status === 'approved' || status === 'completed') return 'tag-approved';
+          if (status === 'rejected') return 'tag-rejected';
+          return 'tag-pending';
+        }
+
+        function getStatusText(status) {
+          const map = {
+            pending: '待审批',
+            approved: '已通过',
+            rejected: '已退回',
+            completed: '已完成',
+          };
+          return map[status] || status;
+        }
+
+        function formatNumber(num) {
+          return num.toLocaleString('zh-CN');
+        }
+
+        function formatCurrency(num) {
+          return '¥' + num.toLocaleString('zh-CN');
+        }
+
+        function onTabChange() {
+          pagination.current = 1;
+        }
+
+        function handleQuery() {
+          pagination.current = 1;
+          // In a real app this would call an API
+        }
+
+        function handleReset() {
+          filters.fcVersion = 'all';
+          filters.director = 'all';
+          filters.salesperson = 'all';
+          pagination.current = 1;
+        }
+
+        function openDetail(item) {
+          modal.title = `${item.fcVersion} - ${item.submitter} 预测明细`;
+          modal.currentItem = item;
+          modal.activeTab = 'byCustomer';
+          modal.visible = true;
+        }
+
+        function approveItem(item) {
+          item.status = 'approved';
+          antd.message.success(`${item.fcVersion} - ${item.submitter} 预测已通过`);
+          updateCounts();
+        }
+
+        function rejectItem(item) {
+          rejectModal.currentItem = item;
+          rejectModal.reason = '';
+          rejectModal.visible = true;
+        }
+
+        function confirmReject() {
+          if (!rejectModal.reason.trim()) {
+            antd.message.warning('请输入退回原因');
+            return;
+          }
+          const item = rejectModal.currentItem;
+          item.status = 'rejected';
+          rejectModal.visible = false;
+          antd.message.success(`${item.fcVersion} - ${item.submitter} 预测已退回`);
+          updateCounts();
+        }
+
+        function updateCounts() {
+          const all = mockData.value;
+          counts.value.all = all.length;
+          counts.value.pending = all.filter(i => i.status === 'pending').length;
+          counts.value.approved = all.filter(i => i.status === 'approved').length;
+          counts.value.rejected = all.filter(i => i.status === 'rejected').length;
+          counts.value.completed = all.filter(i => i.status === 'completed' || i.status === 'approved').length;
+        }
+
+        return {
+          activeTab,
+          counts,
+          filters,
+          pagination,
+          filteredList,
+          paginatedList,
+          modal,
+          rejectModal,
+          getStatusClass,
+          getStatusText,
+          formatNumber,
+          formatCurrency,
+          onTabChange,
+          handleQuery,
+          handleReset,
+          openDetail,
+          approveItem,
+          rejectItem,
+          confirmReject,
+        };
+      },
+    });
+
+    app.use(antd);
+    app.mount('#app');
+  </script>
+</body>
+</html>

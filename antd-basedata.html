@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>基础数据管理 - Sandvik</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://unpkg.com/ant-design-vue@4.x/dist/antd.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/ant-design-vue@4.x/dist/reset.css">
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #F5F7FA;
+    }
+    .page-header {
+      background: #0D3D92;
+      color: #fff;
+      padding: 0 32px;
+      line-height: 56px;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .page-header .brand {
+      color: #F5A623;
+      margin-right: 8px;
+    }
+    .page-content {
+      background: #F5F7FA;
+      min-height: calc(100vh - 56px);
+      padding: 24px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 4px;
+      padding: 24px;
+    }
+    .toolbar {
+      margin-bottom: 16px;
+      display: flex;
+      gap: 8px;
+    }
+    .ant-btn-primary {
+      background: #0D3D92 !important;
+      border-color: #0D3D92 !important;
+    }
+    .ant-btn-primary:hover {
+      background: #0a3278 !important;
+      border-color: #0a3278 !important;
+    }
+    .ant-pagination .ant-pagination-item-active {
+      background: #0D3D92;
+      border-color: #0D3D92;
+    }
+    .ant-pagination .ant-pagination-item-active a {
+      color: #fff;
+    }
+    .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+      color: #0D3D92 !important;
+    }
+    .ant-tabs-ink-bar {
+      background: #0D3D92;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="page-header">
+      Sandvik <span class="brand">|</span> 基础数据管理
+    </div>
+    <div class="page-content">
+      <div class="card">
+        <a-tabs v-model:activeKey="activeTab">
+          <!-- 客户信息 -->
+          <a-tab-pane key="customer" tab="客户信息">
+            <div class="toolbar">
+              <a-button type="primary" @click="openAddModal">新增客户</a-button>
+            </div>
+            <a-table
+              :columns="customerColumns"
+              :data-source="customerData"
+              :pagination="pagination"
+              row-key="id"
+            >
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.key === 'action'">
+                  <a-space>
+                    <a-button type="link" size="small" @click="openEditModal(record)">编辑</a-button>
+                    <a-button type="link" size="small" danger @click="deleteCustomer(record.id)">删除</a-button>
+                  </a-space>
+                </template>
+              </template>
+            </a-table>
+          </a-tab-pane>
+
+          <!-- 组织架构 -->
+          <a-tab-pane key="org" tab="组织架构">
+            <a-empty description="组织架构功能开发中" />
+          </a-tab-pane>
+        </a-tabs>
+      </div>
+    </div>
+
+    <!-- 新增/编辑弹窗 -->
+    <a-modal
+      :open="modalVisible"
+      :title="modalTitle"
+      ok-text="确认"
+      cancel-text="取消"
+      @ok="handleSave"
+      @cancel="modalVisible = false"
+    >
+      <a-form ref="formRef" :model="formData" layout="vertical">
+        <a-form-item label="客户名称" name="name" :rules="[{ required: true, message: '请输入客户名称' }]">
+          <a-input v-model:value="formData.name" placeholder="请输入客户名称" />
+        </a-form-item>
+        <a-form-item label="行业" name="industry" :rules="[{ required: true, message: '请输入行业' }]">
+          <a-input v-model:value="formData.industry" placeholder="请输入行业" />
+        </a-form-item>
+        <a-form-item label="联系人" name="contact" :rules="[{ required: true, message: '请输入联系人' }]">
+          <a-input v-model:value="formData.contact" placeholder="请输入联系人" />
+        </a-form-item>
+        <a-form-item label="电话" name="phone" :rules="[{ required: true, message: '请输入电话' }]">
+          <a-input v-model:value="formData.phone" placeholder="请输入电话" />
+        </a-form-item>
+      </a-form>
+    </a-modal>
+  </div>
+
+  <script>
+    const { createApp, ref, computed } = Vue;
+    const { Antd } = antd;
+
+    const app = createApp({
+      setup() {
+        const activeTab = ref('customer');
+        const modalVisible = ref(false);
+        const modalTitle = ref('新增客户');
+        const editingId = ref(null);
+        const formRef = ref(null);
+
+        const formData = ref({
+          name: '',
+          industry: '',
+          contact: '',
+          phone: ''
+        });
+
+        const customerColumns = [
+          { title: '客户名称', dataIndex: 'name', key: 'name' },
+          { title: '行业', dataIndex: 'industry', key: 'industry' },
+          { title: '信用等级', dataIndex: 'creditLevel', key: 'creditLevel' },
+          { title: '联系人', dataIndex: 'contact', key: 'contact' },
+          { title: '电话', dataIndex: 'phone', key: 'phone' },
+          { title: '操作', key: 'action', width: 140 }
+        ];
+
+        const customers = ref([
+          { id: 1, name: '上海华东机械制造有限公司', industry: '工程机械', creditLevel: 'A级', contact: '张建国', phone: '021-68881234' },
+          { id: 2, name: '北京精密数控设备股份公司', industry: '数控机床', creditLevel: 'AA级', contact: '李明辉', phone: '010-62345678' },
+          { id: 3, name: '广州华南汽车配件有限公司', industry: '汽车制造', creditLevel: 'B级', contact: '王志刚', phone: '020-83345678' },
+          { id: 4, name: '深圳前海工业自动化公司', industry: '自动化设备', creditLevel: 'A级', contact: '陈晓东', phone: '0755-26881234' },
+          { id: 5, name: '成都西南重型装备制造公司', industry: '重型装备', creditLevel: 'AA级', contact: '刘伟明', phone: '028-87654321' },
+          { id: 6, name: '武汉中部智能制造科技有限公司', industry: '智能制造', creditLevel: 'A级', contact: '赵雪峰', phone: '027-85431234' },
+          { id: 7, name: '西安西北航空航天材料公司', industry: '航空航天', creditLevel: 'AAA级', contact: '孙海涛', phone: '029-88771234' },
+          { id: 8, name: '沈阳东北轨道交通装备公司', industry: '轨道交通', creditLevel: 'B级', contact: '周志远', phone: '024-23456789' },
+          { id: 9, name: '天津滨海新区精密仪器公司', industry: '精密仪器', creditLevel: 'A级', contact: '吴建华', phone: '022-26781234' },
+          { id: 10, name: '南京华东电子科技集团', industry: '电子科技', creditLevel: 'AA级', contact: '郑志强', phone: '025-58345678' }
+        ]);
+
+        const pagination = ref({
+          current: 1,
+          pageSize: 5,
+          total: customers.value.length,
+          showSizeChanger: false,
+          showTotal: (total) => `共 ${total} 条`
+        });
+
+        const customerData = computed(() => {
+          const start = (pagination.value.current - 1) * pagination.value.pageSize;
+          return customers.value.slice(start, start + pagination.value.pageSize);
+        });
+
+        const openAddModal = () => {
+          editingId.value = null;
+          modalTitle.value = '新增客户';
+          formData.value = { name: '', industry: '', contact: '', phone: '' };
+          modalVisible.value = true;
+        };
+
+        const openEditModal = (record) => {
+          editingId.value = record.id;
+          modalTitle.value = '编辑客户';
+          formData.value = {
+            name: record.name,
+            industry: record.industry,
+            contact: record.contact,
+            phone: record.phone
+          };
+          modalVisible.value = true;
+        };
+
+        const handleSave = async () => {
+          try {
+            await formRef.value.validate();
+            if (editingId.value) {
+              const idx = customers.value.findIndex(c => c.id === editingId.value);
+              if (idx !== -1) {
+                customers.value[idx] = { ...customers.value[idx], ...formData.value };
+              }
+            } else {
+              customers.value.push({
+                id: Date.now(),
+                ...formData.value,
+                creditLevel: 'B级'
+              });
+              pagination.value.total = customers.value.length;
+            }
+            modalVisible.value = false;
+          } catch (e) {
+            // validation failed
+          }
+        };
+
+        const deleteCustomer = (id) => {
+          customers.value = customers.value.filter(c => c.id !== id);
+          pagination.value.total = customers.value.length;
+        };
+
+        return {
+          activeTab,
+          customerColumns,
+          customerData,
+          pagination,
+          modalVisible,
+          modalTitle,
+          formData,
+          formRef,
+          openAddModal,
+          openEditModal,
+          handleSave,
+          deleteCustomer
+        };
+      }
+    });
+
+    app.use(Antd);
+    app.mount('#app');
+  </script>
+</body>
+</html>
