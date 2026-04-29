@@ -387,7 +387,7 @@
       <!-- Sider -->
       <a-layout-sider v-model:collapsed="collapsed" :trigger="null" collapsible :width="220" :collapsed-width="80" style="background: #ffffff; box-shadow: 2px 0 8px rgba(0,0,0,0.05);">
         <div class="sider-logo">
-          <div class="sider-logo-icon">S</div>
+          <img class="sider-logo-icon" src="https://www.home.sandvik/logo/logo_dark.svg" alt="Sandvik" style="width:36px;height:36px;object-fit:contain;">
         </div>
         <a-menu v-model:selectedKeys="selectedKeys" mode="inline" :inline-collapsible="true" style="border-right: none; margin-top: 8px;">
           <a-menu-item key="dashboard">
@@ -418,7 +418,7 @@
         <a-layout-header style="background: #0D3D92; padding: 0 16px; height: 64px; display: flex; align-items: center; box-shadow: 0 2px 8px rgba(13,61,146,0.15);">
           <menu-fold-outlined class="trigger" @click="() => collapsed = !collapsed" />
           <div class="logo">
-            <div class="logo-icon">S</div>
+            <img class="logo-icon" src="https://www.home.sandvik/logo/logo_dark.svg" alt="Sandvik" style="width:32px;height:32px;object-fit:contain;margin-right:8px;">
             <span class="logo-text">China Division Sales Forecast Tool</span>
           </div>
           <div class="header-actions">
