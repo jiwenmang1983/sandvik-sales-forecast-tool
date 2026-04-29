@@ -216,23 +216,23 @@
           style="border-right: none; margin-top: 8px;"
         >
           <a-menu-item key="dashboard">
-            <template #icon><dashboard-outlined /></template>
+            <template #icon>📊</template>
             <span>Dashboard</span>
           </a-menu-item>
           <a-menu-item key="forecast">
-            <template #icon><form-outlined /></template>
+            <template #icon>📝</template>
             <span>销售预测填报</span>
           </a-menu-item>
           <a-menu-item key="approval">
-            <template #icon><check-circle-outlined /></template>
+            <template #icon>✅</template>
             <span>销售预测审核</span>
           </a-menu-item>
           <a-menu-item key="fc-version">
-            <template #icon><calendar-outlined /></template>
+            <template #icon>📅</template>
             <span>预测周期管理</span>
           </a-menu-item>
           <a-menu-item key="base-data">
-            <template #icon><setting-outlined /></template>
+            <template #icon>⚙️</template>
             <span>基础数据管理</span>
           </a-menu-item>
         </a-menu>
@@ -241,34 +241,31 @@
       <a-layout>
         <!-- Header -->
         <a-layout-header style="background: #0D3D92; padding: 0 16px; height: 64px; display: flex; align-items: center; box-shadow: 0 2px 8px rgba(13,61,146,0.15);">
-          <menu-fold-outlined
-            class="trigger"
-            @click="() => collapsed = !collapsed"
-          />
+          <span class="trigger" @click="() => collapsed = !collapsed">☰</span>
           <div class="logo">
             <div class="logo-icon">S</div>
             <span class="logo-text">China Division Sales Forecast Tool</span>
           </div>
           <div class="header-actions">
             <a-badge :count="3" :offset="[-2, 2]">
-              <bell-outlined class="notification-btn" />
+              <span class="notification-btn">🔔</span>
             </a-badge>
             <a-dropdown>
               <div class="user-dropdown">
-                <user-outlined />
+                <span>👤</span>
                 <span>Admin User</span>
               </div>
               <template #overlay>
                 <a-menu>
                   <a-menu-item key="profile">
-                    <user-outlined style="margin-right: 8px;" />Profile
+                    <span style="margin-right: 8px;">👤</span>Profile
                   </a-menu-item>
                   <a-menu-item key="settings">
-                    <setting-outlined style="margin-right: 8px;" />Settings
+                    <span style="margin-right: 8px;">⚙️</span>Settings
                   </a-menu-item>
                   <a-menu-divider />
                   <a-menu-item key="logout">
-                    <logout-outlined style="margin-right: 8px;" />Logout
+                    <span style="margin-right: 8px;">🚪</span>Logout
                   </a-menu-item>
                 </a-menu>
               </template>
@@ -325,18 +322,6 @@
   <script src="./lib/antd-vue.min.js"></script>
   <script>
     const { createApp, ref } = Vue;
-    const {
-      DashboardOutlined,
-      FormOutlined,
-      CheckCircleOutlined,
-      CalendarOutlined,
-      SettingOutlined,
-      MenuFoldOutlined,
-      MenuUnfoldOutlined,
-      BellOutlined,
-      UserOutlined,
-      LogoutOutlined
-    } = antd.icons;
 
     const app = createApp({
       setup() {
@@ -350,16 +335,6 @@
     });
 
     app.use(antd);
-    app.component('menu-fold-outlined', MenuFoldOutlined);
-    app.component('menu-unfold-outlined', MenuUnfoldOutlined);
-    app.component('bell-outlined', BellOutlined);
-    app.component('user-outlined', UserOutlined);
-    app.component('logout-outlined', LogoutOutlined);
-    app.component('dashboard-outlined', DashboardOutlined);
-    app.component('form-outlined', FormOutlined);
-    app.component('check-circle-outlined', CheckCircleOutlined);
-    app.component('calendar-outlined', CalendarOutlined);
-    app.component('setting-outlined', SettingOutlined);
     app.mount('#app');
   </script>
 </body>
