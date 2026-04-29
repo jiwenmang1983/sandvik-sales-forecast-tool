@@ -4,17 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>销售预测填报 - Sandvik Sales Forecast Tool</title>
-  <script type="importmap">
-  {
-    "imports": {
-      "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js",
-      "ant-design-vue": "https://unpkg.com/ant-design-vue@4.2.6/dist/ant-design-vue.esm.js",
-      "ant-design-vue/icons": "https://unpkg.com/@ant-design/icons-vue/dist/icons.esm.js",
-      "dayjs": "https://unpkg.com/dayjs/dayjs.min.js"
-    }
-  }
-  </script>
-  <link rel="stylesheet" href="https://unpkg.com/ant-design-vue/dist/reset.css">
+  <!-- Local Resources (more reliable than CDN) -->
+  <script src="./lib/vue.global.prod.js"></script>
+  <script src="./lib/dayjs.min.js"></script>
+  <script src="./lib/dayjs-plugin-advancedFormat.js"></script>
+  <script src="./lib/dayjs-plugin-customParseFormat.js"></script>
+  <script src="./lib/dayjs-plugin-localeData.js"></script>
+  <script src="./lib/zh-cn.min.js"></script>
+  <script src="./lib/dayjs-plugin-quarterOfYear.js"></script>
+  <script src="./lib/dayjs-plugin-weekOfYear.js"></script>
+  <script src="./lib/dayjs-plugin-weekYear.js"></script>
+  <script src="./lib/dayjs-plugin-weekday.js"></script>
+  <script src="./lib/antd-vue.min.js"></script>
   <style>
     :root {
       --sandvik-blue: #0D3D92;
@@ -612,10 +613,9 @@
     </div>
   </div>
 
-  <script type="module">
-    import { createApp, ref, computed, reactive } from 'vue';
-    import antd from 'ant-design-vue';
-    import { DownOutlined, DownloadOutlined, UploadOutlined, PlusOutlined, CopyOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from 'ant-design-vue/icons';
+  <script>
+    const { createApp, ref, computed, reactive } = Vue;
+    const { DownOutlined, DownloadOutlined, UploadOutlined, PlusOutlined, CopyOutlined, EditOutlined, DeleteOutlined, SearchOutlined } = antd.icons;
 
     const app = createApp({
       setup() {
@@ -829,6 +829,14 @@
     });
 
     app.use(antd);
+    app.component('DownOutlined', DownOutlined);
+    app.component('DownloadOutlined', DownloadOutlined);
+    app.component('UploadOutlined', UploadOutlined);
+    app.component('PlusOutlined', PlusOutlined);
+    app.component('CopyOutlined', CopyOutlined);
+    app.component('EditOutlined', EditOutlined);
+    app.component('DeleteOutlined', DeleteOutlined);
+    app.component('SearchOutlined', SearchOutlined);
     app.mount('#app');
   </script>
 </body>
