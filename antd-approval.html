@@ -797,12 +797,13 @@
           </a-tab-pane>
           <a-tab-pane key="detail" tab="预测明细">
             <a-table
-              :columns="modal.columns.detail"
-              :data-source="modal.data.detail"
+              :columns="detailColumns"
+              :data-source="detailData"
               :pagination="{ pageSize: 10 }"
               size="small"
               bordered
               class="detail-table"
+              :scroll="{ x: detailColumns.length > 10 ? 2000 : undefined }"
             />
           </a-tab-pane>
         </a-tabs>
@@ -1071,6 +1072,142 @@
           },
         ]);
 
+        // ── Period / Month Helpers (mirror H5 app.js) ──────────────────────────────
+        const monthOrder = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        const monthKeyMap = { Jan:"jan",Feb:"feb",Mar:"mar",Apr:"apr",May:"may",Jun:"jun",Jul:"jul",Aug:"aug",Sep:"sep",Oct:"oct",Nov:"nov",Dec:"dec" };
+        const periodWindows = {
+          "2026FC1": ["Jan","Feb","Mar","Apr"],
+          "2026FC2": ["Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"],
+          "2026-Q3": ["Jul","Aug","Sep"],
+          "2026-Q4": ["Oct","Nov","Dec"],
+        };
+        function getPeriodYear(period) {
+          const match = String(period||"").match(/^(\d{4})/);
+          return match ? match[1] : "2026";
+        }
+        function buildApprovalMonthContext(period, months) {
+          const monthList = (months && months.length ? months : monthOrder).slice();
+          const baseYear = Number(getPeriodYear(period));
+          const ymList = monthList.map((m, i) => {
+            const mIdx = monthOrder.indexOf(m);
+            let y = baseYear;
+            // Months that come BEFORE Jan in the order get pushed to next year
+            if (mIdx >= 7) y = baseYear + 1;
+            return `${y}-${String(mIdx+1).padStart(2,"0")}`;
+          });
+          const monthEntries = monthList.map((month,idx)=>({
+            idx, month, ym: ymList[idx], year: String(ymList[idx]).split("-")[0]
+          }));
+          const yearSegments = [];
+          monthEntries.forEach(ent=>{
+            const last = yearSegments[yearSegments.length-1];
+            if (!last || last.year !== ent.year) { yearSegments.push({year:ent.year, indices:[ent.idx]}); return; }
+            last.indices.push(ent.idx);
+          });
+          return {monthEntries, yearSegments, crossYear: yearSegments.length > 1};
+        }
+        function formatAmount(v) {
+          return Number(v||0).toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2});
+        }
+        function formatUnitPrice(qty,amount) {
+          const q=Number(qty||0), a=Number(amount||0);
+          if(!Number.isFinite(q)||q<=0) return "-";
+          if(!Number.isFinite(a)) return "-";
+          return formatAmount(a/q);
+        }
+        function getQtyKey(month)    { return monthKeyMap[month]+"Qty"; }
+        function getInvKey(month)    { return monthKeyMap[month]+"Inv"; }
+        function getOrdAmtKey(month){ return monthKeyMap[month]+"OrderAmt"; }
+        function getInvAmtKey(month){ return monthKeyMap[month]+"InvAmt"; }
+
+        // ── Dynamic Detail Columns (computed from period) ────────────────────────
+        const detailColumns = ref([]);
+        const detailData    = ref([]);
+
+        function makeApprovalDetailColumns(period) {
+          const months = periodWindows[period] || ["Jan","Feb","Mar"];
+          const ctx = buildApprovalMonthContext(period, months);
+          const cols = [];
+          // Fixed dimension columns (6)
+          cols.push(
+            {title:"客户",dataIndex:"customer",key:"customer",width:140,fixed:"left"},
+            {title:"业绩归属",dataIndex:"performance",key:"performance",width:120},
+            {title:"销售大区",dataIndex:"region",key:"region",width:110},
+            {title:"PA",dataIndex:"pa",key:"pa",width:90},
+            {title:"Sub PA-1",dataIndex:"subpa1",key:"subpa1",width:110},
+            {title:"Sub PA-2",dataIndex:"subpa2",key:"subpa2",width:80},
+          );
+          // Summary totals (4)
+          cols.push(
+            {title:"订单数量汇总",dataIndex:"totalOrderQty",key:"totalOrderQty",align:"right",width:95},
+            {title:"订单金额汇总",dataIndex:"totalOrderAmount",key:"totalOrderAmount",align:"right",width:110},
+            {title:"开票数量汇总",dataIndex:"totalInvoiceQty",key:"totalInvoiceQty",align:"right",width:95},
+            {title:"开票金额汇总",dataIndex:"totalInvoiceAmount",key:"totalInvoiceAmount",align:"right",width:110},
+          );
+          // Month columns + year-totals
+          ctx.yearSegments.forEach(seg=>{
+            seg.indices.forEach(idx=>{
+              const {month,ym} = ctx.monthEntries[idx];
+              const [y,mStr] = ym.split("-");
+              const title = `${y}/${parseInt(mStr)}`;
+              cols.push({title:`${title}\n订单数量`,dataIndex:getQtyKey(month),key:getQtyKey(month),align:"right",width:80});
+              cols.push({title:`${title}\n订单金额`,dataIndex:getOrdAmtKey(month),key:getOrdAmtKey(month),align:"right",width:90});
+              cols.push({title:`${title}\n订单单价`,dataIndex:"_pu_"+month,key:"_pu_"+month,align:"right",width:75,
+                customRender:({record,column})=>formatUnitPrice(record[getQtyKey(month)],record[getOrdAmtKey(month)])// computed on-the-fly
+              });
+              cols.push({title:`${title}\n开票数量`,dataIndex:getInvKey(month),key:getInvKey(month),align:"right",width:80});
+              cols.push({title:`${title}\n开票金额`,dataIndex:getInvAmtKey(month),key:getInvAmtKey(month),align:"right",width:90});
+              cols.push({title:`${title}\n开票单价`,dataIndex:"_iu_"+month,key:"_iu_"+month,align:"right",width:75,
+                customRender:({record,column})=>formatUnitPrice(record[getInvKey(month)],record[getInvAmtKey(month)])
+              });
+            });
+            if (ctx.crossYear) {
+              cols.push({title:`${seg.year}年度汇总\n订单数量`,dataIndex:"_yoq_"+seg.year,key:"_yoq_"+seg.year,align:"right",width:90,
+                customRender:({record})=>{ const q=seg.indices.reduce((s,i)=>s+Number(record[getQtyKey(ctx.monthEntries[i].month)]||0),0); return q; }});
+              cols.push({title:`${seg.year}年度汇总\n订单金额`,dataIndex:"_yoa_"+seg.year,key:"_yoa_"+seg.year,align:"right",width:100,
+                customRender:({record})=>{ const a=seg.indices.reduce((s,i)=>s+Number(record[getOrdAmtKey(ctx.monthEntries[i].month)]||0),0); return formatAmount(a); }});
+              cols.push({title:`${seg.year}年度汇总\n开票数量`,dataIndex:"_yiv_"+seg.year,key:"_yiv_"+seg.year,align:"right",width:90,
+                customRender:({record})=>{ const q=seg.indices.reduce((s,i)=>s+Number(record[getInvKey(ctx.monthEntries[i].month)]||0),0); return q; }});
+              cols.push({title:`${seg.year}年度汇总\n开票金额`,dataIndex:"_yivamt_"+seg.year,key:"_yivamt_"+seg.year,align:"right",width:100,
+                customRender:({record})=>{ const a=seg.indices.reduce((s,i)=>s+Number(record[getInvAmtKey(ctx.monthEntries[i].month)]||0),0); return formatAmount(a); }});
+            }
+          });
+          return cols;
+        }
+
+        // Demo rows with realistic per-month data for each period
+        function buildDetailRows(period) {
+          const months = periodWindows[period] || ["Jan","Feb","Mar"];
+          const customers = [
+            {customer:"昆山智造装备有限公司",performance:"苏州销售部",region:"苏州销售部",pa:"Holemaking",subpa1:"整体硬质合金钻头",subpa2:"3xD",baseQty:520,baseAmt:125000},
+            {customer:"苏州精工模具科技",performance:"东部销售大区",region:"东部销售大区",pa:"Milling",subpa1:"方肩铣刀",subpa2:"ME",baseQty:380,baseAmt:95000},
+            {customer:"无锡锐虎机械制造",performance:"南部销售大区",region:"南部销售大区",pa:"Holemaking",subpa1:"整体硬质合金钻头",subpa2:"5xD",baseQty:290,baseAmt:72000},
+            {customer:"常州高精汽车零部件",performance:"南部销售大区",region:"常熟阿诺",pa:"Turning",subpa1:"外圆车刀",subpa2:"钢件",baseQty:470,baseAmt:215000},
+            {customer:"宁波海越航空部件",performance:"北部销售大区",region:"苏州迈拓",pa:"Holemaking",subpa1:"铰刀",subpa2:"通孔",baseQty:210,baseAmt:65000},
+          ];
+          return customers.map((c,i)=>{
+            const row = {...c};
+            let totalQty=0,totalAmt=0,totalInv=0,totalInvAmt=0;
+            months.forEach((m,mi)=>{
+              const variation = 1 + (Math.sin(i*2.3+mi*1.7)*0.2);
+              const qty  = Math.round(c.baseQty * variation);
+              const amt  = Math.round(c.baseAmt * qty / c.baseQty * 1.05);
+              const inv  = Math.round(qty * (0.75 + 0.1*i));
+              const invA = Math.round(amt * 0.82);
+              row[getQtyKey(m)]    = qty;
+              row[getOrdAmtKey(m)] = amt;
+              row[getInvKey(m)]    = inv;
+              row[getInvAmtKey(m)] = invA;
+              totalQty+=qty; totalAmt+=amt; totalInv+=inv; totalInvAmt+=invA;
+            });
+            row.totalOrderQty     = totalQty;
+            row.totalOrderAmount  = totalAmt;
+            row.totalInvoiceQty   = totalInv;
+            row.totalInvoiceAmount= totalInvAmt;
+            return row;
+          });
+        }
+
         const filteredList = computed(() => {
           return mockData.value.filter(item => {
             if (activeTab.value === 'all') return true;
@@ -1120,20 +1257,6 @@
             byRegion: [
               { title: '销售大区', dataIndex: 'region', key: 'region', width: 160 },
               { title: '客户数', dataIndex: 'customerCount', key: 'customerCount', align: 'right', width: 70 },
-              { title: '订单数量汇总', dataIndex: 'totalOrderQty', key: 'totalOrderQty', align: 'right', width: 95 },
-              { title: '订单金额汇总', dataIndex: 'totalOrderAmount', key: 'totalOrderAmount', align: 'right', width: 110 },
-              { title: '开票数量汇总', dataIndex: 'totalInvoiceQty', key: 'totalInvoiceQty', align: 'right', width: 95 },
-              { title: '开票金额汇总', dataIndex: 'totalInvoiceAmount', key: 'totalInvoiceAmount', align: 'right', width: 110 },
-            ],
-            detail: [
-              // 固定维度列（6列）
-              { title: '客户', dataIndex: 'customer', key: 'customer', width: 140, fixed: 'left' },
-              { title: '业绩归属', dataIndex: 'performance', key: 'performance', width: 120 },
-              { title: '销售大区', dataIndex: 'region', key: 'region', width: 110 },
-              { title: 'PA', dataIndex: 'pa', key: 'pa', width: 90 },
-              { title: 'Sub PA-1', dataIndex: 'subpa1', key: 'subpa1', width: 110 },
-              { title: 'Sub PA-2', dataIndex: 'subpa2', key: 'subpa2', width: 80 },
-              // 汇总列（4列）— 跨所有月份的总计
               { title: '订单数量汇总', dataIndex: 'totalOrderQty', key: 'totalOrderQty', align: 'right', width: 95 },
               { title: '订单金额汇总', dataIndex: 'totalOrderAmount', key: 'totalOrderAmount', align: 'right', width: 110 },
               { title: '开票数量汇总', dataIndex: 'totalInvoiceQty', key: 'totalInvoiceQty', align: 'right', width: 95 },
@@ -1240,7 +1363,11 @@
           modal.title = `${item.fcVersion} - ${item.submitter} 预测明细`;
           modal.currentItem = item;
           currentApprovalItem.value = item;
-          modal.activeTab = 'byCustomer';
+          modal.activeTab = 'detail';
+          // Dynamically build columns + data based on this item's period
+          const period = item.fcVersion; // "2026FC1", "2026FC2", etc.
+          detailColumns.value = makeApprovalDetailColumns(period);
+          detailData.value    = buildDetailRows(period);
           modal.visible = true;
         }
 
@@ -1464,6 +1591,8 @@
           filteredList,
           paginatedList,
           modal,
+          detailColumns,
+          detailData,
           rejectModal,
           showAdjustDialog,
           showHistoryDialog,
