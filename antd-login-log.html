@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>登录日志 - Sandvik Sales Forecast Tool</title>
-  <script src="./lib/vue.global.prod.js"></script>
-  <script src="./lib/dayjs.min.js"></script>
-  <script src="./lib/dayjs-plugin-advancedFormat.js"></script>
-  <script src="./lib/dayjs-plugin-customParseFormat.js"></script>
-  <script src="./lib/dayjs-plugin-localeData.js"></script>
-  <script src="./lib/zh-cn.min.js"></script>
-  <script src="./lib/antd-vue.min.js"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/dayjs.min.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/plugin/advancedFormat.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/plugin/customParseFormat.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/plugin/localeData.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/locale/zh-cn.js"></script>
+  <script src="https://unpkg.com/ant-design-vue@4.0.0/dist/antd.min.js"></script>
   <style>
     :root {
       --sandvik-blue: #0D3D92;
@@ -430,7 +430,14 @@ const app = createApp({
   }
 });
 
-app.use(antd);
+    dayjs.extend(dayjs_plugin_advancedFormat);
+    dayjs.extend(dayjs_plugin_customParseFormat);
+    dayjs.extend(dayjs_plugin_localeData);
+    dayjs.extend(dayjs_plugin_quarterOfYear);
+    dayjs.extend(dayjs_plugin_weekOfYear);
+    dayjs.extend(dayjs_plugin_weekYear);
+    dayjs.extend(dayjs_plugin_weekday);
+    app.use(antd);
 app.mount('#app');
 </script>
 </body>
