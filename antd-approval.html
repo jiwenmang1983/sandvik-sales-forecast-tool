@@ -1088,11 +1088,11 @@
         function buildApprovalMonthContext(period, months) {
           const monthList = (months && months.length ? months : monthOrder).slice();
           const baseYear = Number(getPeriodYear(period));
-          const ymList = monthList.map((m, i) => {
+          // ym: calendar year-month. Months that come BEFORE Jul in the calendar are in NEXT year.
+          const ymList = monthList.map(m => {
             const mIdx = monthOrder.indexOf(m);
-            let y = baseYear;
-            // Months that come BEFORE Jan in the order get pushed to next year
-            if (mIdx >= 7) y = baseYear + 1;
+            // Fiscal year assignment: Jul-Dec (mIdx 6-11) → baseYear, Jan-Jun (mIdx 0-5) → baseYear+1
+            const y = (mIdx >= 6) ? baseYear : baseYear + 1;
             return `${y}-${String(mIdx+1).padStart(2,"0")}`;
           });
           const monthEntries = monthList.map((month,idx)=>({
