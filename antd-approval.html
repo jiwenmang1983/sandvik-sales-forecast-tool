@@ -1350,7 +1350,7 @@
         function downloadApprovalData() {
           const item = modal.currentItem || currentApprovalItem.value;
           if (!item) return;
-          const headers = ['客户', '订单数量', '订单金额', '区域总监', '预测周期', '业绩归属', '销售大区', '状态'];
+          const headers = ['客户', '业绩归属', '销售大区', 'PA', 'Sub PA-1', 'Sub PA-2', '订单数量汇总', '订单金额汇总', '开票数量汇总', '开票金额汇总'];
           const rows = [[item.customer, item.orderQty, item.orderAmount, item.director, item.forecastPeriod, item.performance, item.region, getStatusText(item.status)]];
           const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
           const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
