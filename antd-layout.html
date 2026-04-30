@@ -4,311 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>China Division Sales Forecast Tool</title>
-  <link rel="stylesheet" href="./lib/reset.css">
-  <style>
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      height: 100%;
-    }
-
-    .logo-text {
-      font-size: 18px;
-      font-weight: 600;
-      color: #ffffff;
-      white-space: nowrap;
-      overflow: hidden;
-    }
-
-    .logo-icon {
-      width: 32px;
-      height: 32px;
-      background: #F5A623;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      color: #0D3D92;
-      font-size: 16px;
-      flex-shrink: 0;
-    }
-
-    .trigger {
-      font-size: 18px;
-      cursor: pointer;
-      padding: 0 12px;
-      line-height: 64px;
-      color: rgba(255, 255, 255, 0.65);
-      transition: color 0.3s;
-    }
-
-    .trigger:hover {
-      color: #ffffff;
-    }
-
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-left: auto;
-    }
-
-    .notification-btn {
-      color: rgba(255, 255, 255, 0.65);
-      cursor: pointer;
-      font-size: 18px;
-      padding: 0 12px;
-      height: 64px;
-      display: flex;
-      align-items: center;
-      transition: color 0.3s;
-    }
-
-    .notification-btn:hover {
-      color: #ffffff;
-    }
-
-    .user-dropdown {
-      cursor: pointer;
-      padding: 0 16px;
-      height: 64px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: rgba(255, 255, 255, 0.65);
-      transition: color 0.3s;
-    }
-
-    .user-dropdown:hover {
-      color: #ffffff;
-      background: rgba(255, 255, 255, 0.08);
-    }
-
-    .sider-logo {
-      height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #0D3D92;
-      border-bottom: 1px solid #E5E7EB;
-    }
-
-    .sider-logo-icon {
-      width: 32px;
-      height: 32px;
-      background: #F5A623;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      color: #0D3D92;
-      font-size: 16px;
-    }
-
-    .page-header {
-      background: #ffffff;
-      padding: 16px 24px;
-      border-bottom: 1px solid #E5E7EB;
-      margin-bottom: 0;
-    }
-
-    .page-title {
-      margin: 0;
-      font-size: 20px;
-      font-weight: 600;
-      color: #1F2937;
-    }
-
-    .page-content {
-      background: #F5F7FA;
-      min-height: calc(100vh - 64px);
-      padding: 24px;
-    }
-
-    .welcome-card {
-      background: #ffffff;
-      border-radius: 8px;
-      padding: 32px;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-      border: 1px solid #E5E7EB;
-    }
-
-    .welcome-title {
-      margin: 0 0 8px 0;
-      font-size: 24px;
-      color: #1F2937;
-    }
-
-    .welcome-subtitle {
-      margin: 0 0 24px 0;
-      color: #6B7280;
-      font-size: 14px;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-    }
-
-    .stat-card {
-      background: #F5F7FA;
-      padding: 20px;
-      border-radius: 8px;
-      border: 1px solid #E5E7EB;
-    }
-
-    .stat-label {
-      font-size: 12px;
-      color: #6B7280;
-      margin-bottom: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .stat-value {
-      font-size: 28px;
-      font-weight: 600;
-      color: #0D3D92;
-    }
-
-    .stat-trend {
-      font-size: 12px;
-      margin-top: 4px;
-    }
-
-    .trend-up {
-      color: #52C41A;
-    }
-
-    .trend-down {
-      color: #FF4D4F;
-    }
-  </style>
-</head>
-<body>
-  <div id="app">
-    <a-layout style="min-height: 100vh;">
-      <!-- Sider -->
-      <a-layout-sider
-        v-model:collapsed="collapsed"
-        :trigger="null"
-        collapsible
-        :width="220"
-        :collapsed-width="80"
-        style="background: #ffffff; box-shadow: 2px 0 8px rgba(0,0,0,0.05);"
-      >
-        <div class="sider-logo">
-          <div class="sider-logo-icon">S</div>
-        </div>
-        <a-menu
-          v-model:selectedKeys="selectedKeys"
-          mode="inline"
-          :inline-collapsible="true"
-          style="border-right: none; margin-top: 8px;"
-        >
-          <a-menu-item key="dashboard">
-            <template #icon>📊</template>
-            <span>Dashboard</span>
-          </a-menu-item>
-          <a-menu-item key="forecast">
-            <template #icon>📝</template>
-            <span>销售预测填报</span>
-          </a-menu-item>
-          <a-menu-item key="approval">
-            <template #icon>✅</template>
-            <span>销售预测审核</span>
-          </a-menu-item>
-          <a-menu-item key="fc-version">
-            <template #icon>📅</template>
-            <span>预测周期管理</span>
-          </a-menu-item>
-          <a-menu-item key="base-data">
-            <template #icon>⚙️</template>
-            <span>基础数据管理</span>
-          </a-menu-item>
-        </a-menu>
-      </a-layout-sider>
-
-      <a-layout>
-        <!-- Header -->
-        <a-layout-header style="background: #0D3D92; padding: 0 16px; height: 64px; display: flex; align-items: center; box-shadow: 0 2px 8px rgba(13,61,146,0.15);">
-          <span class="trigger" @click="() => collapsed = !collapsed">☰</span>
-          <div class="logo">
-            <div class="logo-icon">S</div>
-            <span class="logo-text">China Division Sales Forecast Tool</span>
-          </div>
-          <div class="header-actions">
-            <a-badge :count="3" :offset="[-2, 2]">
-              <span class="notification-btn">🔔</span>
-            </a-badge>
-            <a-dropdown>
-              <div class="user-dropdown">
-                <span>👤</span>
-                <span>Admin User</span>
-              </div>
-              <template #overlay>
-                <a-menu>
-                  <a-menu-item key="profile">
-                    <span style="margin-right: 8px;">👤</span>Profile
-                  </a-menu-item>
-                  <a-menu-item key="settings">
-                    <span style="margin-right: 8px;">⚙️</span>Settings
-                  </a-menu-item>
-                  <a-menu-divider />
-                  <a-menu-item key="logout">
-                    <span style="margin-right: 8px;">🚪</span>Logout
-                  </a-menu-item>
-                </a-menu>
-              </template>
-            </a-dropdown>
-          </div>
-        </a-layout-header>
-
-        <!-- Content -->
-        <a-layout-content style="background: #F5F7FA; min-height: calc(100vh - 64px);">
-          <div style="background: #ffffff; border-bottom: 1px solid #E5E7EB; padding: 16px 24px;">
-            <h2 style="margin: 0; font-size: 20px; color: #1F2937;">Dashboard</h2>
-          </div>
-          <div style="padding: 24px;">
-            <div class="welcome-card">
-              <h1 class="welcome-title">欢迎使用销售预测工具</h1>
-              <p class="welcome-subtitle">Welcome to China Division Sales Forecast Tool</p>
-              <div class="stats-grid">
-                <div class="stat-card">
-                  <div class="stat-label">当前周期</div>
-                  <div class="stat-value">Q2 2026</div>
-                </div>
-                <div class="stat-card">
-                  <div class="stat-label">待审核</div>
-                  <div class="stat-value">12</div>
-                </div>
-                <div class="stat-card">
-                  <div class="stat-label">已完成</div>
-                  <div class="stat-value">48</div>
-                  <div class="stat-trend trend-up">+5 本周期</div>
-                </div>
-                <div class="stat-card">
-                  <div class="stat-label">预测准确率</div>
-                  <div class="stat-value">94%</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </a-layout-content>
-      </a-layout>
-    </a-layout>
-  </div>
-  <!-- Local Resources -->
-  <link rel="stylesheet" href="./lib/reset.css">
   <script src="./lib/vue.global.prod.js"></script>
   <script src="./lib/dayjs.min.js"></script>
   <script src="./lib/dayjs-plugin-advancedFormat.js"></script>
@@ -320,16 +15,459 @@
   <script src="./lib/dayjs-plugin-weekYear.js"></script>
   <script src="./lib/dayjs-plugin-weekday.js"></script>
   <script src="./lib/antd-vue.min.js"></script>
+  <style>
+    :root {
+      --sandvik-blue: #0D3D92;
+      --sandvik-orange: #F5A623;
+      --bg-color: #F5F7FA;
+      --text-primary: #1F2937;
+      --text-secondary: #6B7280;
+      --border-color: #E5E7EB;
+      --hover-bg: rgba(13, 61, 146, 0.06);
+      --selected-bg: rgba(13, 61, 146, 0.10);
+      --sider-width: 240px;
+      --sider-collapsed-width: 64px;
+      --header-height: 60px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg-color);
+      color: var(--text-primary);
+    }
+    /* ---------- Sider ---------- */
+    .app-sider {
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+      box-shadow: 2px 0 12px rgba(0,0,0,0.08);
+      transition: width 0.2s;
+      overflow: hidden;
+    }
+    .sider-header {
+      height: var(--header-height);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      background: var(--sandvik-blue);
+      flex-shrink: 0;
+      gap: 10px;
+    }
+    .sider-logo-img {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+    .sider-logo-text {
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sider-logo-sub {
+      color: rgba(255,255,255,0.6);
+      font-size: 10px;
+    }
+    .sider-collapse-btn {
+      position: absolute;
+      top: 18px;
+      right: -12px;
+      width: 24px;
+      height: 24px;
+      background: #fff;
+      border: 1px solid var(--border-color);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-secondary);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      z-index: 101;
+      transition: transform 0.2s;
+    }
+    .sider-collapse-btn:hover { transform: scale(1.1); }
+    .sider-collapse-btn.collapsed { transform: rotate(180deg); }
+    .sider-menu-wrap {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 8px 0;
+    }
+    .sider-menu-wrap::-webkit-scrollbar { width: 4px; }
+    .sider-menu-wrap::-webkit-scrollbar-thumb { background: #d9d9d9; border-radius: 2px; }
+    /* Module group label */
+    .menu-group-label {
+      height: 36px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      white-space: nowrap;
+      margin-top: 4px;
+    }
+    .menu-item-wrap {
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      height: 44px;
+      cursor: pointer;
+      color: var(--text-primary);
+      font-size: 14px;
+      border-radius: 6px;
+      margin: 1px 8px;
+      transition: background 0.15s, color 0.15s;
+      text-decoration: none;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .menu-item-wrap:hover { background: var(--hover-bg); }
+    .menu-item-wrap.active {
+      background: var(--selected-bg);
+      color: var(--sandvik-blue);
+      font-weight: 500;
+    }
+    .menu-item-wrap .menu-icon {
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-right: 10px;
+    }
+    .menu-item-wrap .menu-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    /* indent sub-items */
+    .menu-sub-item {
+      padding-left: 52px !important;
+      height: 40px !important;
+      font-size: 13px !important;
+    }
+    /* sub-menu arrow */
+    .has-sub {
+      position: relative;
+      padding-left: 12px !important;
+    }
+    .has-sub::after {
+      content: '›';
+      position: absolute;
+      right: 12px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      transition: transform 0.2s;
+    }
+    .has-sub.open::after { transform: rotate(90deg); }
+    .sub-menu-wrap {
+      overflow: hidden;
+    }
+    /* collapsed sider: hide labels, keep icons */
+    .app-sider.collapsed .menu-group-label { display: none; }
+    .app-sider.collapsed .menu-item-wrap { padding-left: 20px !important; justify-content: flex-start; }
+    /* ---------- Main area ---------- */
+    .app-main {
+      margin-left: var(--sider-width);
+      transition: margin-left 0.2s;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .app-main.collapsed { margin-left: var(--sider-collapsed-width); }
+    /* ---------- Header ---------- */
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      height: var(--header-height);
+      background: #fff;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .header-breadcrumb {
+      flex: 1;
+      font-size: 15px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+    .header-breadcrumb span.current { color: var(--text-primary); font-weight: 600; }
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .header-icon-btn {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      color: var(--text-secondary);
+      transition: background 0.15s;
+      position: relative;
+    }
+    .header-icon-btn:hover { background: var(--hover-bg); }
+    .header-badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      min-width: 16px;
+      height: 16px;
+      background: #FF4D4F;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
+    .header-user {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-primary);
+      transition: background 0.15s;
+    }
+    .header-user:hover { background: var(--hover-bg); }
+    .header-user-avatar {
+      width: 28px;
+      height: 28px;
+      background: var(--sandvik-blue);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    /* ---------- Content ---------- */
+    .app-content {
+      flex: 1;
+      padding: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Sider -->
+    <div class="app-sider" :style="{ width: collapsed ? '64px' : '240px' }">
+      <!-- Logo -->
+      <div class="sider-header">
+        <img
+          class="sider-logo-img"
+          src="https://www.home.sandvik/logo/logo_dark.svg"
+          alt="Sandvik"
+          @error="e => e.target.style.display='none'"
+        >
+        <div v-if="!collapsed" class="sider-logo-text">
+          <div>Sandvik</div>
+          <div class="sider-logo-sub">China Division</div>
+        </div>
+      </div>
+
+      <!-- Collapse button -->
+      <div
+        class="sider-collapse-btn"
+        :class="{ collapsed }"
+        @click="collapsed = !collapsed"
+        :title="collapsed ? '展开菜单' : '收起菜单'"
+      >‹</div>
+
+      <!-- Menu -->
+      <div class="sider-menu-wrap">
+        <!-- Group 1: 销售预测管理 -->
+        <div class="menu-group-label" v-if="!collapsed">📊 销售预测管理</div>
+
+        <a
+          class="menu-item-wrap"
+          :class="{ active: currentPage === 'dashboard' }"
+          style="padding-left: 20px"
+          @click="navigate('dashboard')"
+          :title="collapsed ? 'Dashboard' : ''"
+        >
+          <span class="menu-icon">📊</span>
+          <span v-if="!collapsed" class="menu-label">Dashboard</span>
+        </a>
+
+        <!-- 销售预测（可展开） -->
+        <div style="position:relative">
+          <div
+            class="menu-item-wrap has-sub"
+            :class="{ active: isForecastPage, open: forecastOpen }"
+            style="padding-left: 20px"
+            @click="forecastOpen = !forecastOpen"
+            :title="collapsed ? '销售预测' : ''"
+          >
+            <span class="menu-icon">📝</span>
+            <span v-if="!collapsed" class="menu-label">销售预测</span>
+          </div>
+          <div v-if="!collapsed && forecastOpen" class="sub-menu-wrap">
+            <a class="menu-item-wrap menu-sub-item" :class="{ active: currentPage === 'forecast' }" @click="navigate('forecast')">销售预测填报</a>
+            <a class="menu-item-wrap menu-sub-item" :class="{ active: currentPage === 'forecast-monthly' }" @click="navigate('forecast-monthly')">销售预测填报（按月）</a>
+            <a class="menu-item-wrap menu-sub-item" :class="{ active: currentPage === 'approval' }" @click="navigate('approval')">销售预测审核</a>
+            <a class="menu-item-wrap menu-sub-item" :class="{ active: currentPage === 'analysis' }" @click="navigate('analysis')">分析报表</a>
+          </div>
+        </div>
+
+        <!-- Group 2: 基础数据管理 -->
+        <div class="menu-group-label" v-if="!collapsed" style="margin-top:12px">🗂 基础数据管理</div>
+
+        <div style="position:relative">
+          <div
+            class="menu-item-wrap has-sub"
+            :class="{ open: baseDataOpen }"
+            style="padding-left: 20px"
+            @click="baseDataOpen = !baseDataOpen"
+            :title="collapsed ? '基础数据管理' : ''"
+          >
+            <span class="menu-icon">🗂</span>
+            <span v-if="!collapsed" class="menu-label">基础数据管理</span>
+          </div>
+          <div v-if="!collapsed && baseDataOpen" class="sub-menu-wrap">
+            <a class="menu-item-wrap menu-sub-item" :class="{ active: currentPage === 'org' }" @click="navigate('org')">组织架构</a>
+            <a class="menu-item-wrap menu-sub-item" :class="{ active: currentPage === 'customers' }" @click="navigate('customers')">客户信息</a>
+            <a class="menu-item-wrap menu-sub-item" :class="{ active: currentPage === 'products' }" @click="navigate('products')">产品库</a>
+            <a class="menu-item-wrap menu-sub-item" :class="{ active: currentPage === 'datadict' }" @click="navigate('datadict')">数据字典</a>
+          </div>
+        </div>
+
+        <!-- Group 3: 系统管理 -->
+        <div class="menu-group-label" v-if="!collapsed" style="margin-top:12px">⚙️ 系统管理</div>
+
+        <div style="position:relative">
+          <div
+            class="menu-item-wrap has-sub"
+            :class="{ open: systemOpen }"
+            style="padding-left: 20px"
+            @click="systemOpen = !systemOpen"
+            :title="collapsed ? '系统管理' : ''"
+          >
+            <span class="menu-icon">⚙️</span>
+            <span v-if="!collapsed" class="menu-label">系统管理</span>
+          </div>
+          <div v-if="!collapsed && systemOpen" class="sub-menu-wrap">
+            <a class="menu-item-wrap menu-sub-item" :class="{ active: currentPage === 'users' }" @click="navigate('users')">用户账号管理</a>
+            <a class="menu-item-wrap menu-sub-item" :class="{ active: currentPage === 'permissions' }" @click="navigate('permissions')">角色和权限管理</a>
+            <a class="menu-item-wrap menu-sub-item" :class="{ active: currentPage === 'fc-version' }" @click="navigate('fc-version')">预测周期管理</a>
+            <a class="menu-item-wrap menu-sub-item" :class="{ active: currentPage === 'login-log' }" @click="navigate('login-log')">系统登录日志</a>
+            <a class="menu-item-wrap menu-sub-item" :class="{ active: currentPage === 'op-log' }" @click="navigate('op-log')">系统操作日志</a>
+            <a class="menu-item-wrap menu-sub-item" :class="{ active: currentPage === 'approval-flow' }" @click="navigate('approval-flow')">审批流程配置</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="app-main" :class="{ collapsed }">
+      <!-- Header -->
+      <div class="app-header">
+        <div class="header-breadcrumb">
+          <span>Sandvik China Division</span>
+          <span style="margin: 0 8px; color: #d9d9d9;">›</span>
+          <span class="current">{{ pageTitle }}</span>
+        </div>
+        <div class="header-actions">
+          <div class="header-icon-btn" title="消息">
+            🔔
+            <span class="header-badge">3</span>
+          </div>
+          <div class="header-icon-btn" title="全屏">⛶</div>
+          <div class="header-user">
+            <div class="header-user-avatar">A</div>
+            <span>Admin User</span>
+            <span style="color:#d9d9d9;font-size:10px;">▾</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content iframe area -->
+      <div class="app-content">
+        <iframe
+          :src="currentUrl"
+          frameborder="0"
+          style="width:100%;height:calc(100vh - 108px);border:none;border-radius:8px;background:#fff;"
+        ></iframe>
+      </div>
+    </div>
+  </div>
+
   <script>
-    const { createApp, ref } = Vue;
+    const { createApp, ref, computed } = Vue;
 
     const app = createApp({
       setup() {
         const collapsed = ref(false);
-        const selectedKeys = ref(['dashboard']);
+        const currentPage = ref('dashboard');
+        const forecastOpen = ref(false);
+        const baseDataOpen = ref(false);
+        const systemOpen = ref(false);
+
+        const pageMap = {
+          'dashboard':       { title: 'Dashboard',              url: 'antd-dashboard.html' },
+          'forecast':        { title: '销售预测填报',            url: 'antd-forecast.html' },
+          'forecast-monthly':{ title: '销售预测填报（按月）',     url: 'antd-forecast.html?mode=monthly' },
+          'approval':        { title: '销售预测审核',            url: 'antd-approval.html' },
+          'analysis':        { title: '分析报表',                url: 'antd-analysis-report.html' },
+          'customers':       { title: '客户/开票公司',           url: 'antd-basedata.html' },
+          'products':        { title: '产品库',                  url: 'antd-basedata.html' },
+          'org':             { title: '组织架构',                url: '#org' },
+          'datadict':        { title: '数据字典',                url: 'antd-data-dict.html' },
+          'users':           { title: '用户账号管理',            url: '#users' },
+          'permissions':     { title: '角色和权限管理',          url: '#permissions' },
+          'fc-version':      { title: '预测周期管理',            url: '#fc-version' },
+          'login-log':       { title: '系统登录日志',            url: 'antd-login-log.html' },
+          'op-log':          { title: '系统操作日志',            url: 'antd-log.html' },
+          'approval-flow':   { title: '审批流程配置',            url: 'antd-approval-flow.html' },
+        };
+
+        const pageTitle = computed(() => pageMap[currentPage.value]?.title || 'Dashboard');
+        const currentUrl = computed(() => pageMap[currentPage.value]?.url || 'antd-dashboard.html');
+        const isForecastPage = computed(() => ['forecast', 'forecast-monthly', 'approval', 'analysis'].includes(currentPage.value));
+
+        const navigate = (page) => {
+          currentPage.value = page;
+          forecastOpen.value = false;
+          baseDataOpen.value = false;
+          systemOpen.value = false;
+        };
+
         return {
           collapsed,
-          selectedKeys
+          currentPage,
+          pageTitle,
+          currentUrl,
+          isForecastPage,
+          forecastOpen,
+          baseDataOpen,
+          systemOpen,
+          navigate
         };
       }
     });

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>操作日志 - Sandvik Sales Forecast Tool</title>
+  <script src="./lib/vue.global.prod.js"></script>
+  <script src="./lib/antd-vue.min.js"></script>
+  <style>
+    :root { --sandvik-blue: #0D3D92; --bg-color: #F5F7FA; --border-color: #E5E7EB; --danger: #FF4D4F; --success: #52C41A; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, sans-serif; background: var(--bg-color); min-height: 100vh; }
+    #app { min-height: 100vh; display: flex; flex-direction: column; }
+    .page-header { background: var(--sandvik-blue); color: #fff; padding: 0 24px; height: 56px; display: flex; align-items: center; }
+    .page-header h1 { font-size: 16px; font-weight: 600; }
+    .page-body { flex: 1; padding: 20px 24px; }
+    .placeholder-card { background: #fff; border-radius: 10px; border: 1px solid var(--border-color); padding: 60px 40px; text-align: center; }
+    .placeholder-icon { font-size: 64px; margin-bottom: 20px; }
+    .placeholder-title { font-size: 20px; font-weight: 700; color: var(--sandvik-blue); margin-bottom: 12px; }
+    .placeholder-desc { font-size: 14px; color: #6B7280; margin-bottom: 24px; line-height: 1.8; }
+    .btn { display: inline-flex; align-items: center; gap: 5px; padding: 8px 20px; border-radius: 6px; font-size: 13px; cursor: pointer; border: 1px solid var(--border-color); background: #fff; color: #1F2937; }
+    .btn-primary { background: var(--sandvik-blue); color: #fff; border-color: var(--sandvik-blue); }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="page-header"><h1">🗒️ 操作日志</h1></div>
+  <div class="page-body">
+    <div class="placeholder-card">
+      <div class="placeholder-icon">🗒️</div>
+      <div class="placeholder-title">操作日志</div>
+      <div class="placeholder-desc">
+        记录所有用户的登录、数据修改、审批操作等关键行为。<br>
+        支持按时间、用户、操作类型筛选。
+      </div>
+      <div style="margin-top:28px;"><button class="btn btn-primary" onclick="alert('操作日志功能开发中')">⚙️ 功能开发中</button></div>
+    </div>
+  </div>
+</div>
+<script>const { createApp } = Vue; const app = createApp({}); app.use(antd); app.mount('#app');</script>
+</body>
+</html>

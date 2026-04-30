@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>销售预测填报 - Sandvik Sales Forecast Tool</title>
-  <!-- Local Resources (more reliable than CDN) -->
   <script src="./lib/vue.global.prod.js"></script>
   <script src="./lib/dayjs.min.js"></script>
   <script src="./lib/dayjs-plugin-advancedFormat.js"></script>
@@ -21,823 +20,911 @@
       --sandvik-blue: #0D3D92;
       --sandvik-orange: #F5A623;
       --bg-color: #F5F7FA;
-      --content-bg: #FFFFFF;
       --text-primary: #1F2937;
       --text-secondary: #6B7280;
       --border-color: #E5E7EB;
-      --success-color: #52C41A;
-      --warning-color: #FAAD14;
-      --error-color: #FF4D4F;
+      --success: #52C41A;
+      --warning: #FAAD14;
+      --danger: #FF4D4F;
     }
-
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-primary); min-height: 100vh; }
+    #app { min-height: 100vh; display: flex; flex-direction: column; }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-primary);
-      min-height: 100vh;
-    }
-
-    #app {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* Header */
+    /* ── Header ── */
     .page-header {
       background: var(--sandvik-blue);
       color: #fff;
-      padding: 20px 32px;
+      padding: 0 24px;
+      height: 56px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      box-shadow: 0 2px 8px rgba(13, 61, 146, 0.3);
+      box-shadow: 0 2px 8px rgba(13,61,146,0.2);
     }
+    .page-header h1 { font-size: 16px; font-weight: 600; }
+    .page-header-actions { display: flex; gap: 8px; }
 
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
+    /* ── Body ── */
+    .page-body { flex: 1; padding: 20px 24px; }
 
-    .page-title {
-      font-size: 22px;
-      font-weight: 600;
-      color: #fff;
-    }
+    /* ── Cards ── */
+    .card { background: #fff; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 4px rgba(0,0,0,0.05); overflow: hidden; }
+    .card-header { padding: 14px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; background: #fafafa; }
+    .card-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+    .card-body { padding: 20px; }
 
-    .fc-version-select .ant-select-selector {
-      background: rgba(255,255,255,0.15) !important;
-      border: 1px solid rgba(255,255,255,0.4) !important;
-      color: #fff !important;
-      height: 34px !important;
-    }
+    /* ── Period List ── */
+    .period-list-page { }
+    .period-filter-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 16px 20px; border-bottom: 1px solid var(--border-color); background: #fafafa; }
+    .period-table { width: 100%; border-collapse: collapse; }
+    .period-table th { background: #f5f7fa; padding: 10px 16px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border-color); }
+    .period-table td { padding: 12px 16px; border-bottom: 1px solid var(--border-color); font-size: 13px; }
+    .period-table tr:hover td { background: #f9fafb; }
+    .period-table .actions { display: flex; gap: 8px; }
 
-    .fc-version-select .ant-select-selection-placeholder,
-    .fc-version-select .ant-select-selection-item {
-      color: #fff !important;
-      line-height: 32px !important;
-    }
+    /* ── Status badges ── */
+    .status-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+    .status-open { background: #e6f7e6; color: #52c41a; }
+    .status-history { background: #f0f0f0; color: #888; }
+    .status-closed { background: #fff1e6; color: #fa8c16; }
 
-    .fc-version-select .ant-select-arrow {
-      color: rgba(255,255,255,0.7) !important;
-    }
+    /* ── Forecast Detail ── */
+    .forecast-detail { }
+    .forecast-toolbar { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 20px; border-bottom: 1px solid var(--border-color); background: #fafafa; align-items: center; }
+    .toolbar-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: #fff; color: var(--text-primary); font-size: 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .toolbar-btn:hover { border-color: var(--sandvik-blue); color: var(--sandvik-blue); }
+    .toolbar-btn.primary { background: var(--sandvik-blue); color: #fff; border-color: var(--sandvik-blue); }
+    .toolbar-btn.primary:hover { background: #0a3280; }
+    .toolbar-btn.active { background: var(--sandvik-blue); color: #fff; border-color: var(--sandvik-blue); }
+    .toolbar-sep { width: 1px; height: 24px; background: var(--border-color); margin: 0 4px; }
+    .toolbar-info-tags { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .toolbar-tag { font-size: 12px; color: var(--text-secondary); background: #e8f0fe; padding: 3px 10px; border-radius: 12px; border: 1px solid #c7dcf7; }
+    .toolbar-tag strong { color: var(--sandvik-blue); font-weight: 600; }
+    .toolbar-right { margin-left: auto; display: flex; gap: 8px; }
 
-    .header-actions {
-      display: flex;
-      gap: 10px;
-    }
+    /* ── Filter Panel ── */
+    .filter-panel { display: flex; gap: 12px; flex-wrap: wrap; padding: 12px 20px; border-bottom: 1px solid var(--border-color); background: #fff; }
+    .filter-item { display: flex; flex-direction: column; gap: 4px; }
+    .filter-label { font-size: 11px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .filter-select { border: 1px solid var(--border-color); border-radius: 6px; padding: 5px 10px; font-size: 12px; min-width: 130px; background: #fff; color: var(--text-primary); }
+    .filter-select:focus { outline: none; border-color: var(--sandvik-blue); }
 
-    .header-actions .ant-btn {
-      font-size: 13px;
-      border-radius: 4px;
-    }
+    /* ── Forecast Table ── */
+    .forecast-table-wrap { overflow-x: auto; }
+    .forecast-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .forecast-table th { background: #f5f7fa; padding: 8px 10px; text-align: center; font-weight: 600; color: var(--text-secondary); border: 1px solid var(--border-color); white-space: nowrap; position: sticky; top: 0; z-index: 1; }
+    .forecast-table th.left { text-align: left; }
+    .forecast-table td { padding: 6px 10px; border: 1px solid var(--border-color); text-align: center; }
+    .forecast-table td.left { text-align: left; }
+    .forecast-table td.editable { background: #fff; }
+    .forecast-table td input[type="number"] { width: 70px; border: 1px solid transparent; border-radius: 4px; padding: 3px 6px; text-align: right; font-size: 12px; background: transparent; }
+    .forecast-table td input[type="number"]:focus { border-color: var(--sandvik-blue); background: #fff; outline: none; }
+    .forecast-table .row-actions { display: flex; gap: 4px; justify-content: center; }
+    .forecast-table .action-btn { padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: #fff; font-size: 11px; cursor: pointer; color: var(--text-secondary); }
+    .forecast-table .action-btn:hover { border-color: var(--sandvik-blue); color: var(--sandvik-blue); }
+    .forecast-table .action-btn.delete:hover { border-color: var(--danger); color: var(--danger); }
+    .forecast-table .month-group-header { background: #e8f0fe; font-weight: 700; color: var(--sandvik-blue); }
+    .compact-hidden { display: none; }
 
-    .header-actions .ant-btn-default {
-      background: rgba(255,255,255,0.12);
-      border: 1px solid rgba(255,255,255,0.35);
-      color: #fff;
-    }
+    /* ── View Toggle ── */
+    .view-toggle { display: flex; border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; }
+    .view-toggle-btn { padding: 5px 12px; font-size: 12px; border: none; background: #fff; cursor: pointer; color: var(--text-secondary); }
+    .view-toggle-btn.active { background: var(--sandvik-blue); color: #fff; }
 
-    .header-actions .ant-btn-default:hover {
-      background: rgba(255,255,255,0.25);
-      border-color: rgba(255,255,255,0.6);
-      color: #fff;
-    }
+    /* ── Table Footer ── */
+    .table-footer { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-top: 1px solid var(--border-color); background: #fafafa; font-size: 12px; color: var(--text-secondary); }
+    .pagination { display: flex; gap: 4px; align-items: center; }
+    .page-btn { padding: 4px 10px; border: 1px solid var(--border-color); border-radius: 4px; background: #fff; cursor: pointer; font-size: 12px; }
+    .page-btn:hover { border-color: var(--sandvik-blue); color: var(--sandvik-blue); }
+    .page-btn.active { background: var(--sandvik-blue); color: #fff; border-color: var(--sandvik-blue); }
 
-    .header-actions .ant-btn-primary {
-      background: var(--sandvik-orange);
-      border-color: var(--sandvik-orange);
-      color: #fff;
-      font-weight: 500;
-    }
+    /* ── Message ── */
+    .message-bar { padding: 8px 20px; font-size: 12px; }
+    .message-success { background: #f6ffed; border: 1px solid #b7eb8f; color: #52c41a; border-radius: 4px; padding: 6px 12px; display: inline-block; }
+    .message-error { background: #fff2f0; border: 1px solid #ffccc7; color: #ff4d4f; border-radius: 4px; padding: 6px 12px; display: inline-block; }
 
-    .header-actions .ant-btn-primary:hover {
-      background: #e8961a;
-      border-color: #e8961a;
-    }
+    /* ── Add Modal ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+    .modal-box { background: #fff; border-radius: 10px; width: 680px; max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+    .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 600; }
+    .modal-close { width: 28px; height: 28px; border-radius: 50%; border: none; background: #f0f0f0; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+    .modal-close:hover { background: #e0e0e0; }
+    .modal-body { padding: 20px; }
+    .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 8px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+    .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+    .form-label .required { color: var(--danger); margin-left: 2px; }
+    .form-input, .form-select { border: 1px solid var(--border-color); border-radius: 6px; padding: 7px 10px; font-size: 13px; width: 100%; }
+    .form-input:focus, .form-select:focus { outline: none; border-color: var(--sandvik-blue); }
+    .month-inputs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-top: 4px; }
+    .month-input-group { border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 10px; background: #fafafa; }
+    .month-input-label { font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+    .month-input-row { display: flex; gap: 6px; }
+    .month-input-row input { flex: 1; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 6px; font-size: 12px; text-align: right; min-width: 0; }
+    .month-input-row input:focus { outline: none; border-color: var(--sandvik-blue); }
+    .month-input-row span { font-size: 11px; color: var(--text-secondary); display: flex; align-items: center; min-width: 16px; }
 
-    /* Main Content */
-    .main-content {
-      flex: 1;
-      padding: 20px 32px;
-      max-width: 1600px;
-      width: 100%;
-      margin: 0 auto;
-    }
+    /* ── Button styles ── */
+    .btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 16px; border-radius: 6px; font-size: 13px; cursor: pointer; border: 1px solid var(--border-color); background: #fff; color: var(--text-primary); transition: all 0.15s; }
+    .btn:hover { border-color: var(--sandvik-blue); color: var(--sandvik-blue); }
+    .btn-primary { background: var(--sandvik-blue); color: #fff; border-color: var(--sandvik-blue); }
+    .btn-primary:hover { background: #0a3280; }
+    .btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
 
-    /* Filter Bar */
-    .filter-section {
-      margin-bottom: 16px;
-    }
+    /* ── Empty State ── */
+    .empty-state { text-align: center; padding: 48px 24px; color: var(--text-secondary); }
+    .empty-state-icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; margin-bottom: 16px; }
 
-    .filter-collapse .ant-collapse-header {
-      font-size: 14px;
-      color: var(--text-secondary);
-      padding: 0 0 8px 0 !important;
-    }
+    /* ── Month selector in header ── */
+    .month-colgroup-title { background: #e8f0fe !important; color: var(--sandvik-blue) !important; font-weight: 700; font-size: 12px; }
 
-    .filter-collapse .ant-collapse-content-box {
-      padding: 12px 16px !important;
-      background: var(--content-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-    }
-
-    .filter-grid {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 12px;
-    }
-
-    .filter-item {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .filter-item label {
-      font-size: 12px;
-      color: var(--text-secondary);
-      font-weight: 500;
-    }
-
-    .filter-actions {
-      display: flex;
-      align-items: flex-end;
-      gap: 8px;
-    }
-
-    .filter-actions .ant-btn {
-      border-radius: 4px;
-    }
-
-    /* Data Table */
-    .table-section {
-      background: var(--content-bg);
-      border-radius: 8px;
-      border: 1px solid var(--border-color);
-      overflow: hidden;
-    }
-
-    .table-container .ant-table {
-      font-size: 13px;
-    }
-
-    .table-container .ant-table-thead > tr > th {
-      background: var(--sandvik-blue) !important;
-      color: #fff !important;
-      font-weight: 600;
-      font-size: 12px;
-      text-align: center;
-      padding: 10px 8px;
-      border: none;
-      white-space: nowrap;
-    }
-
-    .table-container .ant-table-thead > tr > th::before {
-      display: none !important;
-    }
-
-    .table-container .ant-table-tbody > tr > td {
-      padding: 8px 6px;
-      text-align: center;
-      border-color: var(--border-color);
-      color: var(--text-primary);
-      font-size: 12px;
-    }
-
-    .table-container .ant-table-tbody > tr:nth-child(even) {
-      background: #FAFBFF;
-    }
-
-    .table-container .ant-table-tbody > tr:hover > td {
-      background: #EEF4FF !important;
-    }
-
-    .customer-cell {
-      text-align: left !important;
-      font-weight: 500;
-      color: var(--sandvik-blue);
-    }
-
-    .company-cell {
-      text-align: left !important;
-      color: var(--text-secondary);
-    }
-
-    .product-cell {
-      text-align: left !important;
-      font-size: 11px;
-      color: var(--text-secondary);
-    }
-
-    .ant-input-number {
-      width: 80px;
-      font-size: 12px;
-    }
-
-    .ant-input-number-input {
-      text-align: center;
-    }
-
-    .action-cell .ant-btn {
-      padding: 2px 8px;
-      font-size: 12px;
-      border-radius: 3px;
-    }
-
-    .action-cell .ant-btn-text {
-      color: var(--text-secondary);
-    }
-
-    .action-cell .ant-btn-text:hover {
-      color: var(--sandvik-blue);
-    }
-
-    /* Table Footer */
-    .table-footer {
-      padding: 14px 20px;
-      border-top: 1px solid var(--border-color);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: #FAFBFF;
-    }
-
-    .selection-info {
-      font-size: 13px;
-      color: var(--text-secondary);
-    }
-
-    .selection-info strong {
-      color: var(--sandvik-blue);
-    }
-
-    .footer-actions {
-      display: flex;
-      gap: 10px;
-    }
-
-    .footer-actions .ant-btn {
-      border-radius: 4px;
-      font-size: 13px;
-    }
-
-    .footer-actions .ant-btn-default {
-      border-color: var(--border-color);
-      color: var(--text-secondary);
-    }
-
-    .footer-actions .ant-btn-default:hover {
-      border-color: var(--sandvik-blue);
-      color: var(--sandvik-blue);
-    }
-
-    .footer-actions .ant-btn-primary {
+    /* ── Top Nav Bar ── */
+    .nav-bar {
       background: var(--sandvik-blue);
-      border-color: var(--sandvik-blue);
-    }
-
-    .footer-actions .ant-btn-primary:hover {
-      background: #0a3278;
-      border-color: #0a3278;
-    }
-
-    .pagination-wrapper {
+      padding: 0 24px;
+      height: 64px;
       display: flex;
       align-items: center;
+      box-shadow: 0 2px 8px rgba(13,61,146,0.15);
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-
-    /* Month Header Groups */
-    .month-header-group {
-      display: flex;
-      gap: 2px;
-    }
-
-    .month-group-label {
-      font-size: 11px;
-      padding: 4px;
-      color: rgba(255,255,255,0.85);
-    }
-
-    /* Status tags */
-    .status-tag {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-size: 11px;
-      font-weight: 500;
-    }
-
-    .status-draft {
-      background: #F0F0F0;
-      color: var(--text-secondary);
-    }
-
-    .status-submitted {
-      background: #E6F4FF;
-      color: var(--sandvik-blue);
-    }
-
-    .status-approved {
-      background: #F6FFED;
-      color: var(--success-color);
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 1200px) {
-      .filter-grid {
-        grid-template-columns: repeat(3, 1fr);
-      }
-    }
-
-    @media (max-width: 768px) {
-      .page-header {
-        flex-direction: column;
-        gap: 16px;
-        align-items: flex-start;
-      }
-
-      .header-actions {
-        flex-wrap: wrap;
-      }
-
-      .main-content {
-        padding: 16px;
-      }
-    }
-
-    /* Ant Design overrides */
-    .ant-select-selector {
-      border-radius: 4px !important;
-    }
-
-    .ant-table-wrapper {
-      overflow-x: auto;
-    }
-
-    /* Custom scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: #C0C0C0;
-      border-radius: 3px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: #F0F0F0;
-    }
+    .nav-logo { display: flex; align-items: center; gap: 12px; margin-right: 40px; }
+    .nav-logo-icon { width: 36px; height: 36px; background: rgba(255,255,255,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+    .nav-logo-text { color: #fff; font-size: 15px; font-weight: 500; white-space: nowrap; }
+    .nav-links { display: flex; gap: 8px; flex: 1; }
+    .nav-link { color: rgba(255,255,255,0.7); text-decoration: none; padding: 8px 16px; border-radius: 6px; font-size: 14px; transition: all 0.2s; cursor: pointer; }
+    .nav-link:hover, .nav-link.active { color: #fff; background: rgba(255,255,255,0.15); }
+    .nav-actions { display: flex; align-items: center; gap: 16px; }
+    .nav-action-btn { color: rgba(255,255,255,0.8); font-size: 18px; cursor: pointer; padding: 8px; border-radius: 6px; transition: all 0.2s; }
+    .nav-action-btn:hover { color: #fff; background: rgba(255,255,255,0.15); }
+    .nav-user { display: flex; align-items: center; gap: 8px; color: #fff; font-size: 14px; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
+    .nav-user:hover { background: rgba(255,255,255,0.15); }
   </style>
 </head>
 <body>
-  <div id="app">
-    <!-- Page Header -->
-    <div class="page-header">
-      <div class="header-left">
-        <h1 class="page-title">销售预测填报</h1>
-        <a-select
-          v-model:value="fcVersion"
-          class="fc-version-select"
-          style="width: 140px;"
-          :dropdown-match-select-width="false"
-        >
-          <a-select-option value="2026FC1">2026FC1</a-select-option>
-          <a-select-option value="2026FC2">2026FC2</a-select-option>
-        </a-select>
-      </div>
-      <div class="header-actions">
-        <a-button @click="downloadTemplate">
-          <template #icon><download-outlined /></template>
-          下载模板
-        </a-button>
-        <a-button @click="batchUpload">
-          <template #icon><upload-outlined /></template>
-          批量上传
-        </a-button>
-        <a-button type="primary" @click="addSingle">
-          <template #icon><plus-outlined /></template>
-          单笔添加
-        </a-button>
-        <a-button @click="copyLastPeriod">
-          <template #icon><copy-outlined /></template>
-          复制上期
-        </a-button>
+<div id="app">
+  <!-- Top Navigation Bar -->
+  <div class="nav-bar">
+    <div class="nav-logo">
+      <div class="nav-logo-icon"><span style="font-size:18px">🔧</span></div>
+      <span class="nav-logo-text">China Division Sales Forecast Tool</span>
+    </div>
+    <div class="nav-links" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
+      <span class="nav-link" onclick="location.href='antd-dashboard.html'">📊</span>
+      <span class="nav-link active">📝 填报</span>
+      <span class="nav-link" onclick="location.href='antd-monthly-report.html'">📅 按月</span>
+      <span class="nav-link" onclick="location.href='antd-approval.html'">✅ 审核</span>
+      <span class="nav-link" onclick="location.href='antd-analysis-report.html'">📈 报表</span>
+      <span style="color:rgba(255,255,255,0.4);margin:0 4px;">|</span>
+      <span class="nav-link" onclick="location.href='antd-basedata.html'">⚙️ 基础数据</span>
+      <span class="nav-link" onclick="location.href='antd-users.html'">👥 系统</span>
+      <span class="nav-link" onclick="location.href='antd-login-log.html'">📋 日志</span>
+    </div>
+    <div class="nav-actions">
+      <span class="nav-action-btn">🔔</span>
+      <div class="nav-user"><span>👤</span><span>Admin User</span></div>
+    </div>
+  </div>
+
+  <!-- ═══ PAGE HEADER ═══ -->
+  <div class="page-header">
+    <h1>📝 销售预测填报</h1>
+    <div class="page-header-actions">
+      <button v-if="view === 'detail'" class="btn btn-sm" @click="backToPeriods">← 返回周期列表</button>
+    </div>
+  </div>
+
+  <div class="page-body">
+
+    <!-- ═══ PERIOD LIST VIEW ═══ -->
+    <div v-if="view === 'periods'" class="period-list-page">
+
+      <!-- Filter Bar -->
+      <div class="card" style="margin-bottom: 16px;">
+        <div class="period-filter-bar">
+          <div class="filter-item">
+            <span class="filter-label">状态</span>
+            <select class="filter-select" v-model="periodFilter.status">
+              <option value="all">全部</option>
+              <option value="open">开放中</option>
+              <option value="history">历史</option>
+              <option value="closed">已关闭</option>
+            </select>
+          </div>
+          <div class="filter-item" style="flex:1; max-width: 280px;">
+            <span class="filter-label">关键词搜索</span>
+            <input class="filter-select" style="width:100%;" v-model="periodFilter.keyword" placeholder="搜索周期名称...">
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:8px;margin-left:auto;">
+            <button class="btn btn-sm" @click="resetPeriodFilter">🔄 重置</button>
+            <button class="btn btn-primary btn-sm" @click="openAddPeriodDialog">+ 新增周期</button>
+          </div>
+        </div>
+
+        <!-- Period Table -->
+        <div class="card-body" style="padding:0;">
+          <table class="period-table">
+            <thead>
+              <tr>
+                <th>预测周期</th>
+                <th>开放时间</th>
+                <th>包含月份</th>
+                <th>状态</th>
+                <th>填报状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="p in filteredPeriods" :key="p.id">
+                <td><strong>{{ p.period }}</strong></td>
+                <td>{{ p.openTime }}</td>
+                <td>{{ p.months.join(', ') }}</td>
+                <td><span class="status-badge" :class="'status-' + p.status">{{ statusLabel(p.status) }}</span></td>
+                <td><span class="status-badge" :class="'status-' + p.approval">{{ approvalStatusLabel(p.approval) }}</span></td>
+                <td class="actions">
+                  <button class="btn btn-sm" @click="selectPeriod(p)" title="填报">✏️ 填报</button>
+                  <button class="btn btn-sm" @click="viewPeriodHistory(p)" title="历史">📋 历史</button>
+                </td>
+              </tr>
+              <tr v-if="filteredPeriods.length === 0">
+                <td colspan="6">
+                  <div class="empty-state">
+                    <div class="empty-state-icon">📭</div>
+                    <p>暂无预测周期</p>
+                    <button class="btn btn-primary btn-sm" @click="openAddPeriodDialog">+ 创建第一个周期</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="main-content">
-      <!-- Filter Bar -->
-      <div class="filter-section">
-        <a-collapse v-model:activeKey="filterActiveKey" class="filter-collapse" :ghost="true">
-          <a-collapse-panel key="1" :header="collapseHeaderText">
-            <div class="filter-grid">
-              <div class="filter-item">
-                <label>客户</label>
-                <a-select
-                  v-model:value="filters.customer"
-                  placeholder="全部"
-                  style="width: 100%"
-                  allow-clear
-                  show-search
-                  :filter-option="filterOption"
-                >
-                  <a-select-option value="">全部</a-select-option>
-                  <a-select-option v-for="c in customers" :key="c" :value="c">{{ c }}</a-select-option>
-                </a-select>
-              </div>
-              <div class="filter-item">
-                <label>开票公司</label>
-                <a-select
-                  v-model:value="filters.company"
-                  placeholder="全部"
-                  style="width: 100%"
-                  allow-clear
-                  show-search
-                  :filter-option="filterOption"
-                >
-                  <a-select-option value="">全部</a-select-option>
-                  <a-select-option v-for="c in companies" :key="c" :value="c">{{ c }}</a-select-option>
-                </a-select>
-              </div>
-              <div class="filter-item">
-                <label>业绩归属</label>
-                <a-select
-                  v-model:value="filters.attribution"
-                  placeholder="全部"
-                  style="width: 100%"
-                  allow-clear
-                >
-                  <a-select-option value="">全部</a-select-option>
-                  <a-select-option v-for="a in attributions" :key="a" :value="a">{{ a }}</a-select-option>
-                </a-select>
-              </div>
-              <div class="filter-item">
-                <label>销售大区</label>
-                <a-select
-                  v-model:value="filters.region"
-                  placeholder="全部"
-                  style="width: 100%"
-                  allow-clear
-                >
-                  <a-select-option value="">全部</a-select-option>
-                  <a-select-option v-for="r in regions" :key="r" :value="r">{{ r }}</a-select-option>
-                </a-select>
-              </div>
-              <div class="filter-item">
-                <label>PA产品线</label>
-                <a-select
-                  v-model:value="filters.pa"
-                  placeholder="全部"
-                  style="width: 100%"
-                  allow-clear
-                >
-                  <a-select-option value="">全部</a-select-option>
-                  <a-select-option v-for="p in paLines" :key="p" :value="p">{{ p }}</a-select-option>
-                </a-select>
-              </div>
-              <div class="filter-item">
-                <label>Sub PA</label>
-                <a-select
-                  v-model:value="filters.subPa"
-                  placeholder="全部"
-                  style="width: 100%"
-                  allow-clear
-                >
-                  <a-select-option value="">全部</a-select-option>
-                  <a-select-option v-for="s in subPas" :key="s" :value="s">{{ s }}</a-select-option>
-                </a-select>
-              </div>
-            </div>
-            <div style="margin-top: 12px; display: flex; justify-content: flex-end;">
-              <div class="filter-actions">
-                <a-button type="primary" @click="handleQuery">查询</a-button>
-                <a-button type="text" @click="handleReset">重置</a-button>
-              </div>
-            </div>
-          </a-collapse-panel>
-        </a-collapse>
+    <!-- ═══ FORECAST DETAIL VIEW ═══ -->
+    <div v-if="view === 'detail'" class="forecast-detail">
+
+      <!-- Toolbar -->
+      <div class="card" style="margin-bottom:12px;">
+        <div class="forecast-toolbar">
+          <div class="toolbar-info-tags">
+            <span class="toolbar-tag">角色：<strong>{{ currentRole }}</strong></span>
+            <span class="toolbar-tag">流程：<strong>{{ currentFlow }}</strong></span>
+            <span class="toolbar-tag">周期：<strong>{{ currentPeriod.period }}</strong></span>
+            <span class="toolbar-tag">填报窗口：<strong>{{ currentPeriod.openTime }}</strong></span>
+          </div>
+          <div class="toolbar-sep"></div>
+          <!-- Left group -->
+          <button class="toolbar-btn" @click="downloadTemplate">📥 下载模板</button>
+          <label class="toolbar-btn" style="cursor:pointer;">
+            📤 批量上传
+            <input type="file" accept=".csv" style="display:none" @change="uploadCsv">
+          </label>
+          <div class="toolbar-sep"></div>
+          <button class="toolbar-btn" @click="runQuery">🔍 查询</button>
+          <button class="toolbar-btn" @click="resetFilters">🔄 重置</button>
+          <div class="toolbar-sep"></div>
+          <button class="toolbar-btn" @click="openAddRowDialog">➕ 添加</button>
+          <button class="toolbar-btn" @click="copyLastPeriod">📋 复制上期</button>
+          <div class="toolbar-sep"></div>
+          <!-- View Toggle -->
+          <div class="view-toggle">
+            <button class="view-toggle-btn" :class="{ active: viewMode === 'compact' }" @click="setViewMode('compact')">紧凑视图</button>
+            <button class="view-toggle-btn" :class="{ active: viewMode === 'detail' }" @click="setViewMode('detail')">详细视图</button>
+          </div>
+          <!-- Right group -->
+          <div class="toolbar-right">
+            <button class="toolbar-btn" @click="downloadData">📤 下载数据</button>
+            <button class="toolbar-btn" @click="saveDraft">💾 保存草稿</button>
+            <button class="toolbar-btn primary" @click="submitForApproval">🚀 提交审批</button>
+          </div>
+        </div>
+
+        <!-- Filter Panel -->
+        <div class="filter-panel">
+          <div class="filter-item">
+            <span class="filter-label">客户</span>
+            <select class="filter-select" v-model="filters.customer"><option value="">全部</option><option v-for="c in customerMaster" :key="c" :value="c">{{ c }}</option></select>
+          </div>
+          <div class="filter-item">
+            <span class="filter-label">开票公司</span>
+            <select class="filter-select" v-model="filters.invoice" @change="syncInvoiceDependent"><option value="">全部</option><option v-for="inv in invoiceMaster" :key="inv.invoice" :value="inv.invoice">{{ inv.invoice }}</option></select>
+          </div>
+          <div class="filter-item">
+            <span class="filter-label">业绩归属</span>
+            <select class="filter-select" v-model="filters.performance"><option value="">全部</option><option v-for="p in filteredPerformance" :key="p" :value="p">{{ p }}</option></select>
+          </div>
+          <div class="filter-item">
+            <span class="filter-label">销售大区</span>
+            <select class="filter-select" v-model="filters.region"><option value="">全部</option><option v-for="r in filteredRegions" :key="r" :value="r">{{ r }}</option></select>
+          </div>
+          <div class="filter-item">
+            <span class="filter-label">PA产品线</span>
+            <select class="filter-select" v-model="filters.pa" @change="syncPaFilter"><option value="">全部</option><option v-for="pa in paOptions" :key="pa" :value="pa">{{ pa }}</option></select>
+          </div>
+          <div class="filter-item">
+            <span class="filter-label">Sub PA-1</span>
+            <select class="filter-select" v-model="filters.subpa1" :disabled="!filters.pa" @change="syncSubPa1"><option value="">全部</option><option v-for="s in subpa1Options" :key="s" :value="s">{{ s }}</option></select>
+          </div>
+          <div class="filter-item">
+            <span class="filter-label">Sub PA-2</span>
+            <select class="filter-select" v-model="filters.subpa2" :disabled="!filters.subpa1"><option value="">全部</option><option v-for="s in subpa2Options" :key="s" :value="s">{{ s }}</option></select>
+          </div>
+        </div>
+
+        <!-- Message -->
+        <div v-if="message.text" class="message-bar">
+          <span :class="message.type === 'success' ? 'message-success' : 'message-error'">{{ message.text }}</span>
+        </div>
       </div>
 
-      <!-- Data Table -->
-      <div class="table-section">
-        <div class="table-container">
-          <a-table
-            :columns="tableColumns"
-            :data-source="tableData"
-            :pagination="false"
-            :row-selection="rowSelection"
-            :scroll="{ x: 1600 }"
-            size="small"
-          >
-            <template #bodyCell="{ column, record, text }">
-              <template v-if="column.key === 'customer'">
-                <span class="customer-cell">{{ text }}</span>
-              </template>
-              <template v-else-if="column.key === 'company'">
-                <span class="company-cell">{{ text }}</span>
-              </template>
-              <template v-else-if="column.key === 'product'">
-                <span class="product-cell">
-                  <div>{{ record.pa }}</div>
-                  <div style="color: #9CA3AF; font-size: 10px;">{{ record.subPa }}</div>
-                </span>
-              </template>
-              <template v-else-if="column.dataIndex && isForecastCol(column.dataIndex)">
-                <a-input-number
-                  v-model:value="record[column.dataIndex]"
-                  :min="0"
-                  :precision="0"
-                  size="small"
-                  style="width: 72px;"
-                />
-              </template>
-              <template v-else-if="column.dataIndex && isInvoiceCol(column.dataIndex)">
-                <a-input-number
-                  v-model:value="record[column.dataIndex]"
-                  :min="0"
-                  :precision="0"
-                  size="small"
-                  style="width: 72px;"
-                />
-              </template>
-              <template v-else-if="column.key === 'action'">
-                <div class="action-cell">
-                  <a-button type="text" size="small" @click="editRow(record)">
-                    <template #icon><edit-outlined /></template>
-                    编辑
-                  </a-button>
-                  <a-button type="text" size="small" danger @click="deleteRow(record)">
-                    <template #icon><delete-outlined /></template>
-                    删除
-                  </a-button>
-                </div>
-              </template>
-            </template>
-          </a-table>
+      <!-- Forecast Table -->
+      <div class="card">
+        <div class="forecast-table-wrap">
+          <table class="forecast-table">
+            <thead>
+              <!-- Detail-view columns -->
+              <tr v-if="viewMode === 'detail'">
+                <th class="left">销售</th>
+                <th class="left">客户</th>
+                <th class="left">业绩归属</th>
+                <th class="left">开票公司</th>
+                <th class="left">销售大区</th>
+                <th class="left compact-hidden">PA</th>
+                <th class="left compact-hidden">Sub PA-1</th>
+                <th class="left compact-hidden">Sub PA-2</th>
+                <th v-for="m in currentMonths" :key="m" :colspan="6" class="month-colgroup-title">{{ getYearMonth(m, currentPeriod.yearMap) }}</th>
+                <th>操作</th>
+              </tr>
+              <!-- Compact-view columns -->
+              <tr v-if="viewMode === 'compact'">
+                <th class="left">客户</th>
+                <th class="left">业绩归属</th>
+                <th class="left compact-hidden">开票公司</th>
+                <th class="left">销售大区</th>
+                <th class="left">PA</th>
+                <th class="left">Sub PA-1</th>
+                <th class="left">Sub PA-2</th>
+                <th v-for="m in currentMonths" :key="m + '_c'" :colspan="6" class="month-colgroup-title">{{ getYearMonth(m, currentPeriod.yearMap) }}</th>
+                <th>操作</th>
+              </tr>
+              <!-- Sub-headers per month -->
+              <tr>
+                <template v-if="viewMode === 'detail'">
+                  <th></th><th></th><th></th><th></th><th></th>
+                  <th class="compact-hidden"></th><th class="compact-hidden"></th><th class="compact-hidden"></th>
+                </template>
+                <template v-if="viewMode === 'compact'">
+                  <th></th><th></th><th class="compact-hidden"></th><th></th><th></th><th></th><th></th>
+                </template>
+                <th v-for="m in currentMonths" :key="m + '_oq'" class="left">订单数量</th>
+                <th v-for="m in currentMonths" :key="m + '_oa'" class="left">订单金额</th>
+                <th v-for="m in currentMonths" :key="m + '_op'" class="left">订单单价</th>
+                <th v-for="m in currentMonths" :key="m + '_iq'" class="left">开票数量</th>
+                <th v-for="m in currentMonths" :key="m + '_ia'" class="left">开票金额</th>
+                <th v-for="m in currentMonths" :key="m + '_ip'" class="left">开票单价</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in filteredRows" :key="row.__id">
+                <!-- Detail view -->
+                <template v-if="viewMode === 'detail'">
+                  <td class="left">{{ row.sales }}</td>
+                  <td class="left">{{ row.customer }}</td>
+                  <td class="left">{{ row.performance }}</td>
+                  <td class="left compact-hidden">{{ row.invoice }}</td>
+                  <td class="left">{{ row.region }}</td>
+                  <td class="left compact-hidden">{{ row.pa }}</td>
+                  <td class="left compact-hidden">{{ row.subpa1 }}</td>
+                  <td class="left compact-hidden">{{ row.subpa2 }}</td>
+                  <td v-for="m in currentMonths" :key="m" class="editable"><input type="number" :value="getQty(row, m)" @change="setQty(row, m, $event)" placeholder="0"></td>
+                  <td v-for="m in currentMonths" :key="m + '_oq'">{{ orderAmt(row, m) }}</td>
+                  <td v-for="m in currentMonths" :key="m + '_op'">{{ orderPrice(row, m) }}</td>
+                  <td v-for="m in currentMonths" :key="m + '_iq'" class="editable"><input type="number" :value="getInv(row, m)" @change="setInv(row, m, $event)" placeholder="0"></td>
+                  <td v-for="m in currentMonths" :key="m + '_ia'">{{ invAmt(row, m) }}</td>
+                  <td v-for="m in currentMonths" :key="m + '_ip'">{{ invPrice(row, m) }}</td>
+                  <td><div class="row-actions"><button class="action-btn" @click="editRow(row)">✏️</button><button class="action-btn delete" @click="deleteRow(row)">🗑️</button></div></td>
+                </template>
+                <!-- Compact view -->
+                <template v-if="viewMode === 'compact'">
+                  <td class="left">{{ row.customer }}</td>
+                  <td class="left">{{ row.performance }}</td>
+                  <td class="left compact-hidden">{{ row.invoice }}</td>
+                  <td class="left">{{ row.region }}</td>
+                  <td class="left">{{ row.pa }}</td>
+                  <td class="left">{{ row.subpa1 }}</td>
+                  <td class="left">{{ row.subpa2 }}</td>
+                  <td v-for="m in currentMonths" :key="m" class="editable"><input type="number" :value="getQty(row, m)" @change="setQty(row, m, $event)" placeholder="0"></td>
+                  <td v-for="m in currentMonths" :key="m + '_oq'">{{ orderAmt(row, m) }}</td>
+                  <td v-for="m in currentMonths" :key="m + '_op'">{{ orderPrice(row, m) }}</td>
+                  <td v-for="m in currentMonths" :key="m + '_iq'" class="editable"><input type="number" :value="getInv(row, m)" @change="setInv(row, m, $event)" placeholder="0"></td>
+                  <td v-for="m in currentMonths" :key="m + '_ia'">{{ invAmt(row, m) }}</td>
+                  <td v-for="m in currentMonths" :key="m + '_ip'">{{ invPrice(row, m) }}</td>
+                  <td><div class="row-actions"><button class="action-btn" @click="editRow(row)">✏️</button><button class="action-btn delete" @click="deleteRow(row)">🗑️</button></div></td>
+                </template>
+              </tr>
+              <tr v-if="filteredRows.length === 0">
+                <td :colspan="viewMode === 'detail' ? 8 + currentMonths.length * 6 : 7 + currentMonths.length * 6">
+                  <div class="empty-state">
+                    <div class="empty-state-icon">📋</div>
+                    <p>暂无数据，请添加或上传预测数据</p>
+                    <button class="btn btn-primary btn-sm" @click="openAddRowDialog">+ 添加预测记录</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         <!-- Table Footer -->
         <div class="table-footer">
-          <div class="selection-info">
-            已选择 <strong>{{ selectedRowKeys.length }}</strong> 条记录
-            <span v-if="selectedRowKeys.length > 0" style="margin-left: 8px; color: #9CA3AF;">
-              (合计预测: {{ totalForecast }} | 合计实际: {{ totalInvoice }})
-            </span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 20px;">
-            <div class="footer-actions">
-              <a-button @click="saveDraft">保存草稿</a-button>
-              <a-button type="primary" @click="submitForApproval">提交审批</a-button>
-            </div>
-            <div class="pagination-wrapper">
-              <a-pagination
-                v-model:current="pagination.current"
-                v-model:pageSize="pagination.pageSize"
-                :total="pagination.total"
-                :show-size-changer="true"
-                :show-total="showTotal"
-                :page-size-options="['10', '20', '50', '100']"
-                @change="handlePageChange"
-              />
-            </div>
+          <span>共 {{ filteredRows.length }} 条记录，当前周期：<strong>{{ currentPeriod.period }}</strong></span>
+          <div class="pagination">
+            <button class="page-btn" :disabled="page <= 1" @click="page--">‹</button>
+            <button class="page-btn" v-for="p in totalPages" :key="p" :class="{ active: p === page }" @click="page = p">{{ p }}</button>
+            <button class="page-btn" :disabled="page >= totalPages" @click="page++">›</button>
           </div>
         </div>
       </div>
     </div>
+
+  </div><!-- /page-body -->
+
+  <!-- ═══ ADD ROW MODAL ═══ -->
+  <div v-if="showAddModal" class="modal-overlay" @click.self="showAddModal = false">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>添加预测记录</span>
+        <button class="modal-close" @click="showAddModal = false">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">客户<span class="required">*</span></label>
+            <select class="form-select" v-model="newRow.customer">
+              <option value="">请选择客户</option>
+              <option v-for="c in customerMaster" :key="c" :value="c">{{ c }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">开票公司<span class="required">*</span></label>
+            <select class="form-select" v-model="newRow.invoice" @change="onInvoiceChange">
+              <option value="">请选择开票公司</option>
+              <option v-for="inv in invoiceMaster" :key="inv.invoice" :value="inv.invoice">{{ inv.invoice }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">业绩归属</label>
+            <input class="form-input" v-model="newRow.performance" readonly placeholder="自动填充">
+          </div>
+          <div class="form-group">
+            <label class="form-label">销售大区</label>
+            <input class="form-input" v-model="newRow.region" readonly placeholder="自动填充">
+          </div>
+        </div>
+        <div class="form-row-3">
+          <div class="form-group">
+            <label class="form-label">PA产品线<span class="required">*</span></label>
+            <select class="form-select" v-model="newRow.pa" @change="onPaChange">
+              <option value="">请选择</option>
+              <option v-for="pa in paOptions" :key="pa" :value="pa">{{ pa }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sub PA-1</label>
+            <select class="form-select" v-model="newRow.subpa1" :disabled="!newRow.pa" @change="onSubpa1Change">
+              <option value="">请选择</option>
+              <option v-for="s in modalSubpa1Options" :key="s" :value="s">{{ s }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sub PA-2</label>
+            <select class="form-select" v-model="newRow.subpa2" :disabled="!newRow.subpa1">
+              <option value="">请选择</option>
+              <option v-for="s in modalSubpa2Options" :key="s" :value="s">{{ s }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row-3">
+          <div class="form-group" style="visibility:hidden;"><div class="form-label">占位</div></div>
+          <div class="form-group" style="visibility:hidden;"><div class="form-label">占位</div></div>
+          <div class="form-group" style="visibility:hidden;"><div class="form-label">占位</div></div>
+        </div>
+        <div>
+          <div class="form-label" style="margin-bottom:8px;">月度预测数据（订单数量 / 开票数量）</div>
+          <div class="month-inputs-grid">
+            <div class="month-input-group" v-for="m in currentMonths" :key="m">
+              <div class="month-input-label">{{ m }}</div>
+              <div class="month-input-row">
+                <input type="number" v-model="newRow[m + '_qty']" placeholder="订单数" min="0">
+                <span>/</span>
+                <input type="number" v-model="newRow[m + '_inv']" placeholder="开票数" min="0">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" @click="showAddModal = false">取消</button>
+        <button class="btn btn-primary" @click="saveAddRow">💾 保存</button>
+      </div>
+    </div>
   </div>
 
-  <script>
-    const { createApp, ref, computed, reactive } = Vue;
-    const { DownOutlined, DownloadOutlined, UploadOutlined, PlusOutlined, CopyOutlined, EditOutlined, DeleteOutlined, SearchOutlined } = antd.icons;
+  <!-- ═══ ADD PERIOD MODAL ═══ -->
+  <div v-if="showPeriodModal" class="modal-overlay" @click.self="showPeriodModal = false">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>{{ editingPeriod ? '编辑' : '新增' }}预测周期</span>
+        <button class="modal-close" @click="showPeriodModal = false">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">周期名称<span class="required">*</span></label>
+            <input class="form-input" v-model="periodForm.period" placeholder="如：2026FC1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">开放时间<span class="required">*</span></label>
+            <input class="form-input" v-model="periodForm.openTime" placeholder="如：2026-04-01 ~ 2026-04-12">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">包含月份</label>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;padding-top:4px;">
+              <label v-for="m in monthOrder" :key="m" style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;">
+                <input type="checkbox" :value="m" v-model="periodForm.months"> {{ m }}
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">状态</label>
+            <select class="form-select" v-model="periodForm.status">
+              <option value="open">开放中</option>
+              <option value="history">历史</option>
+              <option value="closed">已关闭</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" @click="showPeriodModal = false">取消</button>
+        <button class="btn btn-primary" @click="savePeriod">💾 保存</button>
+      </div>
+    </div>
+  </div>
 
-    const app = createApp({
-      setup() {
-        const fcVersion = ref('2026FC1');
-        const filterActiveKey = ref(['1']);
-        const selectedRowKeys = ref([]);
+</div>
 
-        const filters = reactive({
-          customer: '',
-          company: '',
-          attribution: '',
-          region: '',
-          pa: '',
-          subPa: ''
-        });
+<script>
+const { createApp, ref, computed } = Vue;
 
-        const customers = ['昆山智造', '无锡锐虎', '苏州精密', '上海重机', '宁波协力'];
-        const companies = ['苏州阿诺', '常熟阿诺', '无锡阿诺', '上海阿诺', '宁波阿诺'];
-        const attributions = ['华东区', '华南区', '华北区', '华中区', '西南区'];
-        const regions = ['东区', '南区', '北区', '西区'];
-        const paLines = ['Holemaking', 'Milling', 'Turning'];
-        const subPas = {
-          'Holemaking': ['钻头', '镗刀', '铰刀'],
-          'Milling': ['立铣刀', '面铣刀', '玉米铣刀'],
-          'Turning': ['车刀', '切槽刀', '螺纹刀']
-        };
+const app = createApp({
+  setup() {
+    // ── Views ──
+    const view = ref('periods'); // 'periods' | 'detail'
+    const viewMode = ref('compact'); // 'compact' | 'detail'
+    const currentRole = ref('销售');
+    const currentFlow = ref('草稿');
 
-        const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-        const monthLabels = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+    // ── Period List ──
+    const periodFilter = ref({ status: 'all', keyword: '' });
+    const showPeriodModal = ref(false);
+    const editingPeriod = ref(null);
+    const periodForm = ref({ period: '', openTime: '', months: [], status: 'open' });
 
-        const mockData = [
-          { key: '1', customer: '昆山智造', company: '苏州阿诺', pa: 'Holemaking', subPa: '钻头', status: 'draft', jan_fc: 1234, jan_inv: 1100, feb_fc: 1456, feb_inv: 1320, mar_fc: 1380, mar_inv: 1250, apr_fc: 1520, apr_inv: 1400, may_fc: 1600, may_inv: 1480, jun_fc: 1550, jun_inv: 1420, jul_fc: 1480, jul_inv: 1350, aug_fc: 1620, aug_inv: 1500, sep_fc: 1580, sep_inv: 1450, oct_fc: 1700, oct_inv: 1600, nov_fc: 1650, nov_inv: 1520, dec_fc: 1800, dec_inv: 1680 },
-          { key: '2', customer: '无锡锐虎', company: '常熟阿诺', pa: 'Milling', subPa: '立铣刀', status: 'draft', jan_fc: 890, jan_inv: 920, feb_fc: 1020, feb_inv: 980, mar_fc: 1100, mar_inv: 1050, apr_fc: 980, apr_inv: 940, may_fc: 1150, may_inv: 1100, jun_fc: 1200, jun_inv: 1150, jul_fc: 1080, jul_inv: 1020, aug_fc: 1250, aug_inv: 1200, sep_fc: 1180, sep_inv: 1120, oct_fc: 1300, oct_inv: 1250, nov_fc: 1350, nov_inv: 1280, dec_fc: 1400, dec_inv: 1320 },
-          { key: '3', customer: '苏州精密', company: '无锡阿诺', pa: 'Turning', subPa: '车刀', status: 'submitted', jan_fc: 2340, jan_inv: 2180, feb_fc: 2500, feb_inv: 2380, mar_fc: 2650, mar_inv: 2520, apr_fc: 2700, apr_inv: 2580, may_fc: 2800, may_inv: 2680, jun_fc: 2900, jun_inv: 2780, jul_fc: 2750, jul_inv: 2620, aug_fc: 3000, aug_inv: 2880, sep_fc: 2950, sep_inv: 2820, oct_fc: 3100, oct_inv: 2980, nov_fc: 3200, nov_inv: 3050, dec_fc: 3300, dec_inv: 3150 },
-          { key: '4', customer: '上海重机', company: '上海阿诺', pa: 'Holemaking', subPa: '镗刀', status: 'draft', jan_fc: 560, jan_inv: 520, feb_fc: 620, feb_inv: 580, mar_fc: 680, mar_inv: 640, apr_fc: 720, apr_inv: 680, may_fc: 750, may_inv: 700, jun_fc: 780, jun_inv: 740, jul_fc: 800, jul_inv: 760, aug_fc: 820, aug_inv: 780, sep_fc: 850, sep_inv: 800, oct_fc: 880, oct_inv: 840, nov_fc: 920, nov_inv: 870, dec_fc: 960, dec_inv: 910 },
-          { key: '5', customer: '宁波协力', company: '宁波阿诺', pa: 'Milling', subPa: '面铣刀', status: 'approved', jan_fc: 1780, jan_inv: 1680, feb_fc: 1920, feb_inv: 1820, mar_fc: 2050, mar_inv: 1950, apr_fc: 2100, apr_inv: 2000, may_fc: 2200, may_inv: 2100, jun_fc: 2300, jun_inv: 2200, jul_fc: 2250, jul_inv: 2150, aug_fc: 2350, aug_inv: 2250, sep_fc: 2400, sep_inv: 2300, oct_fc: 2500, oct_inv: 2400, nov_fc: 2580, nov_inv: 2480, dec_fc: 2700, dec_inv: 2580 },
-          { key: '6', customer: '昆山智造', company: '苏州阿诺', pa: 'Turning', subPa: '切槽刀', status: 'draft', jan_fc: 450, jan_inv: 420, feb_fc: 520, feb_inv: 480, mar_fc: 580, mar_inv: 540, apr_fc: 600, apr_inv: 560, may_fc: 650, may_inv: 600, jun_fc: 680, jun_inv: 640, jul_fc: 700, jul_inv: 660, aug_fc: 720, aug_inv: 680, sep_fc: 750, sep_inv: 710, oct_fc: 780, oct_inv: 740, nov_fc: 820, nov_inv: 780, dec_fc: 860, dec_inv: 820 },
-          { key: '7', customer: '无锡锐虎', company: '常熟阿诺', pa: 'Holemaking', subPa: '铰刀', status: 'draft', jan_fc: 320, jan_inv: 300, feb_fc: 380, feb_inv: 360, mar_fc: 420, mar_inv: 400, apr_fc: 450, apr_inv: 420, may_fc: 480, may_inv: 450, jun_fc: 520, jun_inv: 490, jul_fc: 540, jul_inv: 510, aug_fc: 560, aug_inv: 530, sep_fc: 600, sep_inv: 570, oct_fc: 620, oct_inv: 590, nov_fc: 660, nov_inv: 620, dec_fc: 700, dec_inv: 660 },
-          { key: '8', customer: '苏州精密', company: '无锡阿诺', pa: 'Milling', subPa: '玉米铣刀', status: 'submitted', jan_fc: 680, jan_inv: 640, feb_fc: 750, feb_inv: 710, mar_fc: 820, mar_inv: 780, apr_fc: 880, apr_inv: 840, may_fc: 920, may_inv: 870, jun_fc: 980, jun_inv: 930, jul_fc: 1020, jul_inv: 970, aug_fc: 1050, aug_inv: 1000, sep_fc: 1100, sep_inv: 1050, oct_fc: 1150, oct_inv: 1100, nov_fc: 1200, nov_inv: 1150, dec_fc: 1280, dec_inv: 1220 },
-          { key: '9', customer: '上海重机', company: '上海阿诺', pa: 'Turning', subPa: '螺纹刀', status: 'draft', jan_fc: 280, jan_inv: 260, feb_fc: 320, feb_inv: 300, mar_fc: 360, mar_inv: 340, apr_fc: 400, apr_inv: 380, may_fc: 420, may_inv: 400, jun_fc: 450, jun_inv: 420, jul_fc: 480, jul_inv: 450, aug_fc: 500, aug_inv: 470, sep_fc: 530, sep_inv: 500, oct_fc: 560, oct_inv: 530, nov_fc: 590, nov_inv: 560, dec_fc: 620, dec_inv: 590 },
-          { key: '10', customer: '宁波协力', company: '宁波阿诺', pa: 'Holemaking', subPa: '钻头', status: 'draft', jan_fc: 1100, jan_inv: 1020, feb_fc: 1250, feb_inv: 1180, mar_fc: 1380, mar_inv: 1300, apr_fc: 1450, apr_inv: 1380, may_fc: 1520, may_inv: 1450, jun_fc: 1600, jun_inv: 1520, jul_fc: 1680, jul_inv: 1600, aug_fc: 1750, aug_inv: 1680, sep_fc: 1820, sep_inv: 1750, oct_fc: 1900, oct_inv: 1820, nov_fc: 1980, nov_inv: 1900, dec_fc: 2100, dec_inv: 2000 }
-        ];
+    const periodRecords = ref([
+      { id: 'fcv_1', period: '2026FC1', openTime: '2026-04-01 ~ 2026-04-12', months: ['Jan', 'Feb', 'Mar', 'Apr'], salesStartMonth: '2026-01', salesEndMonth: '2026-04', status: 'open', approval: 'draft', yearMap: { 'Jan': '2026', 'Feb': '2026', 'Mar': '2026', 'Apr': '2026' } },
+      { id: 'fcv_2', period: '2026FC2', openTime: '2026-07-01 ~ 2026-07-15', months: ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'], salesStartMonth: '2026-07', salesEndMonth: '2027-03', status: 'open', approval: 'draft', yearMap: { 'Jul': '2026', 'Aug': '2026', 'Sep': '2026', 'Oct': '2026', 'Nov': '2026', 'Dec': '2026', 'Jan': '2027', 'Feb': '2027', 'Mar': '2027' } },
+      { id: 'fcv_3', period: '2025FC2', openTime: '2025-10-01 ~ 2025-10-15', months: ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], salesStartMonth: '2025-05', salesEndMonth: '2025-12', status: 'history', approval: 'approved', yearMap: { 'May': '2025', 'Jun': '2025', 'Jul': '2025', 'Aug': '2025', 'Sep': '2025', 'Oct': '2025', 'Nov': '2025', 'Dec': '2025' } },
+    ]);
 
-        const tableData = ref([...mockData]);
-
-        const baseColumns = [
-          { title: '客户名称', dataIndex: 'customer', key: 'customer', width: 130, fixed: 'left' },
-          { title: '开票公司', dataIndex: 'company', key: 'company', width: 120, fixed: 'left' },
-          { title: '产品线', key: 'product', width: 130, fixed: 'left' }
-        ];
-
-        const monthColumns = months.flatMap((m, i) => [
-          { title: monthLabels[i] + '预测', dataIndex: m + '_fc', key: m + '_fc', width: 80 },
-          { title: monthLabels[i] + '实际', dataIndex: m + '_inv', key: m + '_inv', width: 80 }
-        ]);
-
-        const actionColumn = [
-          { title: '操作', key: 'action', width: 140, fixed: 'right', align: 'center' }
-        ];
-
-        const tableColumns = [...baseColumns, ...monthColumns, ...actionColumn];
-
-        const pagination = reactive({
-          current: 1,
-          pageSize: 10,
-          total: 58
-        });
-
-        const rowSelection = reactive({
-          selectedRowKeys,
-          onChange: (keys) => {
-            selectedRowKeys.value = keys;
-          },
-          getCheckboxProps: (record) => ({
-            name: record.key
-          })
-        });
-
-        const collapseHeaderText = computed(() => {
-          const hasFilters = Object.values(filters).some(v => v && v !== '');
-          return hasFilters ? `筛选条件 (已启用)` : '筛选条件';
-        });
-
-        const isForecastCol = (col) => col.endsWith('_fc');
-        const isInvoiceCol = (col) => col.endsWith('_inv');
-
-        const totalForecast = computed(() => {
-          if (selectedRowKeys.value.length === 0) return 0;
-          const selected = tableData.value.filter(r => selectedRowKeys.value.includes(r.key));
-          return selected.reduce((sum, r) => {
-            return sum + months.reduce((s, m) => s + (r[m + '_fc'] || 0), 0);
-          }, 0).toLocaleString();
-        });
-
-        const totalInvoice = computed(() => {
-          if (selectedRowKeys.value.length === 0) return 0;
-          const selected = tableData.value.filter(r => selectedRowKeys.value.includes(r.key));
-          return selected.reduce((sum, r) => {
-            return sum + months.reduce((s, m) => s + (r[m + '_inv'] || 0), 0);
-          }, 0).toLocaleString();
-        });
-
-        const showTotal = (total, range) => `共 ${total} 条`;
-
-        const filterOption = (input, option) => {
-          return option.children?.[0]?.children?.toLowerCase().indexOf(input.toLowerCase()) >= 0;
-        };
-
-        const handleQuery = () => {
-          console.log('Query with filters:', filters);
-          antd.message.info('查询中...');
-        };
-
-        const handleReset = () => {
-          Object.keys(filters).forEach(key => filters[key] = '');
-          antd.message.success('筛选条件已重置');
-        };
-
-        const handlePageChange = (page, pageSize) => {
-          pagination.current = page;
-          pagination.pageSize = pageSize;
-          console.log('Page changed:', page, pageSize);
-        };
-
-        const downloadTemplate = () => {
-          antd.message.success('模板下载中...');
-        };
-
-        const batchUpload = () => {
-          antd.message.info('批量上传功能开发中');
-        };
-
-        const addSingle = () => {
-          antd.message.info('单笔添加功能开发中');
-        };
-
-        const copyLastPeriod = () => {
-          antd.message.success('已复制上期数据');
-        };
-
-        const saveDraft = () => {
-          antd.message.success('草稿保存成功');
-        };
-
-        const submitForApproval = () => {
-          if (selectedRowKeys.value.length === 0) {
-            antd.message.warning('请先选择要提交的数据');
-            return;
-          }
-          antd.modal.confirm({
-            title: '确认提交',
-            content: `确定要提交选中的 ${selectedRowKeys.value.length} 条记录吗？`,
-            onOk() {
-              antd.message.success('提交成功，审批流程已启动');
-            }
-          });
-        };
-
-        const editRow = (record) => {
-          antd.message.info(`编辑: ${record.customer} - ${record.pa}`);
-        };
-
-        const deleteRow = (record) => {
-          antd.modal.confirm({
-            title: '确认删除',
-            content: `确定要删除 ${record.customer} 的数据吗？`,
-            okText: '确定',
-            cancelText: '取消',
-            onOk() {
-              tableData.value = tableData.value.filter(r => r.key !== record.key);
-              antd.message.success('删除成功');
-            }
-          });
-        };
-
-        return {
-          fcVersion,
-          filterActiveKey,
-          filters,
-          customers,
-          companies,
-          attributions,
-          regions,
-          paLines,
-          subPas,
-          tableColumns,
-          tableData,
-          pagination,
-          rowSelection,
-          selectedRowKeys,
-          collapseHeaderText,
-          totalForecast,
-          totalInvoice,
-          showTotal,
-          isForecastCol,
-          isInvoiceCol,
-          filterOption,
-          handleQuery,
-          handleReset,
-          handlePageChange,
-          downloadTemplate,
-          batchUpload,
-          addSingle,
-          copyLastPeriod,
-          saveDraft,
-          submitForApproval,
-          editRow,
-          deleteRow
-        };
-      }
+    const filteredPeriods = computed(() => {
+      return periodRecords.value.filter(p => {
+        const matchStatus = periodFilter.value.status === 'all' || p.status === periodFilter.value.status;
+        const matchKw = !periodFilter.value.keyword || p.period.toLowerCase().includes(periodFilter.value.keyword.toLowerCase());
+        return matchStatus && matchKw;
+      });
     });
 
-    app.use(antd);
-    app.component('DownOutlined', DownOutlined);
-    app.component('DownloadOutlined', DownloadOutlined);
-    app.component('UploadOutlined', UploadOutlined);
-    app.component('PlusOutlined', PlusOutlined);
-    app.component('CopyOutlined', CopyOutlined);
-    app.component('EditOutlined', EditOutlined);
-    app.component('DeleteOutlined', DeleteOutlined);
-    app.component('SearchOutlined', SearchOutlined);
-    app.mount('#app');
-  </script>
+    const statusLabel = (s) => ({ open: '开放中', history: '历史', closed: '已关闭' }[s] || s);
+    const approvalStatusLabel = (a) => ({ draft: '草稿', submitted_director: '待区总审批', submitted_finance: '待财务审批', approved: '已完成', rejected: '已退回' }[a] || a);
+
+    const resetPeriodFilter = () => { periodFilter.value = { status: 'all', keyword: '' }; };
+
+    const openAddPeriodDialog = () => {
+      editingPeriod.value = null;
+      periodForm.value = { period: '', openTime: '', months: [], status: 'open' };
+      showPeriodModal.value = true;
+    };
+
+    const savePeriod = () => {
+      if (!periodForm.value.period) { alert('请填写周期名称'); return; }
+      if (editingPeriod.value) {
+        Object.assign(editingPeriod.value, periodForm.value);
+      } else {
+        periodRecords.value.push({ id: 'fcv_' + Date.now(), ...periodForm.value });
+      }
+      showPeriodModal.value = false;
+    };
+
+    const viewPeriodHistory = (p) => {
+      alert('历史查看：' + p.period + '\n(完整实现需要后端支持)');
+    };
+
+    // ── Forecast Detail ──
+    const currentPeriod = ref(periodRecords.value[0]);
+    const currentMonths = computed(() => currentPeriod.value?.months || []);
+
+    const selectPeriod = (p) => {
+      currentPeriod.value = p;
+      view.value = 'detail';
+      page.value = 1;
+    };
+
+    const backToPeriods = () => { view.value = 'periods'; };
+
+    const setViewMode = (m) => { viewMode.value = m; };
+
+    // ── Filters ──
+    const filters = ref({ customer: '', invoice: '', performance: '', region: '', pa: '', subpa1: '', subpa2: '' });
+
+    const resetFilters = () => {
+      filters.value = { customer: '', invoice: '', performance: '', region: '', pa: '', subpa1: '', subpa2: '' };
+    };
+
+    const runQuery = () => { page.value = 1; showMessage('查询完成', 'success'); };
+
+    // ── Master Data ──
+    const customerMaster = ['昆山智造装备有限公司','苏州精工模具科技','无锡锐虎机械制造','常州高精汽车零部件','宁波海越航空部件','嘉兴联成精密工业','上海博远自动化','重庆川虎机电','武汉华创数控','天津北辰重工','青岛远航船舶部件','东莞智鼎医疗器械','合肥新锐能源设备','深圳高维电子制造','成都天府轨道装备'];
+    const invoiceMaster = [
+      { invoice: '苏州阿诺医疗器械有限公司', performance: '苏州销售部', region: '苏州销售部' },
+      { invoice: '苏州阿诺医疗科技有限公司', performance: '东部销售大区-苏州', region: '东部销售大区' },
+      { invoice: '苏州百锐纳米科技有限公司', performance: '东部销售大区-杭州', region: '南部销售大区' },
+      { invoice: '常熟阿诺切削工具有限公司', performance: '南部销售大区-业务一组', region: '常熟阿诺' },
+      { invoice: '天津吉恒纳米科技有限公司', performance: '北部销售大区-北京', region: '苏州迈拓' },
+      { invoice: '广东吉恒纳米科技有限公司', performance: '西部销售大区-重庆', region: '新加坡阿诺' },
+      { invoice: '武汉阿诺精密工具有限公司', performance: '科而诺', region: '科而诺' },
+      { invoice: '合肥阿诺精密工具有限公司', performance: '苏州北部', region: '常熟万克' },
+      { invoice: '重庆阿诺威尔刀具有限公司', performance: '西部销售大区-重庆', region: '常熟刀克' },
+    ];
+    const monthOrder = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const monthKeyMap = { Jan:'jan',Feb:'feb',Mar:'mar',Apr:'apr',May:'may',Jun:'jun',Jul:'jul',Aug:'aug',Sep:'sep',Oct:'oct',Nov:'nov',Dec:'dec' };
+    const monthIndexMap = { Jan:1, Feb:2, Mar:3, Apr:4, May:5, Jun:6, Jul:7, Aug:8, Sep:9, Oct:10, Nov:11, Dec:12 };
+    const getYearMonth = (m, yearMap) => { return (yearMap[m] || '2026') + '/' + String(monthIndexMap[m] || 1).padStart(2, '0'); };
+
+    const productHierarchy = {
+      Holemaking: {
+        '整体硬质合金钻头': ['3xD', '5xD', '通用钢件', '不锈钢'],
+        '可转位钻头': ['钢件', '不锈钢'],
+        '铰刀': ['通孔', '盲孔'],
+      },
+      Milling: {
+        '方肩铣刀': ['标准', 'ME', 'MF'],
+        '圆刀片铣刀': ['粗加工', '精加工'],
+      },
+      Turning: {
+        '外圆车刀': ['钢件', '不锈钢'],
+      },
+      Threading: {
+        '螺纹刀片': ['内螺纹', '外螺纹'],
+      },
+      ToolingSystem: {
+        '刀柄': ['侧固', '增速'],
+      },
+    };
+
+    const paOptions = computed(() => Object.keys(productHierarchy));
+    const subpa1Options = computed(() => {
+      if (!filters.value.pa) return [];
+      return Object.keys(productHierarchy[filters.value.pa] || {});
+    });
+    const subpa2Options = computed(() => {
+      if (!filters.value.pa || !filters.value.subpa1) return [];
+      return productHierarchy[filters.value.pa]?.[filters.value.subpa1] || [];
+    });
+
+    const syncInvoiceDependent = () => {
+      const inv = invoiceMaster.find(i => i.invoice === filters.value.invoice);
+      if (inv) {
+        filters.value.performance = inv.performance;
+        filters.value.region = inv.region;
+      }
+    };
+    const syncPaFilter = () => { filters.value.subpa1 = ''; filters.value.subpa2 = ''; };
+    const syncSubPa1 = () => { filters.value.subpa2 = ''; };
+
+    // Cascading options for filter dropdowns
+    const filteredPerformance = computed(() => {
+      if (!filters.value.invoice) return [...new Set(invoiceMaster.map(i => i.performance))];
+      return [invoiceMaster.find(i => i.invoice === filters.value.invoice)?.performance].filter(Boolean);
+    });
+    const filteredRegions = computed(() => {
+      if (!filters.value.invoice) return [...new Set(invoiceMaster.map(i => i.region))];
+      return [invoiceMaster.find(i => i.invoice === filters.value.invoice)?.region].filter(Boolean);
+    });
+
+    // ── Forecast Data ──
+    let rowIdCounter = 100;
+    const forecastRows = ref([
+      makeRow('昆山智造装备有限公司', '张伟', '苏州销售部', '苏州阿诺医疗器械有限公司', '苏州销售部', 'Holemaking', '整体硬质合金钻头', '3xD'),
+      makeRow('苏州精工模具科技', '李娜', '东部销售大区-苏州', '苏州阿诺医疗科技有限公司', '东部销售大区', 'Milling', '方肩铣刀', 'ME'),
+      makeRow('无锡锐虎机械制造', '王强', '东部销售大区-杭州', '苏州百锐纳米科技有限公司', '南部销售大区', 'Holemaking', '整体硬质合金钻头', '5xD'),
+      makeRow('常州高精汽车零部件', '赵敏', '南部销售大区-业务一组', '常熟阿诺切削工具有限公司', '常熟阿诺', 'Turning', '外圆车刀', '钢件'),
+      makeRow('宁波海越航空部件', '孙磊', '北部销售大区-北京', '天津吉恒纳米科技有限公司', '苏州迈拓', 'Holemaking', '铰刀', '通孔'),
+      makeRow('嘉兴联成精密工业', '周婷', '西部销售大区-重庆', '广东吉恒纳米科技有限公司', '新加坡阿诺', 'Milling', '圆刀片铣刀', '粗加工'),
+      makeRow('上海博远自动化', '吴昊', '科而诺', '武汉阿诺精密工具有限公司', '科而诺', 'Holemaking', '可转位钻头', '钢件'),
+      makeRow('重庆川虎机电', '郑楠', '西部销售大区-重庆', '重庆阿诺威尔刀具有限公司', '常熟刀克', 'Threading', '螺纹刀片', '内螺纹'),
+      makeRow('武汉华创数控', '钱坤', '西部销售大区-重庆', '重庆阿诺威尔刀具有限公司', '常熟刀克', 'Holemaking', '整体硬质合金钻头', '不锈钢'),
+      makeRow('天津北辰重工', '冯宇', '苏州销售部', '苏州阿诺医疗器械有限公司', '苏州销售部', 'ToolingSystem', '刀柄', '侧固'),
+    ]);
+
+    function makeRow(customer, sales, performance, invoice, region, pa, subpa1, subpa2) {
+      const row = { __id: 'row_' + (rowIdCounter++), customer, sales, performance, invoice, region, pa, subpa1, subpa2 };
+      monthOrder.forEach(m => {
+        row[monthKeyMap[m] + '_qty'] = Math.floor(Math.random() * 200);
+        row[monthKeyMap[m] + '_inv'] = Math.floor(Math.random() * 150);
+      });
+      return row;
+    }
+
+    const filteredRows = computed(() => {
+      return forecastRows.value.filter(r => {
+        if (filters.value.customer && r.customer !== filters.value.customer) return false;
+        if (filters.value.invoice && r.invoice !== filters.value.invoice) return false;
+        if (filters.value.performance && r.performance !== filters.value.performance) return false;
+        if (filters.value.region && r.region !== filters.value.region) return false;
+        if (filters.value.pa && r.pa !== filters.value.pa) return false;
+        if (filters.value.subpa1 && r.subpa1 !== filters.value.subpa1) return false;
+        if (filters.value.subpa2 && r.subpa2 !== filters.value.subpa2) return false;
+        return true;
+      });
+    });
+
+    // Pagination
+    const page = ref(1);
+    const pageSize = 20;
+    const totalPages = computed(() => Math.max(1, Math.ceil(filteredRows.value.length / pageSize)));
+    const paginatedRows = computed(() => {
+      const start = (page.value - 1) * pageSize;
+      return filteredRows.value.slice(start, start + pageSize);
+    });
+
+    // Cell accessors
+    const getQty = (row, m) => row[monthKeyMap[m] + '_qty'] || 0;
+    const getInv = (row, m) => row[monthKeyMap[m] + '_inv'] || 0;
+    const setQty = (row, m, e) => { row[monthKeyMap[m] + '_qty'] = parseInt(e.target.value) || 0; };
+    const setInv = (row, m, e) => { row[monthKeyMap[m] + '_inv'] = parseInt(e.target.value) || 0; };
+    const orderPrice = (row, m) => { const q = getQty(row, m); return q > 0 ? Math.round(getInv(row, m) / q * 1000).toLocaleString() : '0'; };
+    const orderAmt = (row, m) => (getQty(row, m) * 120).toLocaleString();
+    const invPrice = (row, m) => { const q = getInv(row, m); return q > 0 ? Math.round(getQty(row, m) / q * 1000).toLocaleString() : '0'; };
+    const invAmt = (row, m) => (getInv(row, m) * 120).toLocaleString();
+
+    // Row operations
+    const deleteRow = (row) => {
+      const idx = forecastRows.value.findIndex(r => r.__id === row.__id);
+      if (idx >= 0) forecastRows.value.splice(idx, 1);
+      showMessage('已删除', 'success');
+    };
+    const editRow = (row) => { showMessage('编辑功能：' + row.customer, 'success'); };
+
+    // ── Add Row Modal ──
+    const showAddModal = ref(false);
+    const newRow = ref({ customer: '', invoice: '', performance: '', region: '', pa: '', subpa1: '', subpa2: '' });
+    const modalSubpa1Options = computed(() => !newRow.value.pa ? [] : Object.keys(productHierarchy[newRow.value.pa] || {}));
+    const modalSubpa2Options = computed(() => !newRow.value.pa || !newRow.value.subpa1 ? [] : productHierarchy[newRow.value.pa]?.[newRow.value.subpa1] || []);
+
+    const openAddRowDialog = () => {
+      newRow.value = { customer: '', invoice: '', performance: '', region: '', pa: '', subpa1: '', subpa2: '' };
+      showAddModal.value = true;
+    };
+
+    const onInvoiceChange = () => {
+      const inv = invoiceMaster.find(i => i.invoice === newRow.value.invoice);
+      if (inv) { newRow.value.performance = inv.performance; newRow.value.region = inv.region; }
+    };
+    const onPaChange = () => { newRow.value.subpa1 = ''; newRow.value.subpa2 = ''; };
+    const onSubpa1Change = () => { newRow.value.subpa2 = ''; };
+
+    const saveAddRow = () => {
+      if (!newRow.value.customer || !newRow.value.invoice || !newRow.value.pa) {
+        showMessage('请填写必填项', 'error'); return;
+      }
+      const row = { __id: 'row_' + (rowIdCounter++), ...newRow.value, sales: '张伟' };
+      forecastRows.value.push(row);
+      showAddModal.value = false;
+      showMessage('添加成功', 'success');
+    };
+
+    // ── Toolbar Actions ──
+    const message = ref({ text: '', type: '' });
+    const showMessage = (text, type) => {
+      message.value = { text, type };
+      setTimeout(() => { message.value.text = ''; }, 3000);
+    };
+
+    const downloadTemplate = () => {
+      const headers = ['customer','sales','performance','invoice','region','pa','subpa1','subpa2', ...currentMonths.value.flatMap(m => [m + '_qty', m + '_inv'])];
+      const csv = headers.join(',') + '\n';
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'forecast_template.csv'; a.click();
+      showMessage('模板已下载', 'success');
+    };
+
+    const downloadData = () => {
+      const rows = filteredRows.value;
+      if (rows.length === 0) { showMessage('无数据可下载', 'error'); return; }
+      const headers = ['客户','业绩归属','开票公司','销售大区','PA','Sub PA-1','Sub PA-2', ...currentMonths.value.flatMap(m => [m + '_qty', m + '_inv'])];
+      const csvLines = [headers.join(',')];
+      rows.forEach(r => {
+        const vals = [r.customer, r.performance, r.invoice, r.region, r.pa, r.subpa1, r.subpa2];
+        currentMonths.value.forEach(m => { vals.push(r[monthKeyMap[m] + '_qty'] || 0, r[monthKeyMap[m] + '_inv'] || 0); });
+        csvLines.push(vals.join(','));
+      });
+      const blob = new Blob([csvLines.join('\n')], { type: 'text/csv' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'forecast_data_' + currentPeriod.value.period + '.csv'; a.click();
+      showMessage('数据已下载，共 ' + rows.length + ' 条', 'success');
+    };
+
+    const uploadCsv = (e) => {
+      const file = e.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const lines = ev.target.result.trim().split('\n');
+        if (lines.length < 2) { showMessage('CSV 文件无数据', 'error'); return; }
+        showMessage('已上传 ' + (lines.length - 1) + ' 条记录', 'success');
+        e.target.value = '';
+      };
+      reader.readAsText(file);
+    };
+
+    const copyLastPeriod = () => {
+      showMessage('已复制上期数据到当前周期', 'success');
+    };
+
+    const saveDraft = () => { showMessage('草稿已保存', 'success'); };
+
+    const submitForApproval = () => {
+      if (filteredRows.value.length === 0) { showMessage('请先添加数据', 'error'); return; }
+      showMessage('已提交审批', 'success');
+    };
+
+    return {
+      view, viewMode, periodFilter, periodRecords, filteredPeriods,
+      statusLabel, approvalStatusLabel, resetPeriodFilter, openAddPeriodDialog, savePeriod,
+      viewPeriodHistory, showPeriodModal, editingPeriod, periodForm,
+      currentPeriod, currentMonths, selectPeriod, backToPeriods, setViewMode,
+      filters, resetFilters, runQuery,
+      customerMaster, invoiceMaster, monthOrder, monthKeyMap,
+      paOptions, subpa1Options, subpa2Options,
+      syncInvoiceDependent, syncPaFilter, syncSubPa1,
+      filteredPerformance, filteredRegions,
+      forecastRows, filteredRows, page, pageSize, totalPages,
+      getQty, getInv, setQty, setInv, orderPrice, orderAmt, invPrice, invAmt, getYearMonth,
+      deleteRow, editRow, showAddModal, newRow,
+      openAddRowDialog, onInvoiceChange, onPaChange, onSubpa1Change,
+      saveAddRow, modalSubpa1Options, modalSubpa2Options,
+      message, showMessage, downloadTemplate, downloadData, uploadCsv, copyLastPeriod, saveDraft, submitForApproval,
+      currentRole, currentFlow,
+    };
+  }
+});
+
+app.use(antd);
+app.mount('#app');
+</script>
 </body>
 </html>

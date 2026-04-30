@@ -345,10 +345,155 @@
     .detail-table .ant-table {
       font-size: 13px;
     }
+
+    /* Approval History Timeline */
+    .approval-history {
+      padding: 16px 24px;
+      background: #FAFBFC;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .history-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .timeline {
+      position: relative;
+      padding-left: 28px;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 9px;
+      top: 4px;
+      bottom: 4px;
+      width: 2px;
+      background: var(--border);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+
+    .timeline-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: -24px;
+      top: 2px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    .timeline-dot-draft { background: #E6F7FF; }
+    .timeline-dot-submit { background: #FFF7E6; }
+    .timeline-dot-director-approve { background: #F6FFED; }
+    .timeline-dot-director-reject { background: #FFF2F0; }
+    .timeline-dot-finance { background: #F6FFED; }
+    .timeline-dot-rejected { background: #FFF2F0; }
+
+    .timeline-content {
+      color: var(--text-primary);
+    }
+
+    .timeline-content .timeline-header {
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .timeline-content .timeline-person {
+      color: var(--sandvik-blue);
+    }
+
+    .timeline-content .timeline-time {
+      color: var(--text-secondary);
+      font-size: 12px;
+      margin-left: 8px;
+    }
+
+    .timeline-content .timeline-opinion {
+      margin-top: 4px;
+      padding: 8px 12px;
+      background: #fff;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    .timeline-content .timeline-opinion.rejected {
+      border-color: #FFCCC7;
+      background: #FFF2F0;
+      color: #CF1322;
+    }
+
+    /* Summary Tab Content */
+    .summary-section {
+      padding: 16px 0;
+    }
+
+    .summary-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+    }
+
+    .bd-layout { display: flex; flex: 1; overflow: hidden; }
+    .bd-sidebar { width: 220px; background: #fff; border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+    .bd-sidebar-header { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; background: #fafafa; }
+    .bd-nav { flex: 1; overflow-y: auto; padding: 8px 0; }
+    .nav-group { margin-bottom: 4px; }
+    .nav-group-title { padding: 8px 16px 4px; font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+    .nav-group-title:hover { color: var(--sandvik-blue); }
+    .nav-group-arrow { font-size: 10px; transition: transform 0.2s; }
+    .nav-group-arrow.open { transform: rotate(90deg); }
+    .nav-sub-items { overflow: hidden; }
+    .nav-sub-item { display: flex; align-items: center; gap: 8px; padding: 8px 16px 8px 24px; font-size: 13px; cursor: pointer; color: var(--text-primary); border-left: 3px solid transparent; transition: all 0.15s; }
+    .nav-sub-item:hover { background: #f0f4ff; border-left-color: #c0d0f0; }
+    .nav-sub-item.active { background: #e8f0fe; color: var(--sandvik-blue); border-left-color: var(--sandvik-blue); font-weight: 600; }
   </style>
 </head>
 <body>
   <div id="app">
+    <div class="bd-layout">
+      <!-- Left Sidebar -->
+      <div class="bd-sidebar">
+        <div class="bd-sidebar-header">📂 功能导航</div>
+        <div class="bd-nav">
+          <div v-for="group in navGroups" :key="group.name" class="nav-group">
+            <div class="nav-group-title" @click="toggleGroup(group.name)">
+              <span>{{ group.name }}</span>
+              <span class="nav-group-arrow" :class="{ open: openGroups.includes(group.name) }">▶</span>
+            </div>
+            <div class="nav-sub-items" v-show="openGroups.includes(group.name)">
+              <div v-for="item in group.items" :key="item.id"
+                   class="nav-sub-item"
+                   :class="{ active: currentGroup === group.name && currentModule === item.id }"
+                   @click="navigateTo(group.name, item.id)">
+                <span>{{ item.icon }} {{ item.name }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     <div class="page-wrapper">
 
       <!-- Page Header -->
@@ -413,6 +558,7 @@
                       <a-select-option value="all">全部</a-select-option>
                       <a-select-option value="李华东">李华东</a-select-option>
                       <a-select-option value="陈志远">陈志远</a-select-option>
+                      <a-select-option value="刘晓峰">刘晓峰</a-select-option>
                     </a-select>
                   </div>
                 </a-col>
@@ -425,6 +571,37 @@
                       <a-select-option value="李娜">李娜</a-select-option>
                       <a-select-option value="王强">王强</a-select-option>
                       <a-select-option value="赵敏">赵敏</a-select-option>
+                      <a-select-option value="周杰">周杰</a-select-option>
+                      <a-select-option value="吴婷">吴婷</a-select-option>
+                      <a-select-option value="郑强">郑强</a-select-option>
+                      <a-select-option value="孙悦">孙悦</a-select-option>
+                      <a-select-option value="马超">马超</a-select-option>
+                      <a-select-option value="朱琳">朱琳</a-select-option>
+                      <a-select-option value="胡磊">胡磊</a-select-option>
+                    </a-select>
+                  </div>
+                </a-col>
+                <a-col>
+                  <div class="filter-item">
+                    <span class="filter-label">业绩归属</span>
+                    <a-select v-model:value="filters.performance" class="filter-select" placeholder="请选择">
+                      <a-select-option value="all">全部</a-select-option>
+                      <a-select-option value="刀具">刀具</a-select-option>
+                      <a-select-option value="数控">数控</a-select-option>
+                      <a-select-option value="精密件">精密件</a-select-option>
+                      <a-select-option value="服务">服务</a-select-option>
+                    </a-select>
+                  </div>
+                </a-col>
+                <a-col>
+                  <div class="filter-item">
+                    <span class="filter-label">销售大区</span>
+                    <a-select v-model:value="filters.region" class="filter-select" placeholder="请选择">
+                      <a-select-option value="all">全部</a-select-option>
+                      <a-select-option value="华东区">华东区</a-select-option>
+                      <a-select-option value="华南区">华南区</a-select-option>
+                      <a-select-option value="华北区">华北区</a-select-option>
+                      <a-select-option value="西区">西区</a-select-option>
                     </a-select>
                   </div>
                 </a-col>
@@ -482,6 +659,14 @@
                     <span class="info-label">预测周期：</span>
                     <span class="info-value">{{ item.forecastPeriod }}</span>
                   </div>
+                  <div class="info-item">
+                    <span class="info-label">业绩归属：</span>
+                    <span class="info-value">{{ item.performance }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">销售大区：</span>
+                    <span class="info-value">{{ item.region }}</span>
+                  </div>
                 </div>
 
                 <div class="card-footer-row">
@@ -537,11 +722,48 @@
       <a-modal
         v-model:open="modal.visible"
         :title="modal.title"
-        width="900px"
+        width="960px"
         class="approval-modal"
         :footer="null"
         @cancel="modal.visible = false"
       >
+        <!-- Action Buttons Bar -->
+        <div style="padding: 12px 24px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <a-button @click="downloadApprovalData">数据下载</a-button>
+          <a-button @click="openAdjustDialog">调整</a-button>
+          <a-button style="background:#FF4D4F; border-color:#FF4D4F; color:#fff;" @click="openRejectDialog">退回</a-button>
+          <a-button @click="openHistoryDialog">审批历史</a-button>
+          <a-divider type="vertical" style="margin: 0 4px;" />
+          <a-button type="primary" style="background:var(--success); border-color:var(--success);" @click="approveCurrentItem">通过</a-button>
+        </div>
+
+        <!-- Approval History Timeline -->
+        <div class="approval-history" v-if="modal.currentItem && modal.currentItem.history">
+          <div class="history-title">📜 审批历史</div>
+          <div class="timeline">
+            <div
+              v-for="(step, index) in modal.currentItem.history"
+              :key="index"
+              class="timeline-item"
+            >
+              <div :class="['timeline-dot', step.dotClass]">
+                {{ step.emoji }}
+              </div>
+              <div class="timeline-content">
+                <div class="timeline-header">
+                  {{ step.label }}
+                  <span class="timeline-person">{{ step.person }}</span>
+                  <span class="timeline-time">{{ step.time }}</span>
+                </div>
+                <div v-if="step.opinion" :class="['timeline-opinion', step.rejected ? 'rejected' : '']">
+                  💬 审批意见：{{ step.opinion }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detail Tabs -->
         <a-tabs v-model:activeKey="modal.activeTab" class="detail-tabs">
           <a-tab-pane key="byCustomer" tab="按客户汇总">
             <a-table
@@ -553,10 +775,20 @@
               class="detail-table"
             />
           </a-tab-pane>
-          <a-tab-pane key="byProductLine" tab="按产品线汇总">
+          <a-tab-pane key="byPerformance" tab="按业绩归属汇总">
             <a-table
-              :columns="modal.columns.byProductLine"
-              :data-source="modal.data.byProductLine"
+              :columns="modal.columns.byPerformance"
+              :data-source="modal.data.byPerformance"
+              :pagination="{ pageSize: 10 }"
+              size="small"
+              bordered
+              class="detail-table"
+            />
+          </a-tab-pane>
+          <a-tab-pane key="byRegion" tab="按销售大区汇总">
+            <a-table
+              :columns="modal.columns.byRegion"
+              :data-source="modal.data.byRegion"
               :pagination="{ pageSize: 10 }"
               size="small"
               bordered
@@ -592,6 +824,58 @@
         />
       </a-modal>
 
+      <!-- Adjustment Dialog -->
+      <a-modal
+        v-model:open="showAdjustDialog"
+        title="调整数据并退回"
+        @ok="submitAdjustment"
+        ok-text="提交并退回"
+        cancel-text="取消"
+      >
+        <a-form layout="vertical" style="padding-top: 16px;">
+          <a-form-item label="调整订单总金额为">
+            <a-input-number v-model:value="adjustForm.orderAmt" :min="0" style="width: 100%;" placeholder="请输入订单总金额" />
+          </a-form-item>
+          <a-form-item label="调整订单总数量为">
+            <a-input-number v-model:value="adjustForm.orderQty" :min="0" style="width: 100%;" placeholder="请输入订单总数量" />
+          </a-form-item>
+          <a-form-item label="调整开票总金额为">
+            <a-input-number v-model:value="adjustForm.invoiceAmt" :min="0" style="width: 100%;" placeholder="请输入开票总金额" />
+          </a-form-item>
+          <a-form-item label="调整开票总数量为">
+            <a-input-number v-model:value="adjustForm.invoiceQty" :min="0" style="width: 100%;" placeholder="请输入开票总数量" />
+          </a-form-item>
+          <a-form-item label="调整备注说明">
+            <a-textarea v-model:value="adjustForm.remark" :rows="3" placeholder="请输入调整备注说明" />
+          </a-form-item>
+        </a-form>
+      </a-modal>
+
+      <!-- History Dialog -->
+      <a-modal
+        v-model:open="showHistoryDialog"
+        title="审批历史"
+        :footer="null"
+        width="600px"
+      >
+        <a-table
+          :columns="historyColumns"
+          :data-source="historyData"
+          :pagination="false"
+          size="small"
+          bordered
+          style="margin-top: 16px;"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'result'">
+              <a-tag :color="record.result === '通过' ? 'green' : record.result === '待审批' ? 'orange' : 'red'">
+                {{ record.result }}
+              </a-tag>
+            </template>
+          </template>
+        </a-table>
+      </a-modal>
+
     </div>
   </div>
 
@@ -614,6 +898,8 @@
           fcVersion: 'all',
           director: 'all',
           salesperson: 'all',
+          performance: 'all',
+          region: 'all',
         });
 
         const pagination = reactive({
@@ -621,6 +907,8 @@
           pageSize: 5,
         });
 
+        // 3 directors: 李华东, 陈志远, 刘晓峰
+        // 12 sales people grouped under directors
         const mockData = ref([
           {
             id: 1,
@@ -634,6 +922,12 @@
             forecastPeriod: '2026-Q3',
             submitTime: '2026-04-25 14:30',
             status: 'pending',
+            performance: '刀具',
+            region: '华东区',
+            history: [
+              { label: '草稿创建', person: '张伟', time: '2026-04-25 10:00', emoji: '📝', dotClass: 'timeline-dot-draft' },
+              { label: '提交区总审批', person: '张伟', time: '2026-04-25 14:30', emoji: '📤', dotClass: 'timeline-dot-submit' },
+            ],
           },
           {
             id: 2,
@@ -647,6 +941,12 @@
             forecastPeriod: '2026-Q3',
             submitTime: '2026-04-24 09:15',
             status: 'pending',
+            performance: '数控',
+            region: '华南区',
+            history: [
+              { label: '草稿创建', person: '李娜', time: '2026-04-24 08:00', emoji: '📝', dotClass: 'timeline-dot-draft' },
+              { label: '提交区总审批', person: '李娜', time: '2026-04-24 09:15', emoji: '📤', dotClass: 'timeline-dot-submit' },
+            ],
           },
           {
             id: 3,
@@ -660,6 +960,12 @@
             forecastPeriod: '2026-Q4',
             submitTime: '2026-04-23 16:45',
             status: 'pending',
+            performance: '精密件',
+            region: '华东区',
+            history: [
+              { label: '草稿创建', person: '王强', time: '2026-04-23 14:00', emoji: '📝', dotClass: 'timeline-dot-draft' },
+              { label: '提交区总审批', person: '王强', time: '2026-04-23 16:45', emoji: '📤', dotClass: 'timeline-dot-submit' },
+            ],
           },
           {
             id: 4,
@@ -673,6 +979,15 @@
             forecastPeriod: '2026-Q3',
             submitTime: '2026-04-22 11:20',
             status: 'approved',
+            performance: '刀具',
+            region: '西区',
+            history: [
+              { label: '草稿创建', person: '赵敏', time: '2026-04-22 09:00', emoji: '📝', dotClass: 'timeline-dot-draft' },
+              { label: '提交区总审批', person: '赵敏', time: '2026-04-22 11:20', emoji: '📤', dotClass: 'timeline-dot-submit' },
+              { label: '区总审批通过', person: '陈志远', time: '2026-04-22 15:30', emoji: '✅', dotClass: 'timeline-dot-director-approve', opinion: '数据准确，同意通过' },
+              { label: '提交财务审批', person: '陈志远', time: '2026-04-22 15:35', emoji: '📤', dotClass: 'timeline-dot-submit' },
+              { label: '财务审批通过', person: '财务部', time: '2026-04-23 09:00', emoji: '✅', dotClass: 'timeline-dot-finance', opinion: '审核通过' },
+            ],
           },
           {
             id: 5,
@@ -686,6 +1001,12 @@
             forecastPeriod: '2026-Q4',
             submitTime: '2026-04-21 08:30',
             status: 'pending',
+            performance: '服务',
+            region: '华东区',
+            history: [
+              { label: '草稿创建', person: '张伟', time: '2026-04-21 07:00', emoji: '📝', dotClass: 'timeline-dot-draft' },
+              { label: '提交区总审批', person: '张伟', time: '2026-04-21 08:30', emoji: '📤', dotClass: 'timeline-dot-submit' },
+            ],
           },
           {
             id: 6,
@@ -695,10 +1016,58 @@
             billingCompany: '苏州阿诺',
             orderQty: 2100,
             orderAmount: 567890,
-            director: '李华东',
+            director: '刘晓峰',
             forecastPeriod: '2026-Q3',
             submitTime: '2026-04-20 15:00',
             status: 'rejected',
+            performance: '刀具',
+            region: '华北区',
+            history: [
+              { label: '草稿创建', person: '李娜', time: '2026-04-20 12:00', emoji: '📝', dotClass: 'timeline-dot-draft' },
+              { label: '提交区总审批', person: '李娜', time: '2026-04-20 15:00', emoji: '📤', dotClass: 'timeline-dot-submit' },
+              { label: '区总审批拒绝', person: '刘晓峰', time: '2026-04-20 17:00', emoji: '❌', dotClass: 'timeline-dot-director-reject', opinion: '数据与实际情况不符，请核实后重新提交', rejected: true },
+            ],
+          },
+          {
+            id: 7,
+            fcVersion: '2026FC2',
+            submitter: '周杰',
+            customer: '武汉光电子',
+            billingCompany: '无锡汉高',
+            orderQty: 3800,
+            orderAmount: 987000,
+            director: '刘晓峰',
+            forecastPeriod: '2026-Q4',
+            submitTime: '2026-04-19 10:30',
+            status: 'approved',
+            performance: '数控',
+            region: '华北区',
+            history: [
+              { label: '草稿创建', person: '周杰', time: '2026-04-19 08:00', emoji: '📝', dotClass: 'timeline-dot-draft' },
+              { label: '提交区总审批', person: '周杰', time: '2026-04-19 10:30', emoji: '📤', dotClass: 'timeline-dot-submit' },
+              { label: '区总审批通过', person: '刘晓峰', time: '2026-04-19 14:00', emoji: '✅', dotClass: 'timeline-dot-director-approve', opinion: '同意' },
+              { label: '提交财务审批', person: '刘晓峰', time: '2026-04-19 14:05', emoji: '📤', dotClass: 'timeline-dot-submit' },
+              { label: '财务审批通过', person: '财务部', time: '2026-04-20 09:30', emoji: '✅', dotClass: 'timeline-dot-finance', opinion: '数据核对无误' },
+            ],
+          },
+          {
+            id: 8,
+            fcVersion: '2026FC1',
+            submitter: '吴婷',
+            customer: '广州汽配',
+            billingCompany: '上海戴科尔',
+            orderQty: 5100,
+            orderAmount: 1456000,
+            director: '陈志远',
+            forecastPeriod: '2026-Q3',
+            submitTime: '2026-04-18 14:20',
+            status: 'pending',
+            performance: '精密件',
+            region: '华南区',
+            history: [
+              { label: '草稿创建', person: '吴婷', time: '2026-04-18 11:00', emoji: '📝', dotClass: 'timeline-dot-draft' },
+              { label: '提交区总审批', person: '吴婷', time: '2026-04-18 14:20', emoji: '📤', dotClass: 'timeline-dot-submit' },
+            ],
           },
         ]);
 
@@ -709,6 +1078,13 @@
             if (activeTab.value === 'approved') return item.status === 'approved';
             if (activeTab.value === 'rejected') return item.status === 'rejected';
             if (activeTab.value === 'completed') return item.status === 'completed' || item.status === 'approved';
+            return true;
+          }).filter(item => {
+            if (filters.fcVersion !== 'all' && item.fcVersion !== filters.fcVersion) return false;
+            if (filters.director !== 'all' && item.director !== filters.director) return false;
+            if (filters.salesperson !== 'all' && item.submitter !== filters.salesperson) return false;
+            if (filters.performance !== 'all' && item.performance !== filters.performance) return false;
+            if (filters.region !== 'all' && item.region !== filters.region) return false;
             return true;
           });
         });
@@ -725,46 +1101,69 @@
           currentItem: null,
           columns: {
             byCustomer: [
-              { title: '客户名称', dataIndex: 'customer', key: 'customer' },
-              { title: '产品线', dataIndex: 'productLine', key: 'productLine' },
-              { title: '预测数量', dataIndex: 'qty', key: 'qty', align: 'right' },
-              { title: '预测金额 (¥)', dataIndex: 'amount', key: 'amount', align: 'right' },
+              // 维度列
+              { title: '客户名称', dataIndex: 'customer', key: 'customer', width: 160 },
+              // 汇总列（跨所有月份总计）
+              { title: '订单数量汇总', dataIndex: 'totalOrderQty', key: 'totalOrderQty', align: 'right', width: 95 },
+              { title: '订单金额汇总', dataIndex: 'totalOrderAmount', key: 'totalOrderAmount', align: 'right', width: 110 },
+              { title: '开票数量汇总', dataIndex: 'totalInvoiceQty', key: 'totalInvoiceQty', align: 'right', width: 95 },
+              { title: '开票金额汇总', dataIndex: 'totalInvoiceAmount', key: 'totalInvoiceAmount', align: 'right', width: 110 },
             ],
-            byProductLine: [
-              { title: '产品线', dataIndex: 'productLine', key: 'productLine' },
-              { title: '客户数', dataIndex: 'customerCount', key: 'customerCount', align: 'right' },
-              { title: '预测数量', dataIndex: 'qty', key: 'qty', align: 'right' },
-              { title: '预测金额 (¥)', dataIndex: 'amount', key: 'amount', align: 'right' },
-              { title: '占比', dataIndex: 'ratio', key: 'ratio', align: 'right' },
+            byPerformance: [
+              { title: '业绩归属', dataIndex: 'performance', key: 'performance', width: 160 },
+              { title: '客户数', dataIndex: 'customerCount', key: 'customerCount', align: 'right', width: 70 },
+              { title: '订单数量汇总', dataIndex: 'totalOrderQty', key: 'totalOrderQty', align: 'right', width: 95 },
+              { title: '订单金额汇总', dataIndex: 'totalOrderAmount', key: 'totalOrderAmount', align: 'right', width: 110 },
+              { title: '开票数量汇总', dataIndex: 'totalInvoiceQty', key: 'totalInvoiceQty', align: 'right', width: 95 },
+              { title: '开票金额汇总', dataIndex: 'totalInvoiceAmount', key: 'totalInvoiceAmount', align: 'right', width: 110 },
+            ],
+            byRegion: [
+              { title: '销售大区', dataIndex: 'region', key: 'region', width: 160 },
+              { title: '客户数', dataIndex: 'customerCount', key: 'customerCount', align: 'right', width: 70 },
+              { title: '订单数量汇总', dataIndex: 'totalOrderQty', key: 'totalOrderQty', align: 'right', width: 95 },
+              { title: '订单金额汇总', dataIndex: 'totalOrderAmount', key: 'totalOrderAmount', align: 'right', width: 110 },
+              { title: '开票数量汇总', dataIndex: 'totalInvoiceQty', key: 'totalInvoiceQty', align: 'right', width: 95 },
+              { title: '开票金额汇总', dataIndex: 'totalInvoiceAmount', key: 'totalInvoiceAmount', align: 'right', width: 110 },
             ],
             detail: [
-              { title: '客户', dataIndex: 'customer', key: 'customer', width: 120 },
-              { title: '产品', dataIndex: 'product', key: 'product' },
-              { title: '规格型号', dataIndex: 'spec', key: 'spec', width: 100 },
-              { title: 'Q3预测', dataIndex: 'q3', key: 'q3', align: 'right', width: 80 },
-              { title: 'Q4预测', dataIndex: 'q4', key: 'q4', align: 'right', width: 80 },
-              { title: 'Q1预测(2027)', dataIndex: 'q1next', key: 'q1next', align: 'right', width: 90 },
-              { title: 'Q2预测(2027)', dataIndex: 'q2next', key: 'q2next', align: 'right', width: 90 },
-              { title: '金额 (¥)', dataIndex: 'amount', key: 'amount', align: 'right', width: 110 },
+              // 固定维度列（6列）
+              { title: '客户', dataIndex: 'customer', key: 'customer', width: 140, fixed: 'left' },
+              { title: '业绩归属', dataIndex: 'performance', key: 'performance', width: 120 },
+              { title: '销售大区', dataIndex: 'region', key: 'region', width: 110 },
+              { title: 'PA', dataIndex: 'pa', key: 'pa', width: 90 },
+              { title: 'Sub PA-1', dataIndex: 'subpa1', key: 'subpa1', width: 110 },
+              { title: 'Sub PA-2', dataIndex: 'subpa2', key: 'subpa2', width: 80 },
+              // 汇总列（4列）— 跨所有月份的总计
+              { title: '订单数量汇总', dataIndex: 'totalOrderQty', key: 'totalOrderQty', align: 'right', width: 95 },
+              { title: '订单金额汇总', dataIndex: 'totalOrderAmount', key: 'totalOrderAmount', align: 'right', width: 110 },
+              { title: '开票数量汇总', dataIndex: 'totalInvoiceQty', key: 'totalInvoiceQty', align: 'right', width: 95 },
+              { title: '开票金额汇总', dataIndex: 'totalInvoiceAmount', key: 'totalInvoiceAmount', align: 'right', width: 110 },
             ],
           },
           data: {
             byCustomer: [
-              { customer: '昆山智造', productLine: '刀具', qty: 5234, amount: 1234567 },
-              { customer: '昆山智造', productLine: '数控', qty: 1200, amount: 456000 },
+              { customer: '昆山智造装备有限公司', totalOrderQty: 5234, totalOrderAmount: 1234567, totalInvoiceQty: 4100, totalInvoiceAmount: 986000 },
+              { customer: '苏州精工模具科技', totalOrderQty: 3200, totalOrderAmount: 876000, totalInvoiceQty: 2800, totalInvoiceAmount: 765000 },
+              { customer: '无锡锐虎机械制造', totalOrderQty: 2100, totalOrderAmount: 654000, totalInvoiceQty: 1800, totalInvoiceAmount: 543000 },
+              { customer: '常州高精汽车零部件', totalOrderQty: 4500, totalOrderAmount: 2345000, totalInvoiceQty: 3900, totalInvoiceAmount: 1987000 },
             ],
-            byProductLine: [
-              { productLine: '刀具', customerCount: 12, qty: 25000, amount: 8900000, ratio: '45%' },
-              { productLine: '数控', customerCount: 8, qty: 12000, amount: 5600000, ratio: '28%' },
-              { productLine: '精密件', customerCount: 6, qty: 8000, amount: 3200000, ratio: '16%' },
-              { productLine: '服务', customerCount: 15, qty: 0, amount: 2100000, ratio: '11%' },
+            byPerformance: [
+              { performance: '苏州销售部', customerCount: 4, totalOrderQty: 12000, totalOrderAmount: 4560000, totalInvoiceQty: 9800, totalInvoiceAmount: 3780000 },
+              { performance: '东部销售大区-苏州', customerCount: 3, totalOrderQty: 8500, totalOrderAmount: 3120000, totalInvoiceQty: 7200, totalInvoiceAmount: 2650000 },
+              { performance: '南部销售大区-业务一组', customerCount: 3, totalOrderQty: 9800, totalOrderAmount: 4200000, totalInvoiceQty: 8100, totalInvoiceAmount: 3560000 },
+            ],
+            byRegion: [
+              { region: '苏州销售部', customerCount: 4, totalOrderQty: 12000, totalOrderAmount: 4560000, totalInvoiceQty: 9800, totalInvoiceAmount: 3780000 },
+              { region: '东部销售大区', customerCount: 3, totalOrderQty: 8500, totalOrderAmount: 3120000, totalInvoiceQty: 7200, totalInvoiceAmount: 2650000 },
+              { region: '南部销售大区', customerCount: 3, totalOrderQty: 9800, totalOrderAmount: 4200000, totalInvoiceQty: 8100, totalInvoiceAmount: 3560000 },
+              { region: '北部销售大区', customerCount: 2, totalOrderQty: 5600, totalOrderAmount: 1980000, totalInvoiceQty: 4600, totalInvoiceAmount: 1650000 },
             ],
             detail: [
-              { customer: '昆山智造', product: '铣刀片', spec: 'APKT1604', q3: 2000, q4: 1800, q1next: 2200, q2next: 2400, amount: 520000 },
-              { customer: '昆山智造', product: '钻头套装', spec: 'DSS-8-30', q3: 1500, q4: 1400, q1next: 1600, q2next: 1700, amount: 380000 },
-              { customer: '昆山智造', product: '刀柄', spec: 'BT50-32', q3: 1000, q4: 900, q1next: 1000, q2next: 1100, amount: 334567 },
-              { customer: '深圳精密', product: '铣刀片', spec: 'SEKT1204', q3: 3500, q4: 3200, q1next: 3800, q2next: 4000, amount: 780000 },
-              { customer: '深圳精密', product: '丝锥', spec: 'M6-M20', q3: 2200, q4: 2000, q1next: 2400, q2next: 2600, amount: 456000 },
+              { customer: '昆山智造装备有限公司', performance: '苏州销售部', region: '苏州销售部', pa: 'Holemaking', subpa1: '整体硬质合金钻头', subpa2: '3xD', totalOrderQty: 5234, totalOrderAmount: 1234567, totalInvoiceQty: 4100, totalInvoiceAmount: 986000 },
+              { customer: '苏州精工模具科技', performance: '东部销售大区-苏州', region: '东部销售大区', pa: 'Milling', subpa1: '方肩铣刀', subpa2: 'ME', totalOrderQty: 3200, totalOrderAmount: 876000, totalInvoiceQty: 2800, totalInvoiceAmount: 765000 },
+              { customer: '无锡锐虎机械制造', performance: '东部销售大区-杭州', region: '南部销售大区', pa: 'Holemaking', subpa1: '整体硬质合金钻头', subpa2: '5xD', totalOrderQty: 2100, totalOrderAmount: 654000, totalInvoiceQty: 1800, totalInvoiceAmount: 543000 },
+              { customer: '常州高精汽车零部件', performance: '南部销售大区-业务一组', region: '常熟阿诺', pa: 'Turning', subpa1: '外圆车刀', subpa2: '钢件', totalOrderQty: 4500, totalOrderAmount: 2345000, totalInvoiceQty: 3900, totalInvoiceAmount: 1987000 },
+              { customer: '宁波海越航空部件', performance: '北部销售大区-北京', region: '苏州迈拓', pa: 'Holemaking', subpa1: '铰刀', subpa2: '通孔', totalOrderQty: 1800, totalOrderAmount: 567000, totalInvoiceQty: 1500, totalInvoiceAmount: 476000 },
             ],
           },
         });
@@ -774,6 +1173,25 @@
           reason: '',
           currentItem: null,
         });
+
+        const showAdjustDialog = ref(false);
+        const showHistoryDialog = ref(false);
+        const currentApprovalItem = ref(null);
+        const adjustForm = ref({ orderAmt: 0, orderQty: 0, invoiceAmt: 0, invoiceQty: 0, remark: '' });
+
+        const historyColumns = [
+          { title: '节点', dataIndex: 'node', key: 'node' },
+          { title: '审批人', dataIndex: 'person', key: 'person' },
+          { title: '时间', dataIndex: 'time', key: 'time' },
+          { title: '意见', dataIndex: 'opinion', key: 'opinion' },
+          { title: '结果', dataIndex: 'result', key: 'result' },
+        ];
+
+        const historyData = ref([
+          { node: '销售提交', person: '张伟', time: '2026-04-20 14:30', opinion: '提交预报数据', result: '通过' },
+          { node: '区域总监审批', person: '李华东', time: '2026-04-21 09:15', opinion: '同意', result: '通过' },
+          { node: '财务审批', person: '-', time: '-', opinion: '-', result: '待审批' },
+        ]);
 
         function getStatusClass(status) {
           if (status === 'pending') return 'tag-pending';
@@ -813,18 +1231,59 @@
           filters.fcVersion = 'all';
           filters.director = 'all';
           filters.salesperson = 'all';
+          filters.performance = 'all';
+          filters.region = 'all';
           pagination.current = 1;
         }
 
         function openDetail(item) {
           modal.title = `${item.fcVersion} - ${item.submitter} 预测明细`;
           modal.currentItem = item;
+          currentApprovalItem.value = item;
           modal.activeTab = 'byCustomer';
           modal.visible = true;
         }
 
         function approveItem(item) {
-          item.status = 'approved';
+          // Simulate approval flow
+          const now = new Date();
+          const timeStr = now.getFullYear() + '-' + 
+            String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+            String(now.getDate()).padStart(2, '0') + ' ' + 
+            String(now.getHours()).padStart(2, '0') + ':' + 
+            String(now.getMinutes()).padStart(2, '0');
+          
+          if (item.status === 'pending') {
+            // Add director approval to history
+            if (!item.history) item.history = [];
+            item.history.push({
+              label: '区总审批通过',
+              person: item.director,
+              time: timeStr,
+              emoji: '✅',
+              dotClass: 'timeline-dot-director-approve',
+              opinion: '同意'
+            });
+            item.history.push({
+              label: '提交财务审批',
+              person: item.director,
+              time: timeStr,
+              emoji: '📤',
+              dotClass: 'timeline-dot-submit'
+            });
+            item.status = 'submitted_finance';
+          } else if (item.status === 'submitted_finance') {
+            item.history.push({
+              label: '财务审批通过',
+              person: '财务部',
+              time: timeStr,
+              emoji: '✅',
+              dotClass: 'timeline-dot-finance',
+              opinion: '审核通过'
+            });
+            item.status = 'approved';
+          }
+          
           antd.message.success(`${item.fcVersion} - ${item.submitter} 预测已通过`);
           updateCounts();
         }
@@ -841,6 +1300,38 @@
             return;
           }
           const item = rejectModal.currentItem;
+          const now = new Date();
+          const timeStr = now.getFullYear() + '-' + 
+            String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+            String(now.getDate()).padStart(2, '0') + ' ' + 
+            String(now.getHours()).padStart(2, '0') + ':' + 
+            String(now.getMinutes()).padStart(2, '0');
+          
+          if (!item.history) item.history = [];
+          
+          // Determine who is rejecting based on status
+          if (item.status === 'pending') {
+            item.history.push({
+              label: '区总审批拒绝',
+              person: item.director,
+              time: timeStr,
+              emoji: '❌',
+              dotClass: 'timeline-dot-director-reject',
+              opinion: rejectModal.reason,
+              rejected: true
+            });
+          } else if (item.status === 'submitted_finance') {
+            item.history.push({
+              label: '财务审批拒绝',
+              person: '财务部',
+              time: timeStr,
+              emoji: '❌',
+              dotClass: 'timeline-dot-rejected',
+              opinion: rejectModal.reason,
+              rejected: true
+            });
+          }
+          
           item.status = 'rejected';
           rejectModal.visible = false;
           antd.message.success(`${item.fcVersion} - ${item.submitter} 预测已退回`);
@@ -851,10 +1342,119 @@
           const all = mockData.value;
           counts.value.all = all.length;
           counts.value.pending = all.filter(i => i.status === 'pending').length;
-          counts.value.approved = all.filter(i => i.status === 'approved').length;
+          counts.value.approved = all.filter(i => i.status === 'approved' || i.status === 'submitted_finance').length;
           counts.value.rejected = all.filter(i => i.status === 'rejected').length;
           counts.value.completed = all.filter(i => i.status === 'completed' || i.status === 'approved').length;
         }
+
+        function downloadApprovalData() {
+          const item = modal.currentItem || currentApprovalItem.value;
+          if (!item) return;
+          const headers = ['客户', '订单数量', '订单金额', '区域总监', '预测周期', '业绩归属', '销售大区', '状态'];
+          const rows = [[item.customer, item.orderQty, item.orderAmount, item.director, item.forecastPeriod, item.performance, item.region, getStatusText(item.status)]];
+          const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+          const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${item.fcVersion}_${item.submitter}_审批数据.csv`;
+          link.click();
+          URL.revokeObjectURL(url);
+          antd.message.success('数据下载成功');
+        }
+
+        function openAdjustDialog() {
+          const item = modal.currentItem || currentApprovalItem.value;
+          if (!item) return;
+          adjustForm.value = {
+            orderAmt: item.orderAmount,
+            orderQty: item.orderQty,
+            invoiceAmt: item.orderAmount,
+            invoiceQty: item.orderQty,
+            remark: '',
+          };
+          showAdjustDialog.value = true;
+        }
+
+        function submitAdjustment() {
+          antd.message.success('数据已调整并退回');
+          showAdjustDialog.value = false;
+          modal.visible = false;
+        }
+
+        function openHistoryDialog() {
+          showHistoryDialog.value = true;
+        }
+
+        function openRejectDialog() {
+          const item = modal.currentItem || currentApprovalItem.value;
+          if (item) {
+            rejectModal.currentItem = item;
+            rejectModal.reason = '';
+            rejectModal.visible = true;
+          }
+        }
+
+        function approveCurrentItem() {
+          const item = modal.currentItem || currentApprovalItem.value;
+          if (item) {
+            approveItem(item);
+          }
+        }
+
+        // ── Navigation ──
+        const navGroups = [
+          {
+            name: '销售预测管理',
+            items: [
+              { id: 'dashboard', name: 'Dashboard', icon: '📊', href: 'antd-dashboard.html' },
+              { id: 'forecast', name: '销售预测填报', icon: '📝', href: 'antd-forecast.html' },
+              { id: 'forecast-monthly', name: '销售预测填报（按月）', icon: '📅', href: 'antd-monthly-report.html' },
+              { id: 'approval', name: '销售预测审核', icon: '✅', href: 'antd-approval.html' },
+              { id: 'report', name: '分析报表', icon: '📈', href: 'antd-analysis-report.html' },
+            ]
+          },
+          {
+            name: '基础数据管理',
+            items: [
+              { id: 'org', name: '组织架构', icon: '👥', href: 'antd-basedata.html' },
+              { id: 'customer', name: '客户信息', icon: '🏢', href: 'antd-basedata.html' },
+              { id: 'invoiceCompany', name: '开票公司', icon: '🏛️', href: 'antd-basedata.html' },
+              { id: 'productHierarchy', name: '产品分类', icon: '📦', href: 'antd-basedata.html' },
+              { id: 'productLibrary', name: '产品库', icon: '🗃️', href: 'antd-basedata.html' },
+              { id: 'productPricing', name: '产品价格', icon: '💰', href: 'antd-basedata.html' },
+              { id: 'regionMapping', name: '区域映射', icon: '🗺️', href: 'antd-basedata.html' },
+              { id: 'dataDict', name: '数据字典', icon: '📋', href: 'antd-basedata.html' },
+            ]
+          },
+          {
+            name: '系统管理',
+            items: [
+              { id: 'users', name: '用户账号管理', icon: '👤', href: 'antd-users.html' },
+              { id: 'permissions', name: '角色和权限管理', icon: '🔐', href: 'antd-permissions.html' },
+              { id: 'fc-version', name: '预测周期管理', icon: '📅', href: 'antd-fc-version.html' },
+              { id: 'login-log', name: '系统登录日志', icon: '📋', href: 'antd-login-log.html' },
+              { id: 'system-log', name: '系统操作日志', icon: '🗒️', href: 'antd-system-log.html' },
+              { id: 'approval-flow', name: '审批流程配置', icon: '⚙️', href: 'antd-approval-flow.html' },
+            ]
+          }
+        ];
+        const openGroups = ref(['销售预测管理', '基础数据管理', '系统管理']);
+        const currentGroup = ref('销售预测管理');
+        const currentModule = ref('approval');
+
+        const toggleGroup = (name) => {
+          const idx = openGroups.value.indexOf(name);
+          if (idx >= 0) openGroups.value.splice(idx, 1);
+          else openGroups.value.push(name);
+        };
+        const navigateTo = (groupName, itemId) => {
+          currentGroup.value = groupName;
+          currentModule.value = itemId;
+          const group = navGroups.find(g => g.name === groupName);
+          const item = group.items.find(i => i.id === itemId);
+          if (item.href) { location.href = item.href; }
+        };
 
         return {
           activeTab,
@@ -865,6 +1465,12 @@
           paginatedList,
           modal,
           rejectModal,
+          showAdjustDialog,
+          showHistoryDialog,
+          currentApprovalItem,
+          adjustForm,
+          historyColumns,
+          historyData,
           getStatusClass,
           getStatusText,
           formatNumber,
@@ -876,6 +1482,14 @@
           approveItem,
           rejectItem,
           confirmReject,
+          downloadApprovalData,
+          openAdjustDialog,
+          submitAdjustment,
+          openHistoryDialog,
+          openRejectDialog,
+          approveCurrentItem,
+          navGroups, openGroups, currentGroup, currentModule,
+          toggleGroup, navigateTo,
         };
       },
     });

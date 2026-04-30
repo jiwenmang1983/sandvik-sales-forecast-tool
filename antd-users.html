@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用户管理 - Sandvik Sales Forecast Tool</title>
+  <script src="./lib/vue.global.prod.js"></script>
+  <script src="./lib/dayjs.min.js"></script>
+  <script src="./lib/dayjs-plugin-advancedFormat.js"></script>
+  <script src="./lib/dayjs-plugin-customParseFormat.js"></script>
+  <script src="./lib/dayjs-plugin-localeData.js"></script>
+  <script src="./lib/zh-cn.min.js"></script>
+  <script src="./lib/antd-vue.min.js"></script>
+  <style>
+    :root {
+      --sandvik-blue: #0D3D92;
+      --sandvik-orange: #F5A623;
+      --bg-color: #F5F7FA;
+      --text-primary: #1F2937;
+      --text-secondary: #6B7280;
+      --border-color: #E5E7EB;
+      --success: #52C41A;
+      --warning: #FAAD14;
+      --danger: #FF4D4F;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-primary); min-height: 100vh; }
+    #app { min-height: 100vh; display: flex; flex-direction: column; }
+
+    .page-header { background: var(--sandvik-blue); color: #fff; padding: 0 24px; height: 56px; display: flex; align-items: center; box-shadow: 0 2px 8px rgba(13,61,146,0.2); }
+    .page-header h1 { font-size: 16px; font-weight: 600; }
+
+    .bd-layout { display: flex; flex: 1; overflow: hidden; }
+
+    /* Sidebar */
+    .bd-sidebar { width: 220px; background: #fff; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; }
+    .bd-sidebar-header { padding: 14px 16px; border-bottom: 1px solid var(--border-color); font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; background: #fafafa; }
+    .bd-nav { flex: 1; overflow-y: auto; padding: 8px 0; }
+    .bd-nav-group { padding: 0; }
+    .bd-nav-item { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-size: 13px; cursor: pointer; color: var(--text-primary); border-left: 3px solid transparent; transition: all 0.15s; }
+    .bd-nav-item:hover { background: #f0f4ff; border-left-color: #c0d0f0; }
+    .bd-nav-item.active { background: #e8f0fe; color: var(--sandvik-blue); border-left-color: var(--sandvik-blue); font-weight: 600; }
+    .bd-nav-item .icon { font-size: 16px; }
+    .bd-nav-item .badge { margin-left: auto; background: var(--sandvik-blue); color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 8px; }
+    .nav-group { margin-bottom: 4px; }
+    .nav-group-title { padding: 8px 16px 4px; font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+    .nav-group-title:hover { color: var(--sandvik-blue); }
+    .nav-group-arrow { font-size: 10px; transition: transform 0.2s; }
+    .nav-group-arrow.open { transform: rotate(90deg); }
+    .nav-sub-items { overflow: hidden; }
+    .nav-sub-item { display: flex; align-items: center; gap: 8px; padding: 8px 16px 8px 24px; font-size: 13px; cursor: pointer; color: var(--text-primary); border-left: 3px solid transparent; transition: all 0.15s; }
+    .nav-sub-item:hover { background: #f0f4ff; border-left-color: #c0d0f0; }
+    .nav-sub-item.active { background: #e8f0fe; color: var(--sandvik-blue); border-left-color: var(--sandvik-blue); font-weight: 600; }
+
+    /* Content */
+    .bd-content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+    .bd-toolbar { padding: 12px 20px; background: #fff; border-bottom: 1px solid var(--border-color); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .bd-toolbar-right { margin-left: auto; display: flex; gap: 8px; }
+
+    /* Filters */
+    .filter-bar { display: flex; gap: 10px; padding: 12px 20px; background: #fafafa; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; }
+    .filter-item { display: flex; flex-direction: column; gap: 3px; }
+    .filter-label { font-size: 11px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; }
+    .filter-input, .filter-select { border: 1px solid var(--border-color); border-radius: 6px; padding: 5px 10px; font-size: 12px; min-width: 130px; background: #fff; }
+    .filter-input:focus, .filter-select:focus { outline: none; border-color: var(--sandvik-blue); }
+
+    /* Table */
+    .table-wrap { flex: 1; overflow: auto; padding: 0; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .data-table th { background: #f5f7fa; padding: 9px 12px; text-align: left; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border-color); white-space: nowrap; position: sticky; top: 0; z-index: 1; }
+    .data-table td { padding: 9px 12px; border-bottom: 1px solid var(--border-color); }
+    .data-table tr:hover td { background: #f9fafb; }
+    .data-table .actions { display: flex; gap: 6px; }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; border: 1px solid var(--border-color); background: #fff; color: var(--text-primary); transition: all 0.15s; }
+    .btn:hover { border-color: var(--sandvik-blue); color: var(--sandvik-blue); }
+    .btn-primary { background: var(--sandvik-blue); color: #fff; border-color: var(--sandvik-blue); }
+    .btn-primary:hover { background: #0a3280; }
+    .btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+    .btn-warning { background: var(--warning); color: #fff; border-color: var(--warning); }
+    .btn-sm { padding: 3px 8px; font-size: 11px; }
+    .btn-icon { padding: 3px 6px; font-size: 11px; }
+
+    /* Card body */
+    .bd-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
+
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+    .modal-box { background: #fff; border-radius: 10px; width: 560px; max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+    .modal-header { padding: 14px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 600; background: #fafafa; border-radius: 10px 10px 0 0; }
+    .modal-close { width: 26px; height: 26px; border-radius: 50%; border: none; background: #e8e8e8; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+    .modal-close:hover { background: #d0d0d0; }
+    .modal-body { padding: 20px; }
+    .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 8px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .form-row-full { margin-bottom: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+    .form-label .req { color: var(--danger); margin-left: 2px; }
+    .form-input, .form-select, .form-textarea { border: 1px solid var(--border-color); border-radius: 6px; padding: 7px 10px; font-size: 13px; width: 100%; }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--sandvik-blue); }
+    .form-textarea { resize: vertical; min-height: 60px; }
+    .form-hint { font-size: 11px; color: var(--text-secondary); }
+
+    /* Status badges */
+    .badge-status { display: inline-block; padding: 1px 7px; border-radius: 8px; font-size: 11px; font-weight: 600; }
+    .badge-active { background: #e6f7e6; color: #52c41a; }
+    .badge-inactive { background: #f0f0f0; color: #888; }
+    .badge-pending { background: #fff7e6; color: #fa8c16; }
+
+    /* Empty state */
+    .empty-state { text-align: center; padding: 48px 24px; color: var(--text-secondary); }
+    .empty-state-icon { font-size: 36px; margin-bottom: 10px; }
+    .empty-state p { font-size: 13px; }
+
+    /* Pagination */
+    .table-footer { padding: 10px 20px; border-top: 1px solid var(--border-color); background: #fafafa; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-secondary); }
+    .pagination { display: flex; gap: 4px; }
+    .page-btn { padding: 3px 9px; border: 1px solid var(--border-color); border-radius: 4px; background: #fff; cursor: pointer; font-size: 12px; }
+    .page-btn.active { background: var(--sandvik-blue); color: #fff; border-color: var(--sandvik-blue); }
+    .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Page size selector */
+    .page-size-select { border: 1px solid var(--border-color); border-radius: 4px; padding: 3px 8px; font-size: 12px; background: #fff; }
+
+    /* Toast */
+    .toast { position: fixed; top: 20px; right: 20px; z-index: 2000; padding: 10px 18px; border-radius: 8px; font-size: 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .toast-success { background: #f6ffed; border: 1px solid #b7eb8f; color: #52c41a; }
+    .toast-error { background: #fff2f0; border: 1px solid #ffccc7; color: #ff4d4f; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Header -->
+  <div class="page-header">
+    <h1>👥 用户管理</h1>
+  </div>
+
+  <div class="bd-layout">
+
+    <!-- Left Sidebar -->
+    <div class="bd-sidebar">
+      <div class="bd-sidebar-header">📂 功能导航</div>
+      <div class="bd-nav">
+        <div v-for="group in navGroups" :key="group.name" class="nav-group">
+          <div class="nav-group-title" @click="toggleGroup(group.name)">
+            <span>{{ group.name }}</span>
+            <span class="nav-group-arrow" :class="{ open: openGroups.includes(group.name) }">▶</span>
+          </div>
+          <div class="nav-sub-items" v-show="openGroups.includes(group.name)">
+            <div v-for="item in group.items" :key="item.id"
+                 class="nav-sub-item"
+                 :class="{ active: currentGroup === group.name && currentModule === item.id }"
+                 @click="navigateTo(group.name, item.id)">
+              <span>{{ item.icon }} {{ item.name }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Content -->
+    <div class="bd-content">
+
+      <!-- Toolbar -->
+      <div class="bd-toolbar">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;flex:1;">
+          <button class="btn" @click="exportData">📥 导出</button>
+        </div>
+        <div class="bd-toolbar-right">
+          <button class="btn btn-primary" @click="openAddModal">➕ 新增用户</button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filter-bar">
+        <div class="filter-item">
+          <span class="filter-label">关键词搜索</span>
+          <input class="filter-input" style="min-width:180px;" v-model="filterKeyword" placeholder="姓名 / 邮箱" @input="onFilter">
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">角色</span>
+          <select class="filter-select" v-model="filterRole" @change="onFilter">
+            <option value="">全部</option>
+            <option value="区域总监">区域总监</option>
+            <option value="销售">销售</option>
+            <option value="财务">财务</option>
+            <option value="管理员">管理员</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">状态</span>
+          <select class="filter-select" v-model="filterStatus" @change="onFilter">
+            <option value="">全部</option>
+            <option value="active">激活</option>
+            <option value="inactive">停用</option>
+          </select>
+        </div>
+        <button class="btn btn-sm" @click="resetFilters">🔄 重置</button>
+      </div>
+
+      <!-- Body -->
+      <div class="bd-body">
+
+        <!-- User Table -->
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>用户姓名</th>
+                <th>邮箱</th>
+                <th>部门</th>
+                <th>角色</th>
+                <th>最近登录</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="user in paginatedUsers" :key="user.id">
+                <td><strong>{{ user.name }}</strong></td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.department }}</td>
+                <td>{{ user.role }}</td>
+                <td>{{ user.lastLogin }}</td>
+                <td><span class="badge-status" :class="user.status === 'active' ? 'badge-active' : 'badge-inactive'">{{ user.status === 'active' ? '激活' : '停用' }}</span></td>
+                <td class="actions">
+                  <button class="btn btn-icon" @click="openEditModal(user)">✏️</button>
+                  <button v-if="user.status === 'active'" class="btn btn-icon" @click="toggleStatus(user)">🚫</button>
+                  <button v-else class="btn btn-icon" style="color:#52c41a;" @click="toggleStatus(user)">✅</button>
+                </td>
+              </tr>
+              <tr v-if="filteredUsers.length === 0">
+                <td colspan="7"><div class="empty-state"><div class="empty-state-icon">👤</div><p>暂无用户数据</p></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Table Footer with Pagination -->
+        <div class="table-footer">
+          <span>共 {{ filteredUsers.length }} 条</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span>每页</span>
+            <select class="page-size-select" v-model="pageSize" @change="onPageSizeChange">
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+            </select>
+            <span>条</span>
+            <div class="pagination">
+              <button class="page-btn" :disabled="currentPage === 1" @click="currentPage--">‹</button>
+              <button v-for="p in totalPages" :key="p" class="page-btn" :class="{ active: p === currentPage }" @click="currentPage = p">{{ p }}</button>
+              <button class="page-btn" :disabled="currentPage === totalPages" @click="currentPage++">›</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /bd-body -->
+    </div><!-- /bd-content -->
+  </div><!-- /bd-layout -->
+
+  <!-- Add/Edit User Modal -->
+  <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>{{ editingUser ? '编辑' : '新增' }}用户</span>
+        <button class="modal-close" @click="showModal = false">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">用户姓名<span class="req">*</span></label>
+            <input class="form-input" v-model="formData.name" placeholder="请输入用户姓名">
+          </div>
+          <div class="form-group">
+            <label class="form-label">邮箱<span class="req">*</span></label>
+            <input class="form-input" type="email" v-model="formData.email" placeholder="name@sandvik.com">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">部门</label>
+            <select class="form-select" v-model="formData.department">
+              <option value="">请选择</option>
+              <option value="销售部">销售部</option>
+              <option value="市场部">市场部</option>
+              <option value="财务部">财务部</option>
+              <option value="技术部">技术部</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">角色</label>
+            <select class="form-select" v-model="formData.role">
+              <option value="">请选择</option>
+              <option value="区域总监">区域总监</option>
+              <option value="销售">销售</option>
+              <option value="财务">财务</option>
+              <option value="管理员">管理员</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">状态</label>
+            <select class="form-select" v-model="formData.status">
+              <option value="active">激活</option>
+              <option value="inactive">停用</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" @click="showModal = false">取消</button>
+        <button class="btn btn-primary" @click="saveUser">💾 保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div v-if="toast.text" class="toast" :class="'toast-' + toast.type">{{ toast.text }}</div>
+
+</div>
+
+<script>
+const { createApp, ref, computed } = Vue;
+
+const app = createApp({
+  setup() {
+    const currentModule = ref('users');
+
+    // Filter states
+    const filterKeyword = ref('');
+    const filterRole = ref('');
+    const filterStatus = ref('');
+
+    // Pagination
+    const currentPage = ref(1);
+    const pageSize = ref(10);
+
+    // Modal state
+    const showModal = ref(false);
+    const editingUser = ref(null);
+    const formData = ref({ status: 'active' });
+
+    // Toast
+    const toast = ref({ text: '', type: '' });
+
+    // Sample user data - 15 users
+    const users = ref([
+      { id: 'u1', name: '张伟', email: 'wei.zhang@sandvik.com', department: '销售部', role: '区域总监', lastLogin: '2026-04-29 14:32', status: 'active' },
+      { id: 'u2', name: '李娜', email: 'na.li@sandvik.com', department: '财务部', role: '财务', lastLogin: '2026-04-29 09:15', status: 'active' },
+      { id: 'u3', name: '王强', email: 'qiang.wang@sandvik.com', department: '销售部', role: '销售', lastLogin: '2026-04-28 16:45', status: 'active' },
+      { id: 'u4', name: '赵敏', email: 'min.zhao@sandvik.com', department: '市场部', role: '销售', lastLogin: '2026-04-29 11:20', status: 'active' },
+      { id: 'u5', name: '孙磊', email: 'lei.sun@sandvik.com', department: '技术部', role: '销售', lastLogin: '2026-04-27 15:30', status: 'active' },
+      { id: 'u6', name: '周婷', email: 'ting.zhou@sandvik.com', department: '财务部', role: '财务', lastLogin: '2026-04-29 08:50', status: 'active' },
+      { id: 'u7', name: '吴昊', email: 'hao.wu@sandvik.com', department: '销售部', role: '区域总监', lastLogin: '2026-04-28 13:25', status: 'active' },
+      { id: 'u8', name: '郑楠', email: 'nan.zheng@sandvik.com', department: '技术部', role: '管理员', lastLogin: '2026-04-29 16:10', status: 'active' },
+      { id: 'u9', name: '钱坤', email: 'kun.qian@sandvik.com', department: '销售部', role: '销售', lastLogin: '2026-04-26 10:00', status: 'inactive' },
+      { id: 'u10', name: '冯宇', email: 'yu.feng@sandvik.com', department: '市场部', role: '销售', lastLogin: '2026-04-29 12:40', status: 'active' },
+      { id: 'u11', name: '蒋宁', email: 'ning.jiang@sandvik.com', department: '财务部', role: '财务', lastLogin: '2026-04-28 14:55', status: 'active' },
+      { id: 'u12', name: '邓琳', email: 'lin.deng@sandvik.com', department: '技术部', role: '管理员', lastLogin: '2026-04-29 17:05', status: 'active' },
+      { id: 'u13', name: '刘洋', email: 'yang.liu@sandvik.com', department: '销售部', role: '销售', lastLogin: '2026-04-25 09:30', status: 'inactive' },
+      { id: 'u14', name: '陈明', email: 'ming.chen@sandvik.com', department: '销售部', role: '区域总监', lastLogin: '2026-04-29 10:15', status: 'active' },
+      { id: 'u15', name: '马云', email: 'yun.ma@sandvik.com', department: '市场部', role: '管理员', lastLogin: '2026-04-29 15:45', status: 'active' },
+    ]);
+
+    // Filtered users
+    const filteredUsers = computed(() => {
+      return users.value.filter(user => {
+        if (filterKeyword.value) {
+          const kw = filterKeyword.value.toLowerCase();
+          if (!user.name.toLowerCase().includes(kw) && !user.email.toLowerCase().includes(kw)) {
+            return false;
+          }
+        }
+        if (filterRole.value && user.role !== filterRole.value) return false;
+        if (filterStatus.value && user.status !== filterStatus.value) return false;
+        return true;
+      });
+    });
+
+    // Total pages
+    const totalPages = computed(() => Math.max(1, Math.ceil(filteredUsers.value.length / pageSize.value)));
+
+    // Paginated users
+    const paginatedUsers = computed(() => {
+      const start = (currentPage.value - 1) * pageSize.value;
+      const end = start + pageSize.value;
+      return filteredUsers.value.slice(start, end);
+    });
+
+    // Reset page when filter changes
+    const onFilter = () => { currentPage.value = 1; };
+
+    // Reset filters
+    const resetFilters = () => {
+      filterKeyword.value = '';
+      filterRole.value = '';
+      filterStatus.value = '';
+      currentPage.value = 1;
+    };
+
+    // Page size change
+    const onPageSizeChange = () => { currentPage.value = 1; };
+
+    // Open add modal
+    const openAddModal = () => {
+      editingUser.value = null;
+      formData.value = { status: 'active' };
+      showModal.value = true;
+    };
+
+    // Open edit modal
+    const openEditModal = (user) => {
+      editingUser.value = user;
+      formData.value = { ...user };
+      showModal.value = true;
+    };
+
+    // Save user
+    const saveUser = () => {
+      if (!formData.value.name || !formData.value.email) {
+        showToast('请填写必填项（姓名、邮箱）', 'error');
+        return;
+      }
+      if (!formData.value.email.includes('@')) {
+        showToast('请输入有效的邮箱地址', 'error');
+        return;
+      }
+      if (editingUser.value) {
+        const idx = users.value.findIndex(u => u.id === editingUser.value.id);
+        if (idx >= 0) {
+          users.value[idx] = { ...users.value[idx], ...formData.value };
+        }
+        showToast('用户信息已更新', 'success');
+      } else {
+        formData.value.id = 'u_' + Date.now();
+        formData.value.lastLogin = '—';
+        users.value.push({ ...formData.value });
+        showToast('用户已添加', 'success');
+      }
+      showModal.value = false;
+    };
+
+    // Toggle user status
+    const toggleStatus = (user) => {
+      const newStatus = user.status === 'active' ? 'inactive' : 'active';
+      const idx = users.value.findIndex(u => u.id === user.id);
+      if (idx >= 0) {
+        users.value[idx].status = newStatus;
+        showToast(newStatus === 'active' ? '用户已激活' : '用户已停用', 'success');
+      }
+    };
+
+    // Export
+    const exportData = () => { showToast('导出功能演示', 'success'); };
+
+    // Toast
+    const showToast = (text, type) => {
+      toast.value = { text, type };
+      setTimeout(() => { toast.value.text = ''; }, 2500);
+    };
+
+    // ── Navigation ──
+    const navGroups = [
+      {
+        name: '销售预测管理',
+        items: [
+          { id: 'dashboard', name: 'Dashboard', icon: '📊', href: 'antd-dashboard.html' },
+          { id: 'forecast', name: '销售预测填报', icon: '📝', href: 'antd-forecast.html' },
+          { id: 'forecast-monthly', name: '销售预测填报（按月）', icon: '📅', href: 'antd-monthly-report.html' },
+          { id: 'approval', name: '销售预测审核', icon: '✅', href: 'antd-approval.html' },
+          { id: 'report', name: '分析报表', icon: '📈', href: 'antd-analysis-report.html' },
+        ]
+      },
+      {
+        name: '基础数据管理',
+        items: [
+          { id: 'org', name: '组织架构', icon: '👥', href: 'antd-basedata.html', tab: 'org' },
+          { id: 'customer', name: '客户信息', icon: '🏢', href: 'antd-basedata.html', tab: 'customer' },
+          { id: 'invoiceCompany', name: '开票公司', icon: '🏛️', href: 'antd-basedata.html', tab: 'invoiceCompany' },
+          { id: 'productHierarchy', name: '产品分类', icon: '📦', href: 'antd-basedata.html', tab: 'productHierarchy' },
+          { id: 'productLibrary', name: '产品库', icon: '🗃️', href: 'antd-basedata.html', tab: 'productLibrary' },
+          { id: 'productPricing', name: '产品价格', icon: '💰', href: 'antd-basedata.html', tab: 'productPricing' },
+          { id: 'regionMapping', name: '区域映射', icon: '🗺️', href: 'antd-basedata.html', tab: 'regionMapping' },
+          { id: 'dataDict', name: '数据字典', icon: '📋', href: 'antd-basedata.html', tab: 'dataDict' },
+        ]
+      },
+      {
+        name: '系统管理',
+        items: [
+          { id: 'users', name: '用户账号管理', icon: '👤', href: 'antd-users.html' },
+          { id: 'permissions', name: '角色和权限管理', icon: '🔐', href: 'antd-permissions.html' },
+          { id: 'fc-version', name: '预测周期管理', icon: '📅', href: 'antd-fc-version.html' },
+          { id: 'login-log', name: '系统登录日志', icon: '📋', href: 'antd-login-log.html' },
+          { id: 'system-log', name: '系统操作日志', icon: '🗒️', href: 'antd-system-log.html' },
+          { id: 'approval-flow', name: '审批流程配置', icon: '⚙️', href: 'antd-approval-flow.html' },
+        ]
+      }
+    ];
+    const openGroups = ref(['销售预测管理', '基础数据管理', '系统管理']);
+    const currentGroup = ref('系统管理');
+    const currentModule = ref('users');
+
+    const toggleGroup = (name) => {
+      const idx = openGroups.value.indexOf(name);
+      if (idx >= 0) openGroups.value.splice(idx, 1);
+      else openGroups.value.push(name);
+    };
+    const navigateTo = (groupName, itemId) => {
+      currentGroup.value = groupName;
+      currentModule.value = itemId;
+      const group = navGroups.find(g => g.name === groupName);
+      const item = group.items.find(i => i.id === itemId);
+      if (item.href) { location.href = item.href + (item.tab ? '?tab=' + item.tab : ''); }
+    };
+
+    return {
+      currentModule,
+      filterKeyword, filterRole, filterStatus,
+      currentPage, pageSize, totalPages,
+      showModal, editingUser, formData, toast,
+      users, filteredUsers, paginatedUsers,
+      onFilter, resetFilters, onPageSizeChange,
+      openAddModal, openEditModal, saveUser, toggleStatus, exportData,
+      navGroups, openGroups, currentGroup, currentModule,
+      toggleGroup, navigateTo,
+    };
+  }
+});
+
+app.use(antd);
+app.mount('#app');
+</script>
+</body>
+</html>

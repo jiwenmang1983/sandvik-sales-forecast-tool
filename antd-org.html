@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>山特维克销售预测工具 - 组织架构</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ant-design-vue@1.7/dist/antd.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ant-design-vue@1.7/dist/antd.min.css">
+  <style>
+    :root {
+      --color-primary: #1890ff;
+      --color-success: #52c41a;
+      --color-warning: #faad14;
+      --color-error: #f5222d;
+      --color-text-primary: rgba(0, 0, 0, 0.85);
+      --color-text-secondary: rgba(0, 0, 0, 0.65);
+      --color-text-tertiary: rgba(0, 0, 0, 0.45);
+      --color-border: #d9d9d9;
+      --color-bg-container: #ffffff;
+      --color-bg-layout: #f0f2f5;
+      --border-radius-base: 4px;
+      --border-radius-lg: 8px;
+      --box-shadow-base: 0 2px 8px rgba(0, 0, 0, 0.15);
+      --font-size-base: 14px;
+      --font-size-lg: 16px;
+      --font-size-xl: 20px;
+      --line-height-base: 1.5715;
+      --spacing-xs: 8px;
+      --spacing-sm: 12px;
+      --spacing-md: 16px;
+      --spacing-lg: 24px;
+      --spacing-xl: 32px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--color-bg-layout);
+      color: var(--color-text-primary);
+      font-size: var(--font-size-base);
+      line-height: var(--line-height-base);
+      min-height: 100vh;
+    }
+
+    #app {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app-header {
+      background: var(--color-bg-container);
+      padding: var(--spacing-md) var(--spacing-xl);
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .app-logo {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    .app-logo h1 {
+      font-size: var(--font-size-xl);
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .app-main {
+      flex: 1;
+      padding: var(--spacing-xl);
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .placeholder-card {
+      background: var(--color-bg-container);
+      border-radius: var(--border-radius-lg);
+      box-shadow: var(--box-shadow-base);
+      padding: var(--spacing-xl);
+      margin-bottom: var(--spacing-xl);
+    }
+
+    .card-title {
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin-bottom: var(--spacing-lg);
+      padding-bottom: var(--spacing-sm);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .flow-diagram {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-xl) 0;
+    }
+
+    .flow-node {
+      background: linear-gradient(135deg, var(--color-primary), #40a9ff);
+      color: #ffffff;
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-radius: var(--border-radius-base);
+      font-weight: 500;
+      text-align: center;
+      min-width: 100px;
+      box-shadow: 0 2px 4px rgba(24, 144, 255, 0.3);
+      transition: transform 0.2s ease;
+    }
+
+    .flow-node:hover {
+      transform: translateY(-2px);
+    }
+
+    .flow-arrow {
+      color: var(--color-primary);
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .feature-chips {
+      display: flex;
+      gap: var(--spacing-sm);
+      flex-wrap: wrap;
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .feature-chip {
+      background: linear-gradient(135deg, #f0f5ff, #e6f0ff);
+      border: 1px solid var(--color-primary);
+      color: var(--color-primary);
+      padding: var(--spacing-xs) var(--spacing-md);
+      border-radius: 20px;
+      font-size: var(--font-size-base);
+      font-weight: 500;
+    }
+
+    .feature-chip:nth-child(2) {
+      background: linear-gradient(135deg, #f6ffed, #e6fff0);
+      border-color: var(--color-success);
+      color: var(--color-success);
+    }
+
+    .feature-chip:nth-child(3) {
+      background: linear-gradient(135deg, #fff7e6, #fff0cc);
+      border-color: var(--color-warning);
+      color: var(--color-warning);
+    }
+
+    .development-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--spacing-sm);
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <div class="app-logo">
+        <h1>🏭 山特维克销售预测工具</h1>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <a-card class="placeholder-card" hoverable>
+        <template #title>
+          <span style="font-weight: 600; font-size: 16px;">📊 组织架构管理</span>
+        </template>
+
+        <div class="feature-chips">
+          <span class="feature-chip">🔄 实时数据同步</span>
+          <span class="feature-chip">📈 智能销售预测</span>
+          <span class="feature-chip">👥 多层级权限管理</span>
+        </div>
+
+        <a-divider>汇报流程</a-divider>
+
+        <div class="flow-diagram">
+          <div class="flow-node">👔 总裁</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">📋 销售VP</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">🗺️ 大区总监</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">👨‍💼 销售经理</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">📞 业务员</div>
+        </div>
+
+        <a-divider></a-divider>
+
+        <div class="development-badge">
+          <a-button type="primary" size="large" disabled>
+            🔧 功能开发中
+          </a-button>
+        </div>
+      </a-card>
+    </main>
+  </div>
+
+  <script>
+    new Vue({
+      el: '#app',
+      data() {
+        return {
+          message: '山特维克销售预测工具 - 组织架构模块'
+        }
+      }
+    })
+  </script>
+</body>
+</html>

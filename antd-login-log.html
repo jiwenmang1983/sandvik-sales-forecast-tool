@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录日志 - Sandvik Sales Forecast Tool</title>
+  <script src="./lib/vue.global.prod.js"></script>
+  <script src="./lib/dayjs.min.js"></script>
+  <script src="./lib/dayjs-plugin-advancedFormat.js"></script>
+  <script src="./lib/dayjs-plugin-customParseFormat.js"></script>
+  <script src="./lib/dayjs-plugin-localeData.js"></script>
+  <script src="./lib/zh-cn.min.js"></script>
+  <script src="./lib/antd-vue.min.js"></script>
+  <style>
+    :root {
+      --sandvik-blue: #0D3D92;
+      --sandvik-orange: #F5A623;
+      --bg-color: #F5F7FA;
+      --text-primary: #1F2937;
+      --text-secondary: #6B7280;
+      --border-color: #E5E7EB;
+      --success: #52C41A;
+      --warning: #FAAD14;
+      --danger: #FF4D4F;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-primary); min-height: 100vh; }
+    #app { min-height: 100vh; display: flex; flex-direction: column; }
+
+    .page-header { background: var(--sandvik-blue); color: #fff; padding: 0 24px; height: 56px; display: flex; align-items: center; box-shadow: 0 2px 8px rgba(13,61,146,0.2); }
+    .page-header h1 { font-size: 16px; font-weight: 600; }
+
+    .bd-layout { display: flex; flex: 1; overflow: hidden; }
+
+    .bd-sidebar { width: 220px; background: #fff; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; }
+    .bd-sidebar-header { padding: 14px 16px; border-bottom: 1px solid var(--border-color); font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; background: #fafafa; }
+    .bd-nav { flex: 1; overflow-y: auto; padding: 8px 0; }
+    .nav-group { margin-bottom: 4px; }
+    .nav-group-title { padding: 8px 16px 4px; font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+    .nav-group-title:hover { color: var(--sandvik-blue); }
+    .nav-group-arrow { font-size: 10px; transition: transform 0.2s; }
+    .nav-group-arrow.open { transform: rotate(90deg); }
+    .nav-sub-items { overflow: hidden; }
+    .nav-sub-item { display: flex; align-items: center; gap: 8px; padding: 8px 16px 8px 24px; font-size: 13px; cursor: pointer; color: var(--text-primary); border-left: 3px solid transparent; transition: all 0.15s; }
+    .nav-sub-item:hover { background: #f0f4ff; border-left-color: #c0d0f0; }
+    .nav-sub-item.active { background: #e8f0fe; color: var(--sandvik-blue); border-left-color: var(--sandvik-blue); font-weight: 600; }
+
+    .bd-content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+    .bd-toolbar { padding: 12px 20px; background: #fff; border-bottom: 1px solid var(--border-color); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .bd-toolbar-right { margin-left: auto; display: flex; gap: 8px; }
+
+    .filter-bar { display: flex; gap: 10px; padding: 12px 20px; background: #fafafa; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; }
+    .filter-item { display: flex; flex-direction: column; gap: 3px; }
+    .filter-label { font-size: 11px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; }
+    .filter-input, .filter-select { border: 1px solid var(--border-color); border-radius: 6px; padding: 5px 10px; font-size: 12px; min-width: 130px; background: #fff; }
+    .filter-input:focus, .filter-select:focus { outline: none; border-color: var(--sandvik-blue); }
+
+    .table-wrap { flex: 1; overflow: auto; padding: 0; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .data-table th { background: #f5f7fa; padding: 9px 12px; text-align: left; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border-color); white-space: nowrap; position: sticky; top: 0; z-index: 1; }
+    .data-table td { padding: 9px 12px; border-bottom: 1px solid var(--border-color); }
+    .data-table tr:hover td { background: #f9fafb; }
+
+    .btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; border: 1px solid var(--border-color); background: #fff; color: var(--text-primary); transition: all 0.15s; }
+    .btn:hover { border-color: var(--sandvik-blue); color: var(--sandvik-blue); }
+    .btn-primary { background: var(--sandvik-blue); color: #fff; border-color: var(--sandvik-blue); }
+    .btn-primary:hover { background: #0a3280; }
+    .btn-sm { padding: 3px 8px; font-size: 11px; }
+    .btn-icon { padding: 3px 6px; font-size: 11px; }
+
+    .bd-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
+
+    .badge-status { display: inline-block; padding: 1px 7px; border-radius: 8px; font-size: 11px; font-weight: 600; }
+    .badge-success { background: #e6f7e6; color: #52c41a; }
+    .badge-danger { background: #fff2f0; color: #ff4d4f; }
+
+    .empty-state { text-align: center; padding: 48px 24px; color: var(--text-secondary); }
+    .empty-state-icon { font-size: 36px; margin-bottom: 10px; }
+    .empty-state p { font-size: 13px; }
+
+    .toast { position: fixed; top: 20px; right: 20px; z-index: 2000; padding: 10px 18px; border-radius: 8px; font-size: 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .toast-success { background: #f6ffed; border: 1px solid #b7eb8f; color: #52c41a; }
+    .toast-error { background: #fff2f0; border: 1px solid #ffccc7; color: #ff4d4f; }
+
+    .table-footer { padding: 10px 20px; border-top: 1px solid var(--border-color); background: #fafafa; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-secondary); }
+    .pagination { display: flex; gap: 4px; }
+    .page-btn { padding: 3px 9px; border: 1px solid var(--border-color); border-radius: 4px; background: #fff; cursor: pointer; font-size: 12px; }
+    .page-btn.active { background: var(--sandvik-blue); color: #fff; border-color: var(--sandvik-blue); }
+    .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+    .modal-box { background: #fff; border-radius: 10px; width: 480px; max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+    .modal-header { padding: 14px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 600; background: #fafafa; border-radius: 10px 10px 0 0; }
+    .modal-close { width: 26px; height: 26px; border-radius: 50%; border: none; background: #e8e8e8; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+    .modal-close:hover { background: #d0d0d0; }
+    .modal-body { padding: 20px; }
+    .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 8px; }
+    .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .info-item { background: #f9fafb; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 12px; }
+    .info-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 3px; }
+    .info-value { font-size: 13px; font-weight: 500; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <div class="page-header">
+    <h1>🔐 登录日志</h1>
+  </div>
+
+  <div class="bd-layout">
+
+    <div class="bd-sidebar">
+      <div class="bd-sidebar-header">📂 功能导航</div>
+      <div class="bd-nav">
+        <div v-for="group in navGroups" :key="group.name" class="nav-group">
+          <div class="nav-group-title" @click="toggleGroup(group.name)">
+            <span>{{ group.name }}</span>
+            <span class="nav-group-arrow" :class="{ open: openGroups.includes(group.name) }">▶</span>
+          </div>
+          <div class="nav-sub-items" v-show="openGroups.includes(group.name)">
+            <div v-for="item in group.items" :key="item.id"
+                 class="nav-sub-item"
+                 :class="{ active: currentGroup === group.name && currentModule === item.id }"
+                 @click="navigateTo(group.name, item.id)">
+              <span>{{ item.icon }} {{ item.name }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bd-content">
+
+      <div class="bd-toolbar">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;flex:1;"></div>
+        <div class="bd-toolbar-right">
+          <button class="btn btn-primary" @click="exportCSV">📥 导出 CSV</button>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <div class="filter-item">
+          <span class="filter-label">开始日期</span>
+          <input type="date" class="filter-input" v-model="filter.startDate" @change="applyFilter">
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">结束日期</span>
+          <input type="date" class="filter-input" v-model="filter.endDate" @change="applyFilter">
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">用户</span>
+          <select class="filter-select" v-model="filter.user" @change="applyFilter">
+            <option value="">全部</option>
+            <option v-for="u in userList" :key="u" :value="u">{{ u }}</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">结果</span>
+          <select class="filter-select" v-model="filter.result" @change="applyFilter">
+            <option value="">全部</option>
+            <option value="成功">成功</option>
+            <option value="失败">失败</option>
+          </select>
+        </div>
+        <button class="btn btn-sm" @click="resetFilter">🔄 重置</button>
+      </div>
+
+      <div class="bd-body">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>用户</th>
+                <th>角色</th>
+                <th>登录时间</th>
+                <th>IP地址</th>
+                <th>设备</th>
+                <th>结果</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in paginatedData" :key="r.id">
+                <td><strong>{{ r.user }}</strong></td>
+                <td>{{ r.role }}</td>
+                <td>{{ r.loginTime }}</td>
+                <td>{{ r.ip }}</td>
+                <td>{{ r.device }}</td>
+                <td>
+                  <span class="badge-status" :class="r.result === '成功' ? 'badge-success' : 'badge-danger'">
+                    {{ r.result }}
+                  </span>
+                </td>
+                <td>
+                  <button class="btn btn-icon" @click="viewDetail(r)">👁️</button>
+                </td>
+              </tr>
+              <tr v-if="filteredData.length === 0">
+                <td colspan="7"><div class="empty-state"><div class="empty-state-icon">🔐</div><p>暂无登录日志</p></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-footer">
+          <span>共 {{ filteredData.length }} 条，第 {{ currentPageNum }} / {{ totalPages }} 页</span>
+          <div class="pagination">
+            <button class="page-btn" :disabled="currentPageNum === 1" @click="currentPageNum--">‹</button>
+            <button class="page-btn" v-for="p in pageNumbers" :key="p" :class="{ active: p === currentPageNum }" @click="currentPageNum = p">{{ p }}</button>
+            <button class="page-btn" :disabled="currentPageNum === totalPages" @click="currentPageNum++">›</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div v-if="showDetailModal" class="modal-overlay" @click.self="showDetailModal = false">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>登录详情</span>
+        <button class="modal-close" @click="showDetailModal = false">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">用户</div>
+            <div class="info-value">{{ detailData.user }}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">角色</div>
+            <div class="info-value">{{ detailData.role }}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">登录时间</div>
+            <div class="info-value">{{ detailData.loginTime }}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">IP地址</div>
+            <div class="info-value">{{ detailData.ip }}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">设备</div>
+            <div class="info-value">{{ detailData.device }}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">结果</div>
+            <div class="info-value">
+              <span class="badge-status" :class="detailData.result === '成功' ? 'badge-success' : 'badge-danger'">
+                {{ detailData.result }}
+              </span>
+            </div>
+          </div>
+          <div class="info-item" style="grid-column: span 2;">
+            <div class="info-label">浏览器</div>
+            <div class="info-value">{{ detailData.browser }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" @click="showDetailModal = false">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <div v-if="toast.text" class="toast" :class="'toast-' + toast.type">{{ toast.text }}</div>
+
+</div>
+
+<script>
+const { createApp, ref, computed } = Vue;
+
+const app = createApp({
+  setup() {
+    const currentPage = ref('loginLog');
+    const toast = ref({ text: '', type: '' });
+    const showDetailModal = ref(false);
+    const detailData = ref({});
+    const currentPageNum = ref(1);
+    const pageSize = 10;
+
+    const navGroups = [
+      {
+        name: '销售预测管理',
+        items: [
+          { id: 'dashboard', name: 'Dashboard', icon: '📊', href: 'antd-dashboard.html' },
+          { id: 'forecast', name: '销售预测填报', icon: '📝', href: 'antd-forecast.html' },
+          { id: 'forecast-monthly', name: '销售预测填报（按月）', icon: '📅', href: 'antd-monthly-report.html' },
+          { id: 'approval', name: '销售预测审核', icon: '✅', href: 'antd-approval.html' },
+          { id: 'report', name: '分析报表', icon: '📈', href: 'antd-analysis-report.html' },
+        ]
+      },
+      {
+        name: '基础数据管理',
+        items: [
+          { id: 'org', name: '组织架构', icon: '👥', href: 'antd-basedata.html', tab: 'org' },
+          { id: 'customer', name: '客户信息', icon: '🏢', href: 'antd-basedata.html', tab: 'customer' },
+          { id: 'invoiceCompany', name: '开票公司', icon: '🏛️', href: 'antd-basedata.html', tab: 'invoiceCompany' },
+          { id: 'productHierarchy', name: '产品分类', icon: '📦', href: 'antd-basedata.html', tab: 'productHierarchy' },
+          { id: 'productLibrary', name: '产品库', icon: '🗃️', href: 'antd-basedata.html', tab: 'productLibrary' },
+          { id: 'productPricing', name: '产品价格', icon: '💰', href: 'antd-basedata.html', tab: 'productPricing' },
+          { id: 'regionMapping', name: '区域映射', icon: '🗺️', href: 'antd-basedata.html', tab: 'regionMapping' },
+          { id: 'dataDict', name: '数据字典', icon: '📋', href: 'antd-basedata.html', tab: 'dataDict' },
+        ]
+      },
+      {
+        name: '系统管理',
+        items: [
+          { id: 'users', name: '用户账号管理', icon: '👤', href: 'antd-users.html' },
+          { id: 'permissions', name: '角色和权限管理', icon: '🔐', href: 'antd-permissions.html' },
+          { id: 'fc-version', name: '预测周期管理', icon: '📅', href: 'antd-fc-version.html' },
+          { id: 'login-log', name: '系统登录日志', icon: '📋', href: 'antd-login-log.html' },
+          { id: 'system-log', name: '系统操作日志', icon: '🗒️', href: 'antd-system-log.html' },
+          { id: 'approval-flow', name: '审批流程配置', icon: '⚙️', href: 'antd-approval-flow.html' },
+        ]
+      }
+    ];
+    const openGroups = ref(['销售预测管理', '基础数据管理', '系统管理']);
+    const currentGroup = ref('系统管理');
+    const currentModule = ref('login-log');
+
+    const toggleGroup = (name) => {
+      const idx = openGroups.value.indexOf(name);
+      if (idx >= 0) openGroups.value.splice(idx, 1);
+      else openGroups.value.push(name);
+    };
+    const navigateTo = (groupName, itemId) => {
+      currentGroup.value = groupName;
+      currentModule.value = itemId;
+      const group = navGroups.find(g => g.name === groupName);
+      const item = group.items.find(i => i.id === itemId);
+      if (item.href) { location.href = item.href + (item.tab ? '?tab=' + item.tab : ''); }
+    };
+
+    const filter = ref({ startDate: '', endDate: '', user: '', result: '' });
+
+    const userList = ['张伟', '李娜', '王强', '赵敏', '孙磊', '周婷', '吴昊', '郑楠', '钱坤', '刘晓峰'];
+
+    const allData = ref([
+      { id: 1, user: '张伟', role: '销售', loginTime: '2026-04-30 08:32:15', ip: '10.0.1.101', device: 'Windows PC / Chrome', result: '成功', browser: 'Chrome 123.0 / Windows 11' },
+      { id: 2, user: '李娜', role: '区域总监', loginTime: '2026-04-30 08:45:22', ip: '10.0.1.102', device: 'MacBook Pro / Safari', result: '成功', browser: 'Safari 17.4 / macOS 14.4' },
+      { id: 3, user: '王强', role: '销售', loginTime: '2026-04-30 08:50:01', ip: '192.168.1.201', device: 'iPhone 15 / Safari', result: '成功', browser: 'Safari Mobile / iOS 17.4' },
+      { id: 4, user: '赵敏', role: '财务', loginTime: '2026-04-30 09:12:08', ip: '10.0.1.103', device: 'Windows PC / Edge', result: '成功', browser: 'Edge 123.0 / Windows 10' },
+      { id: 5, user: '孙磊', role: '销售', loginTime: '2026-04-30 09:30:44', ip: '10.0.1.104', device: 'Windows PC / Chrome', result: '失败', browser: 'Chrome 123.0 / Windows 11' },
+      { id: 6, user: '周婷', role: '区域总监', loginTime: '2026-04-30 09:45:17', ip: '10.0.1.105', device: 'MacBook Air / Chrome', result: '成功', browser: 'Chrome 123.0 / macOS 14.4' },
+      { id: 7, user: '吴昊', role: '销售', loginTime: '2026-04-30 10:02:33', ip: '192.168.1.205', device: 'iPad Pro / Safari', result: '成功', browser: 'Safari Mobile / iPadOS 17.4' },
+      { id: 8, user: '郑楠', role: '系统管理员', loginTime: '2026-04-30 10:15:55', ip: '10.0.0.50', device: 'Windows Server / Chrome', result: '成功', browser: 'Chrome 123.0 / Windows Server 2022' },
+      { id: 9, user: '钱坤', role: '销售', loginTime: '2026-04-30 10:30:10', ip: '10.0.1.107', device: 'Windows PC / Firefox', result: '成功', browser: 'Firefox 124.0 / Windows 11' },
+      { id: 10, user: '刘晓峰', role: '区域总监', loginTime: '2026-04-30 10:48:29', ip: '10.0.1.108', device: 'MacBook Pro / Safari', result: '成功', browser: 'Safari 17.4 / macOS 14.4' },
+      { id: 11, user: '张伟', role: '销售', loginTime: '2026-04-29 08:35:12', ip: '10.0.1.101', device: 'Windows PC / Chrome', result: '成功', browser: 'Chrome 123.0 / Windows 11' },
+      { id: 12, user: '李娜', role: '区域总监', loginTime: '2026-04-29 08:50:08', ip: '10.0.1.102', device: 'MacBook Pro / Safari', result: '成功', browser: 'Safari 17.4 / macOS 14.4' },
+      { id: 13, user: '王强', role: '销售', loginTime: '2026-04-29 09:05:44', ip: '192.168.1.201', device: 'iPhone 15 / Safari', result: '失败', browser: 'Safari Mobile / iOS 17.4' },
+      { id: 14, user: '赵敏', role: '财务', loginTime: '2026-04-29 09:22:30', ip: '10.0.1.103', device: 'Windows PC / Edge', result: '成功', browser: 'Edge 123.0 / Windows 10' },
+      { id: 15, user: '孙磊', role: '销售', loginTime: '2026-04-29 09:40:18', ip: '10.0.1.104', device: 'Windows PC / Chrome', result: '成功', browser: 'Chrome 123.0 / Windows 11' },
+      { id: 16, user: '周婷', role: '区域总监', loginTime: '2026-04-29 10:05:55', ip: '10.0.1.105', device: 'MacBook Air / Chrome', result: '成功', browser: 'Chrome 123.0 / macOS 14.4' },
+      { id: 17, user: '吴昊', role: '销售', loginTime: '2026-04-29 10:25:41', ip: '192.168.1.205', device: 'iPad Pro / Safari', result: '成功', browser: 'Safari Mobile / iPadOS 17.4' },
+      { id: 18, user: '郑楠', role: '系统管理员', loginTime: '2026-04-29 10:40:03', ip: '10.0.0.50', device: 'Windows Server / Chrome', result: '成功', browser: 'Chrome 123.0 / Windows Server 2022' },
+      { id: 19, user: '钱坤', role: '销售', loginTime: '2026-04-29 11:02:17', ip: '10.0.1.107', device: 'Windows PC / Firefox', result: '失败', browser: 'Firefox 124.0 / Windows 11' },
+      { id: 20, user: '刘晓峰', role: '区域总监', loginTime: '2026-04-29 11:20:50', ip: '10.0.1.108', device: 'MacBook Pro / Safari', result: '成功', browser: 'Safari 17.4 / macOS 14.4' },
+    ]);
+
+    const filteredData = computed(() => {
+      return allData.value.filter(r => {
+        if (filter.value.user && r.user !== filter.value.user) return false;
+        if (filter.value.result && r.result !== filter.value.result) return false;
+        if (filter.value.startDate && r.loginTime < filter.value.startDate) return false;
+        if (filter.value.endDate && r.loginTime > filter.value.endDate + ' 23:59:59') return false;
+        return true;
+      });
+    });
+
+    const totalPages = computed(() => Math.max(1, Math.ceil(filteredData.value.length / pageSize)));
+
+    const paginatedData = computed(() => {
+      const start = (currentPageNum.value - 1) * pageSize;
+      return filteredData.value.slice(start, start + pageSize);
+    });
+
+    const pageNumbers = computed(() => {
+      const pages = [];
+      for (let i = 1; i <= totalPages.value; i++) {
+        if (i === 1 || i === totalPages.value || (i >= currentPageNum.value - 1 && i <= currentPageNum.value + 1)) {
+          pages.push(i);
+        }
+      }
+      return pages;
+    });
+
+    const applyFilter = () => { currentPageNum.value = 1; };
+
+    const resetFilter = () => {
+      filter.value = { startDate: '', endDate: '', user: '', result: '' };
+      currentPageNum.value = 1;
+      showToast('筛选已重置', 'success');
+    };
+
+    const viewDetail = (r) => {
+      detailData.value = { ...r };
+      showDetailModal.value = true;
+    };
+
+    const exportCSV = () => {
+      const headers = ['用户', '角色', '登录时间', 'IP地址', '设备', '结果'];
+      const rows = filteredData.value.map(r => [r.user, r.role, r.loginTime, r.ip, r.device, r.result]);
+      const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '登录日志_' + new Date().toISOString().slice(0,10) + '.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('导出成功，共 ' + filteredData.value.length + ' 条记录', 'success');
+    };
+
+    const showToast = (text, type) => {
+      toast.value = { text, type };
+      setTimeout(() => { toast.value.text = ''; }, 2500);
+    };
+
+    return {
+      toast, navGroups, openGroups, currentGroup, currentModule,
+      toggleGroup, navigateTo,
+      filter, userList, allData, filteredData, paginatedData,
+      totalPages, currentPageNum, pageNumbers,
+      showDetailModal, detailData,
+      applyFilter, resetFilter, viewDetail, exportCSV
+    };
+  }
+});
+
+app.use(antd);
+app.mount('#app');
+</script>
+</body>
+</html>

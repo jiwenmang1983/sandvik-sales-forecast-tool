@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>月度填报 - Sandvik Sales Forecast Tool</title>
+  <script src="./lib/vue.global.prod.js"></script>
+  <script src="./lib/dayjs.min.js"></script>
+  <script src="./lib/dayjs-plugin-advancedFormat.js"></script>
+  <script src="./lib/dayjs-plugin-localeData.js"></script>
+  <script src="./lib/zh-cn.min.js"></script>
+  <script src="./lib/antd-vue.min.js"></script>
+  <style>
+    :root { --sandvik-blue: #0D3D92; --bg-color: #F5F7FA; --text-primary: #1F2937; --border-color: #E5E7EB; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg-color); min-height: 100vh; }
+    #app { min-height: 100vh; display: flex; flex-direction: column; }
+    .page-header { background: var(--sandvik-blue); color: #fff; padding: 0 24px; height: 56px; display: flex; align-items: center; }
+    .page-header h1 { font-size: 16px; font-weight: 600; }
+    .page-body { flex: 1; padding: 20px 24px; }
+    .placeholder-card { background: #fff; border-radius: 10px; border: 1px solid var(--border-color); padding: 60px 40px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .placeholder-icon { font-size: 64px; margin-bottom: 20px; }
+    .placeholder-title { font-size: 20px; font-weight: 700; color: var(--sandvik-blue); margin-bottom: 12px; }
+    .placeholder-desc { font-size: 14px; color: #6B7280; margin-bottom: 24px; line-height: 1.8; }
+    .placeholder-features { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .feature-chip { background: #e8f0fe; color: var(--sandvik-blue); padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .btn { display: inline-flex; align-items: center; gap: 5px; padding: 8px 20px; border-radius: 6px; font-size: 13px; cursor: pointer; border: 1px solid var(--border-color); background: #fff; color: var(--text-primary); margin: 4px; }
+    .btn:hover { border-color: var(--sandvik-blue); color: var(--sandvik-blue); }
+    .btn-primary { background: var(--sandvik-blue); color: #fff; border-color: var(--sandvik-blue); }
+    .info-row { display: flex; gap: 24px; margin-top: 32px; justify-content: center; }
+    .info-block { background: #f9fafb; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px 24px; text-align: center; min-width: 140px; }
+    .info-value { font-size: 28px; font-weight: 700; color: var(--sandvik-blue); }
+    .info-label { font-size: 12px; color: #6B7280; margin-top: 4px; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="page-header">
+    <h1>📅 月度填报</h1>
+  </div>
+  <div class="page-body">
+    <div class="placeholder-card">
+      <div class="placeholder-icon">📅</div>
+      <div class="placeholder-title">月度填报</div>
+      <div class="placeholder-desc">
+        按自然月汇总各销售预测的实际执行数据。<br>
+        支持按客户、开票公司、PA产品线多维度汇总月度实际值。
+      </div>
+      <div class="placeholder-features">
+        <span class="feature-chip">📊 月度汇总表</span>
+        <span class="feature-chip">📈 实际 vs 预测对比</span>
+        <span class="feature-chip">🏢 按客户汇总</span>
+        <span class="feature-chip">🏛️ 按开票公司汇总</span>
+        <span class="feature-chip">📦 按 PA 产品线汇总</span>
+        <span class="feature-chip">📥 Excel 导出</span>
+      </div>
+      <div class="info-row">
+        <div class="info-block"><div class="info-value">2026</div><div class="info-label">覆盖年份</div></div>
+        <div class="info-block"><div class="info-value">Jan-Mar</div><div class="info-label">已填报月份</div></div>
+        <div class="info-block"><div class="info-value">85%</div><div class="info-label">匹配率</div></div>
+      </div>
+      <div style="margin-top:28px;">
+        <button class="btn btn-primary" onclick="alert('月度填报功能开发中')">⚙️ 功能开发中</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>const { createApp } = Vue; const app = createApp({}); app.use(antd); app.mount('#app');</script>
+</body>
+</html>

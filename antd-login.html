@@ -123,32 +123,33 @@
       margin-bottom: 24px;
     }
 
-    .sso-buttons .ant-btn {
+    .sso-buttons .sso-btn {
       height: 44px;
       font-size: 15px;
       border-radius: 6px;
       width: 100%;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+      border: 1px solid #d9d9d9;
+      background: #fff;
+      color: #333;
     }
 
-    .ant-btn-primary {
-      background-color: #0D3D92 !important;
-      border-color: #0D3D92 !important;
+    .sso-btn.primary {
+      background-color: #0D3D92;
+      border-color: #0D3D92;
+      color: #fff;
     }
 
-    .ant-btn-primary:hover {
-      background-color: #0a3278 !important;
-      border-color: #0a3278 !important;
+    .sso-btn.primary:hover {
+      background-color: #0a3280;
+      border-color: #0a3280;
     }
 
-    .ant-btn:not(.ant-btn-primary) {
-      border-color: #E5E7EB !important;
-      color: #1F2937 !important;
-      background-color: #FFFFFF !important;
-    }
-
-    .ant-btn:not(.ant-btn-primary):hover {
-      border-color: #0D3D92 !important;
-      color: #0D3D92 !important;
+    .sso-btn:not(.primary):hover {
+      border-color: #0D3D92;
+      color: #0D3D92;
     }
 
     .forgot-password {
@@ -260,19 +261,19 @@
           <p class="subtitle">通过 Microsoft 365 单点登录进入系统</p>
 
           <div class="sso-buttons">
-            <a-button type="primary" size="large" @click="handleSandvikLogin">
+            <button id="btn-sandvik" class="sso-btn primary" @click="handleSandvikLogin">
               使用 SSO 登录（sandvik 域）
-            </a-button>
-            <a-button size="large" @click="handleAhnoLogin">
+            </button>
+            <button id="btn-ahno" class="sso-btn" @click="handleAhnoLogin">
               使用 SSO 登录（AHNO 域）
-            </a-button>
+            </button>
           </div>
 
           <div class="forgot-password">
             忘记密码？联系 <a href="mailto:it-servicedesk@sandvik.com">IT Service Desk</a>
           </div>
 
-          <a-divider class="divider" />
+          <hr class="divider" />
 
           <p class="disclaimer">
             登录即代表您同意公司信息安全与数据合规政策。
@@ -284,32 +285,25 @@
 
   <!-- Local Resources -->
   <script src="./lib/vue.global.prod.js"></script>
-  <script src="./lib/dayjs.min.js"></script>
-  <script src="./lib/dayjs-plugin-advancedFormat.js"></script>
-  <script src="./lib/dayjs-plugin-customParseFormat.js"></script>
-  <script src="./lib/dayjs-plugin-localeData.js"></script>
-  <script src="./lib/dayjs-plugin-quarterOfYear.js"></script>
-  <script src="./lib/dayjs-plugin-weekOfYear.js"></script>
-  <script src="./lib/dayjs-plugin-weekYear.js"></script>
-  <script src="./lib/dayjs-plugin-weekday.js"></script>
-  <link rel="stylesheet" href="./lib/reset.css">
-  <script src="./lib/antd.min.js"></script>
 
   <script>
     const { createApp, ref } = Vue;
-    const { message } = antd;
 
     const app = createApp({
       setup() {
         const handleSandvikLogin = () => {
-          message.loading({ content: '正在跳转 Sandvik SSO...', key: 'login' });
+          const btn = document.getElementById('btn-sandvik');
+          btn.textContent = '正在跳转 Sandvik SSO...';
+          btn.disabled = true;
           setTimeout(() => {
             window.location.href = 'antd-dashboard.html';
           }, 800);
         };
 
         const handleAhnoLogin = () => {
-          message.loading({ content: '正在跳转 AHNO SSO...', key: 'login' });
+          const btn = document.getElementById('btn-ahno');
+          btn.textContent = '正在跳转 AHNO SSO...';
+          btn.disabled = true;
           setTimeout(() => {
             window.location.href = 'antd-dashboard.html';
           }, 800);
@@ -322,7 +316,6 @@
       }
     });
 
-    app.use(antd);
     app.mount('#app');
   </script>
 </body>

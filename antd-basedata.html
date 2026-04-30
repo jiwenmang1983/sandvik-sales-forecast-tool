@@ -3,259 +3,1376 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>基础数据管理 - Sandvik</title>
-  <!-- Local Resources (more reliable than CDN) -->
+  <title>基础数据管理 - Sandvik Sales Forecast Tool</title>
   <script src="./lib/vue.global.prod.js"></script>
   <script src="./lib/dayjs.min.js"></script>
   <script src="./lib/dayjs-plugin-advancedFormat.js"></script>
   <script src="./lib/dayjs-plugin-customParseFormat.js"></script>
   <script src="./lib/dayjs-plugin-localeData.js"></script>
   <script src="./lib/zh-cn.min.js"></script>
-  <script src="./lib/dayjs-plugin-quarterOfYear.js"></script>
-  <script src="./lib/dayjs-plugin-weekOfYear.js"></script>
-  <script src="./lib/dayjs-plugin-weekYear.js"></script>
-  <script src="./lib/dayjs-plugin-weekday.js"></script>
   <script src="./lib/antd-vue.min.js"></script>
-  <link rel="stylesheet" href="./lib/reset.css">
   <style>
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background: #F5F7FA;
+    :root {
+      --sandvik-blue: #0D3D92;
+      --sandvik-orange: #F5A623;
+      --bg-color: #F5F7FA;
+      --text-primary: #1F2937;
+      --text-secondary: #6B7280;
+      --border-color: #E5E7EB;
+      --success: #52C41A;
+      --warning: #FAAD14;
+      --danger: #FF4D4F;
     }
-    .page-header {
-      background: #0D3D92;
-      color: #fff;
-      padding: 0 32px;
-      line-height: 56px;
-      font-size: 18px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-    }
-    .page-header .brand {
-      color: #F5A623;
-      margin-right: 8px;
-    }
-    .page-content {
-      background: #F5F7FA;
-      min-height: calc(100vh - 56px);
-      padding: 24px;
-    }
-    .card {
-      background: #fff;
-      border-radius: 4px;
-      padding: 24px;
-    }
-    .toolbar {
-      margin-bottom: 16px;
-      display: flex;
-      gap: 8px;
-    }
-    .ant-btn-primary {
-      background: #0D3D92 !important;
-      border-color: #0D3D92 !important;
-    }
-    .ant-btn-primary:hover {
-      background: #0a3278 !important;
-      border-color: #0a3278 !important;
-    }
-    .ant-pagination .ant-pagination-item-active {
-      background: #0D3D92;
-      border-color: #0D3D92;
-    }
-    .ant-pagination .ant-pagination-item-active a {
-      color: #fff;
-    }
-    .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
-      color: #0D3D92 !important;
-    }
-    .ant-tabs-ink-bar {
-      background: #0D3D92;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-primary); min-height: 100vh; }
+    #app { min-height: 100vh; display: flex; flex-direction: column; }
+
+    .page-header { background: var(--sandvik-blue); color: #fff; padding: 0 24px; height: 56px; display: flex; align-items: center; box-shadow: 0 2px 8px rgba(13,61,146,0.2); }
+    .page-header h1 { font-size: 16px; font-weight: 600; }
+
+    .bd-layout { display: flex; flex: 1; overflow: hidden; }
+
+    /* Sidebar */
+    .bd-sidebar { width: 220px; background: #fff; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; }
+    .bd-sidebar-header { padding: 14px 16px; border-bottom: 1px solid var(--border-color); font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; background: #fafafa; }
+    .bd-nav { flex: 1; overflow-y: auto; padding: 8px 0; }
+    .bd-nav-group { padding: 0; }
+    .bd-nav-item { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-size: 13px; cursor: pointer; color: var(--text-primary); border-left: 3px solid transparent; transition: all 0.15s; }
+    .bd-nav-item:hover { background: #f0f4ff; border-left-color: #c0d0f0; }
+    .bd-nav-item.active { background: #e8f0fe; color: var(--sandvik-blue); border-left-color: var(--sandvik-blue); font-weight: 600; }
+    .bd-nav-item .icon { font-size: 16px; }
+    .bd-nav-item .badge { margin-left: auto; background: var(--sandvik-blue); color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 8px; }
+
+    /* Two-level nav */
+    .nav-group { margin-bottom: 4px; }
+    .nav-group-title { padding: 8px 16px 4px; font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+    .nav-group-title:hover { color: var(--sandvik-blue); }
+    .nav-group-arrow { font-size: 10px; transition: transform 0.2s; }
+    .nav-group-arrow.open { transform: rotate(90deg); }
+    .nav-sub-items { overflow: hidden; }
+    .nav-sub-item { display: flex; align-items: center; gap: 8px; padding: 8px 16px 8px 24px; font-size: 13px; cursor: pointer; color: var(--text-primary); border-left: 3px solid transparent; transition: all 0.15s; }
+    .nav-sub-item:hover { background: #f0f4ff; border-left-color: #c0d0f0; }
+    .nav-sub-item.active { background: #e8f0fe; color: var(--sandvik-blue); border-left-color: var(--sandvik-blue); font-weight: 600; }
+
+    /* Content */
+    .bd-content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+    .bd-toolbar { padding: 12px 20px; background: #fff; border-bottom: 1px solid var(--border-color); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .bd-toolbar-right { margin-left: auto; display: flex; gap: 8px; }
+
+    /* Filters */
+    .filter-bar { display: flex; gap: 10px; padding: 12px 20px; background: #fafafa; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; }
+    .filter-item { display: flex; flex-direction: column; gap: 3px; }
+    .filter-label { font-size: 11px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; }
+    .filter-input, .filter-select { border: 1px solid var(--border-color); border-radius: 6px; padding: 5px 10px; font-size: 12px; min-width: 130px; background: #fff; }
+    .filter-input:focus, .filter-select:focus { outline: none; border-color: var(--sandvik-blue); }
+
+    /* Table */
+    .table-wrap { flex: 1; overflow: auto; padding: 0; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .data-table th { background: #f5f7fa; padding: 9px 12px; text-align: left; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border-color); white-space: nowrap; position: sticky; top: 0; z-index: 1; }
+    .data-table td { padding: 9px 12px; border-bottom: 1px solid var(--border-color); }
+    .data-table tr:hover td { background: #f9fafb; }
+    .data-table .actions { display: flex; gap: 6px; }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; border: 1px solid var(--border-color); background: #fff; color: var(--text-primary); transition: all 0.15s; }
+    .btn:hover { border-color: var(--sandvik-blue); color: var(--sandvik-blue); }
+    .btn-primary { background: var(--sandvik-blue); color: #fff; border-color: var(--sandvik-blue); }
+    .btn-primary:hover { background: #0a3280; }
+    .btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+    .btn-sm { padding: 3px 8px; font-size: 11px; }
+    .btn-icon { padding: 3px 6px; font-size: 11px; }
+
+    /* Card body */
+    .bd-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
+
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+    .modal-box { background: #fff; border-radius: 10px; width: 560px; max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+    .modal-header { padding: 14px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 600; background: #fafafa; border-radius: 10px 10px 0 0; }
+    .modal-close { width: 26px; height: 26px; border-radius: 50%; border: none; background: #e8e8e8; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+    .modal-close:hover { background: #d0d0d0; }
+    .modal-body { padding: 20px; }
+    .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 8px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .form-row-full { margin-bottom: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+    .form-label .req { color: var(--danger); margin-left: 2px; }
+    .form-input, .form-select, .form-textarea { border: 1px solid var(--border-color); border-radius: 6px; padding: 7px 10px; font-size: 13px; width: 100%; }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--sandvik-blue); }
+    .form-textarea { resize: vertical; min-height: 60px; }
+    .form-hint { font-size: 11px; color: var(--text-secondary); }
+
+    /* Status badges */
+    .badge-status { display: inline-block; padding: 1px 7px; border-radius: 8px; font-size: 11px; font-weight: 600; }
+    .badge-active { background: #e6f7e6; color: #52c41a; }
+    .badge-inactive { background: #f0f0f0; color: #888; }
+    .badge-pending { background: #fff7e6; color: #fa8c16; }
+
+    /* Empty state */
+    .empty-state { text-align: center; padding: 48px 24px; color: var(--text-secondary); }
+    .empty-state-icon { font-size: 36px; margin-bottom: 10px; }
+    .empty-state p { font-size: 13px; }
+
+    /* Sub-table for hierarchy */
+    .sub-table { width: 100%; border: 1px solid var(--border-color); border-collapse: collapse; border-radius: 6px; overflow: hidden; }
+    .sub-table th { background: #f0f4ff; padding: 7px 10px; font-size: 11px; font-weight: 600; color: var(--sandvik-blue); border-bottom: 1px solid var(--border-color); text-align: left; }
+    .sub-table td { padding: 6px 10px; border-bottom: 1px solid var(--border-color); font-size: 12px; }
+    .sub-table tr:last-child td { border-bottom: none; }
+    .indent-1 { padding-left: 20px; }
+    .indent-2 { padding-left: 36px; }
+
+    /* Message toast */
+    .toast { position: fixed; top: 20px; right: 20px; z-index: 2000; padding: 10px 18px; border-radius: 8px; font-size: 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .toast-success { background: #f6ffed; border: 1px solid #b7eb8f; color: #52c41a; }
+    .toast-error { background: #fff2f0; border: 1px solid #ffccc7; color: #ff4d4f; }
+
+    /* Info grid */
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+    .info-item { background: #f9fafb; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 12px; }
+    .info-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 3px; }
+    .info-value { font-size: 13px; font-weight: 500; }
+
+    /* Pagination */
+    .table-footer { padding: 10px 20px; border-top: 1px solid var(--border-color); background: #fafafa; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-secondary); }
+    .pagination { display: flex; gap: 4px; }
+    .page-btn { padding: 3px 9px; border: 1px solid var(--border-color); border-radius: 4px; background: #fff; cursor: pointer; font-size: 12px; }
+    .page-btn.active { background: var(--sandvik-blue); color: #fff; border-color: var(--sandvik-blue); }
   </style>
 </head>
 <body>
-  <div id="app">
-    <div class="page-header">
-      Sandvik <span class="brand">|</span> 基础数据管理
-    </div>
-    <div class="page-content">
-      <div class="card">
-        <a-tabs v-model:activeKey="activeTab">
-          <!-- 客户信息 -->
-          <a-tab-pane key="customer" tab="客户信息">
-            <div class="toolbar">
-              <a-button type="primary" @click="openAddModal">新增客户</a-button>
-            </div>
-            <a-table
-              :columns="customerColumns"
-              :data-source="customerData"
-              :pagination="pagination"
-              row-key="id"
-            >
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'action'">
-                  <a-space>
-                    <a-button type="link" size="small" @click="openEditModal(record)">编辑</a-button>
-                    <a-button type="link" size="small" danger @click="deleteCustomer(record.id)">删除</a-button>
-                  </a-space>
-                </template>
-              </template>
-            </a-table>
-          </a-tab-pane>
+<div id="app">
 
-          <!-- 组织架构 -->
-          <a-tab-pane key="org" tab="组织架构">
-            <a-empty description="组织架构功能开发中" />
-          </a-tab-pane>
-        </a-tabs>
+  <!-- Header -->
+  <div class="page-header">
+    <h1>⚙️ 基础数据管理</h1>
+  </div>
+
+  <div class="bd-layout">
+
+    <!-- Left Sidebar -->
+    <div class="bd-sidebar">
+      <div class="bd-sidebar-header">📂 功能导航</div>
+      <div class="bd-nav">
+        <div v-for="group in navGroups" :key="group.name" class="nav-group">
+          <div class="nav-group-title" @click="toggleGroup(group.name)">
+            <span>{{ group.name }}</span>
+            <span class="nav-group-arrow" :class="{ open: openGroups.includes(group.name) }">▶</span>
+          </div>
+          <div class="nav-sub-items" v-show="openGroups.includes(group.name)">
+            <div v-for="item in group.items" :key="item.id"
+                 class="nav-sub-item"
+                 :class="{ active: currentGroup === group.name && currentModule === item.id }"
+                 @click="navigateTo(group.name, item.id)">
+              <span>{{ item.icon }} {{ item.name }}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- 新增/编辑弹窗 -->
-    <a-modal
-      :open="modalVisible"
-      :title="modalTitle"
-      ok-text="确认"
-      cancel-text="取消"
-      @ok="handleSave"
-      @cancel="modalVisible = false"
-    >
-      <a-form ref="formRef" :model="formData" layout="vertical">
-        <a-form-item label="客户名称" name="name" :rules="[{ required: true, message: '请输入客户名称' }]">
-          <a-input v-model:value="formData.name" placeholder="请输入客户名称" />
-        </a-form-item>
-        <a-form-item label="行业" name="industry" :rules="[{ required: true, message: '请输入行业' }]">
-          <a-input v-model:value="formData.industry" placeholder="请输入行业" />
-        </a-form-item>
-        <a-form-item label="联系人" name="contact" :rules="[{ required: true, message: '请输入联系人' }]">
-          <a-input v-model:value="formData.contact" placeholder="请输入联系人" />
-        </a-form-item>
-        <a-form-item label="电话" name="phone" :rules="[{ required: true, message: '请输入电话' }]">
-          <a-input v-model:value="formData.phone" placeholder="请输入电话" />
-        </a-form-item>
-      </a-form>
-    </a-modal>
+    <!-- Right Content -->
+    <div class="bd-content">
+
+      <!-- Toolbar -->
+      <div class="bd-toolbar">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;flex:1;">
+          <button class="btn" @click="exportData">📥 导出</button>
+          <button class="btn" @click="importData">📤 导入</button>
+        </div>
+        <div class="bd-toolbar-right">
+          <input v-if="currentModule !== 'productHierarchy'" class="filter-input" style="min-width:180px;" v-model="keyword" :placeholder="'搜索' + currentModuleName + '...'" @input="onSearch">
+          <button class="btn btn-primary" @click="openAddDialog">➕ {{ addButtonLabel }}</button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filter-bar" v-if="currentModule !== 'productHierarchy'">
+        <div class="filter-item">
+          <span class="filter-label">状态</span>
+          <select class="filter-select" v-model="filterStatus" @change="onFilter">
+            <option value="">全部</option>
+            <option value="active">激活</option>
+            <option value="inactive">停用</option>
+          </select>
+        </div>
+        <div class="filter-item" v-for="f in currentFilters" :key="f.key">
+          <span class="filter-label">{{ f.label }}</span>
+          <select class="filter-select" v-model="filterValues[f.key]" @change="onFilter">
+            <option value="">全部</option>
+            <option v-for="opt in f.options" :key="opt" :value="opt">{{ opt }}</option>
+          </select>
+        </div>
+        <button class="btn btn-sm" @click="resetFilters">🔄 重置</button>
+      </div>
+
+      <!-- Body -->
+      <div class="bd-body">
+
+        <!-- ═══ 客户管理 ═══ -->
+        <div v-if="currentModule === 'customer'">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>客户名称</th>
+                  <th>客户编码</th>
+                  <th>客户类型</th>
+                  <th>联系人</th>
+                  <th>电话</th>
+                  <th>邮箱</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in filteredCustomers" :key="r.id">
+                  <td><strong>{{ r.name }}</strong></td>
+                  <td>{{ r.code }}</td>
+                  <td>{{ r.type }}</td>
+                  <td>{{ r.contact }}</td>
+                  <td>{{ r.phone }}</td>
+                  <td>{{ r.email }}</td>
+                  <td><span class="badge-status" :class="r.status === 'active' ? 'badge-active' : 'badge-inactive'">{{ r.status === 'active' ? '激活' : '停用' }}</span></td>
+                  <td class="actions">
+                    <button class="btn btn-icon" @click="editItem('customer', r)">✏️</button>
+                    <button class="btn btn-icon" @click="deleteItem('customer', r)">🗑️</button>
+                  </td>
+                </tr>
+                <tr v-if="filteredCustomers.length === 0">
+                  <td colspan="8"><div class="empty-state"><div class="empty-state-icon">🏢</div><p>暂无客户数据</p></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <span>共 {{ filteredCustomers.length }} 条</span>
+            <div class="pagination">
+              <button class="page-btn" v-for="p in Math.ceil(filteredCustomers.length / 20)" :key="p" :class="{ active: p === 1 }" @click="page = p">{{ p }}</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ 开票公司管理 ═══ -->
+        <div v-if="currentModule === 'invoiceCompany'">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>开票公司名称</th>
+                  <th>公司编码</th>
+                  <th>业绩归属</th>
+                  <th>销售大区</th>
+                  <th>税号</th>
+                  <th>地址</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in filteredInvoiceCompanies" :key="r.id">
+                  <td><strong>{{ r.name }}</strong></td>
+                  <td>{{ r.code }}</td>
+                  <td>{{ r.performance }}</td>
+                  <td>{{ r.region }}</td>
+                  <td>{{ r.taxNo }}</td>
+                  <td>{{ r.address }}</td>
+                  <td><span class="badge-status" :class="r.status === 'active' ? 'badge-active' : 'badge-inactive'">{{ r.status === 'active' ? '激活' : '停用' }}</span></td>
+                  <td class="actions">
+                    <button class="btn btn-icon" @click="editItem('invoiceCompany', r)">✏️</button>
+                    <button class="btn btn-icon" @click="deleteItem('invoiceCompany', r)">🗑️</button>
+                  </td>
+                </tr>
+                <tr v-if="filteredInvoiceCompanies.length === 0">
+                  <td colspan="8"><div class="empty-state"><div class="empty-state-icon">🏛️</div><p>暂无开票公司数据</p></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <span>共 {{ filteredInvoiceCompanies.length }} 条</span>
+          </div>
+        </div>
+
+        <!-- ═══ 产品分类 ═══ -->
+        <div v-if="currentModule === 'productHierarchy'">
+          <div class="bd-toolbar" style="padding:8px 20px;border-top:none;">
+            <button class="btn btn-sm" @click="expandAllHierarchy">📂 展开全部</button>
+            <button class="btn btn-sm" @click="collapseAllHierarchy">📁 折叠全部</button>
+            <button class="btn btn-primary btn-sm" @click="openAddHierarchyDialog">➕ 添加分类</button>
+          </div>
+          <div style="padding:16px 20px;">
+            <table class="sub-table">
+              <thead>
+                <tr>
+                  <th style="width:40px;"></th>
+                  <th>分类名称</th>
+                  <th>层级</th>
+                  <th>上级分类</th>
+                  <th>编码</th>
+                  <th>描述</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template v-for="cat1 in productHierarchy" :key="cat1.name">
+                  <tr>
+                    <td><button class="btn btn-icon" @click="toggleCat(cat1)">{{ cat1.expanded ? '📂' : '📁' }}</button></td>
+                    <td><strong>📦 {{ cat1.name }}</strong></td>
+                    <td><span class="badge-status badge-active">一级</span></td>
+                    <td>—</td>
+                    <td>{{ cat1.code }}</td>
+                    <td>{{ cat1.desc }}</td>
+                    <td><button class="btn btn-icon" @click="editHierarchy(cat1)">✏️</button></td>
+                  </tr>
+                  <template v-if="cat1.expanded">
+                    <tr v-for="cat2 in cat1.children" :key="cat2.name">
+                      <td></td>
+                      <td class="indent-1">📁 {{ cat2.name }}</td>
+                      <td><span class="badge-status badge-pending">二级</span></td>
+                      <td>{{ cat1.name }}</td>
+                      <td>{{ cat2.code }}</td>
+                      <td>{{ cat2.desc }}</td>
+                      <td><button class="btn btn-icon" @click="editHierarchy(cat2)">✏️</button></td>
+                    </tr>
+                  </template>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ═══ 产品库 ═══ -->
+        <div v-if="currentModule === 'productLibrary'">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>PA</th>
+                  <th>Sub PA-1</th>
+                  <th>Sub PA-2</th>
+                  <th>Sub PA-3（产品名称）</th>
+                  <th>Sub PA-4（产品型号）</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in filteredProducts" :key="r.id">
+                  <td><strong>{{ r.sku }}</strong></td>
+                  <td>{{ r.pa }}</td>
+                  <td>{{ r.subpa1 }}</td>
+                  <td>{{ r.subpa2 }}</td>
+                  <td>{{ r.subpa3 }}</td>
+                  <td>{{ r.subpa4 }}</td>
+                  <td><span class="badge-status" :class="r.status === 'active' ? 'badge-active' : 'badge-inactive'">{{ r.status === 'active' ? '激活' : '停用' }}</span></td>
+                  <td class="actions">
+                    <button class="btn btn-icon" @click="editItem('productLibrary', r)">✏️</button>
+                    <button class="btn btn-icon" @click="deleteItem('productLibrary', r)">🗑️</button>
+                  </td>
+                </tr>
+                <tr v-if="filteredProducts.length === 0">
+                  <td colspan="8"><div class="empty-state"><div class="empty-state-icon">📦</div><p>暂无产品数据</p></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-footer"><span>共 {{ filteredProducts.length }} 条</span></div>
+        </div>
+
+        <!-- ═══ 产品价格 ═══ -->
+        <div v-if="currentModule === 'productPricing'">
+          <div class="filter-bar">
+            <div class="filter-item">
+              <span class="filter-label">PA产品线</span>
+              <select class="filter-select" v-model="priceFilter.pa">
+                <option value="">全部</option>
+                <option v-for="pa in paList" :key="pa" :value="pa">{{ pa }}</option>
+              </select>
+            </div>
+            <div class="filter-item">
+              <span class="filter-label">生效状态</span>
+              <select class="filter-select" v-model="priceFilter.active">
+                <option value="">全部</option>
+                <option value="active">生效中</option>
+                <option value="future">待生效</option>
+                <option value="expired">已失效</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>产品名称</th>
+                  <th>PA</th>
+                  <th>Sub PA</th>
+                  <th>开票公司</th>
+                  <th>客户</th>
+                  <th>单价</th>
+                  <th>生效日期</th>
+                  <th>失效日期</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in filteredPrices" :key="r.id">
+                  <td><strong>{{ r.product }}</strong></td>
+                  <td>{{ r.pa }}</td>
+                  <td>{{ r.subpa }}</td>
+                  <td>{{ r.invoice }}</td>
+                  <td>{{ r.customer }}</td>
+                  <td><strong>¥{{ r.price?.toLocaleString() }}</strong></td>
+                  <td>{{ r.startDate }}</td>
+                  <td>{{ r.endDate }}</td>
+                  <td><span class="badge-status" :class="priceStatusClass(r)">{{ priceStatusLabel(r) }}</span></td>
+                  <td class="actions">
+                    <button class="btn btn-icon" @click="editItem('productPricing', r)">✏️</button>
+                    <button class="btn btn-icon" @click="deleteItem('productPricing', r)">🗑️</button>
+                  </td>
+                </tr>
+                <tr v-if="filteredPrices.length === 0">
+                  <td colspan="10"><div class="empty-state"><div class="empty-state-icon">💰</div><p>暂无价格数据</p></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-footer"><span>共 {{ filteredPrices.length }} 条</span></div>
+        </div>
+
+        <!-- ═══ 区域/开票/业绩归属 ═══ -->
+        <div v-if="currentModule === 'regionMapping'">
+          <div class="info-grid" style="margin-bottom:16px;">
+            <div class="info-item">
+              <div class="info-label">销售大区</div>
+              <div class="info-value">{{ regions.length }} 个</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">业绩归属组</div>
+              <div class="info-value">{{ performances.length }} 个</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">开票公司</div>
+              <div class="info-value">{{ invoiceCompanies.length }} 个</div>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>销售大区</th>
+                  <th>业绩归属</th>
+                  <th>对应开票公司</th>
+                  <th>区域总监</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in filteredMappings" :key="r.id">
+                  <td><strong>{{ r.region }}</strong></td>
+                  <td>{{ r.performance }}</td>
+                  <td>{{ r.invoices.join('、') }}</td>
+                  <td>{{ r.director }}</td>
+                  <td><span class="badge-status" :class="r.status === 'active' ? 'badge-active' : 'badge-inactive'">{{ r.status === 'active' ? '激活' : '停用' }}</span></td>
+                  <td class="actions">
+                    <button class="btn btn-icon" @click="editItem('regionMapping', r)">✏️</button>
+                    <button class="btn btn-icon" @click="deleteItem('regionMapping', r)">🗑️</button>
+                  </td>
+                </tr>
+                <tr v-if="filteredMappings.length === 0">
+                  <td colspan="6"><div class="empty-state"><div class="empty-state-icon">🗺️</div><p>暂无映射数据</p></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-footer"><span>共 {{ filteredMappings.length }} 条</span></div>
+        </div>
+
+        <!-- ═══ 组织架构 ═══ -->
+        <div v-if="currentModule === 'org'">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>销售人员</th>
+                  <th>区域总监</th>
+                  <th>销售总监</th>
+                  <th>总经理</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in filteredOrgData" :key="r.id">
+                  <td><strong>{{ r.sales }}</strong></td>
+                  <td>{{ r.regionDirector }}</td>
+                  <td>{{ r.salesDirector }}</td>
+                  <td>{{ r.gm }}</td>
+                  <td><span class="badge-status" :class="r.status === 'active' ? 'badge-active' : 'badge-inactive'">{{ r.status === 'active' ? '启用' : '停用' }}</span></td>
+                  <td class="actions">
+                    <button class="btn btn-icon" @click="editItem('org', r)">✏️</button>
+                    <button class="btn btn-icon" @click="deleteItem('org', r)">🗑️</button>
+                  </td>
+                </tr>
+                <tr v-if="filteredOrgData.length === 0">
+                  <td colspan="6"><div class="empty-state"><div class="empty-state-icon">👥</div><p>暂无组织架构数据</p></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-footer"><span>共 {{ filteredOrgData.length }} 条</span></div>
+        </div>
+
+        <!-- ═══ 数据字典 ═══ -->
+        <div v-if="currentModule === 'dataDict'">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>开票公司</th>
+                  <th>业绩归属</th>
+                  <th>销售大区</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in filteredDataDictData" :key="r.id">
+                  <td><strong>{{ r.invoice }}</strong></td>
+                  <td>{{ r.performance }}</td>
+                  <td>{{ r.region }}</td>
+                  <td class="actions">
+                    <button class="btn btn-icon" @click="editItem('dataDict', r)">✏️</button>
+                    <button class="btn btn-icon" @click="deleteItem('dataDict', r)">🗑️</button>
+                  </td>
+                </tr>
+                <tr v-if="filteredDataDictData.length === 0">
+                  <td colspan="4"><div class="empty-state"><div class="empty-state-icon">📋</div><p>暂无数据字典</p></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-footer"><span>共 {{ filteredDataDictData.length }} 条</span></div>
+        </div>
+
+      </div><!-- /bd-body -->
+    </div><!-- /bd-content -->
+  </div><!-- /bd-layout -->
+
+  <!-- ═══ ADD/EDIT MODAL ═══ -->
+  <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>{{ editingId ? '编辑' : '新增' }} {{ currentModuleName }}</span>
+        <button class="modal-close" @click="showModal = false">×</button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Customer fields -->
+        <template v-if="currentModule === 'customer'">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">客户名称<span class="req">*</span></label>
+              <input class="form-input" v-model="formData.name" placeholder="请输入客户名称">
+            </div>
+            <div class="form-group">
+              <label class="form-label">客户编码<span class="req">*</span></label>
+              <input class="form-input" v-model="formData.code" placeholder="如：CUST-001">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">客户类型</label>
+              <select class="form-select" v-model="formData.type">
+                <option value="直接客户">直接客户</option>
+                <option value="渠道商">渠道商</option>
+                <option value="终端用户">终端用户</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">状态</label>
+              <select class="form-select" v-model="formData.status">
+                <option value="active">激活</option>
+                <option value="inactive">停用</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">联系人</label>
+              <input class="form-input" v-model="formData.contact" placeholder="联系人姓名">
+            </div>
+            <div class="form-group">
+              <label class="form-label">电话</label>
+              <input class="form-input" v-model="formData.phone" placeholder="电话号码">
+            </div>
+          </div>
+          <div class="form-row-full">
+            <div class="form-group">
+              <label class="form-label">邮箱</label>
+              <input class="form-input" v-model="formData.email" placeholder="email@example.com">
+            </div>
+          </div>
+        </template>
+
+        <!-- Invoice Company fields -->
+        <template v-if="currentModule === 'invoiceCompany'">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">开票公司名称<span class="req">*</span></label>
+              <input class="form-input" v-model="formData.name" placeholder="请输入开票公司名称">
+            </div>
+            <div class="form-group">
+              <label class="form-label">公司编码<span class="req">*</span></label>
+              <input class="form-input" v-model="formData.code" placeholder="如：INV-001">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">业绩归属</label>
+              <select class="form-select" v-model="formData.performance">
+                <option value="">请选择</option>
+                <option v-for="p in performances" :key="p" :value="p">{{ p }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">销售大区</label>
+              <select class="form-select" v-model="formData.region">
+                <option value="">请选择</option>
+                <option v-for="r in regions" :key="r" :value="r">{{ r }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row-full">
+            <div class="form-group">
+              <label class="form-label">税号</label>
+              <input class="form-input" v-model="formData.taxNo" placeholder="统一社会信用代码">
+            </div>
+          </div>
+          <div class="form-row-full">
+            <div class="form-group">
+              <label class="form-label">地址</label>
+              <input class="form-input" v-model="formData.address" placeholder="注册地址">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">状态</label>
+              <select class="form-select" v-model="formData.status">
+                <option value="active">激活</option>
+                <option value="inactive">停用</option>
+              </select>
+            </div>
+          </div>
+        </template>
+
+        <!-- Product Library fields -->
+        <template v-if="currentModule === 'productLibrary'">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">SKU<span class="req">*</span></label>
+              <input class="form-input" v-model="formData.sku" placeholder="SKU编码">
+            </div>
+            <div class="form-group">
+              <label class="form-label">PA<span class="req">*</span></label>
+              <select class="form-select" v-model="formData.pa">
+                <option value="">请选择</option>
+                <option v-for="pa in paList" :key="pa" :value="pa">{{ pa }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Sub PA-1</label>
+              <input class="form-input" v-model="formData.subpa1" placeholder="Sub PA-1">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Sub PA-2</label>
+              <input class="form-input" v-model="formData.subpa2" placeholder="Sub PA-2">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Sub PA-3（产品名称）</label>
+              <input class="form-input" v-model="formData.subpa3" placeholder="产品名称">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Sub PA-4（产品型号）</label>
+              <input class="form-input" v-model="formData.subpa4" placeholder="产品型号">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">状态</label>
+              <select class="form-select" v-model="formData.status">
+                <option value="active">激活</option>
+                <option value="inactive">停用</option>
+              </select>
+            </div>
+          </div>
+        </template>
+
+        <!-- Product Pricing fields -->
+        <template v-if="currentModule === 'productPricing'">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">产品<span class="req">*</span></label>
+              <select class="form-select" v-model="formData.product">
+                <option value="">请选择</option>
+                <option v-for="p in products" :key="p" :value="p">{{ p }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">开票公司</label>
+              <select class="form-select" v-model="formData.invoice">
+                <option value="">请选择</option>
+                <option v-for="inv in invoiceCompanies" :key="inv" :value="inv">{{ inv }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">客户</label>
+              <select class="form-select" v-model="formData.customer">
+                <option value="">通用（所有客户）</option>
+                <option v-for="c in customers" :key="c" :value="c">{{ c }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">单价<span class="req">*</span></label>
+              <input class="form-input" type="number" v-model="formData.price" placeholder="0">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">生效日期</label>
+              <input class="form-input" v-model="formData.startDate" placeholder="YYYY-MM-DD">
+            </div>
+            <div class="form-group">
+              <label class="form-label">失效日期</label>
+              <input class="form-input" v-model="formData.endDate" placeholder="YYYY-MM-DD">
+            </div>
+          </div>
+        </template>
+
+        <!-- Region Mapping fields -->
+        <template v-if="currentModule === 'regionMapping'">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">销售大区<span class="req">*</span></label>
+              <input class="form-input" v-model="formData.region" placeholder="大区名称">
+            </div>
+            <div class="form-group">
+              <label class="form-label">业绩归属</label>
+              <input class="form-input" v-model="formData.performance" placeholder="归属组">
+            </div>
+          </div>
+          <div class="form-row-full">
+            <div class="form-group">
+              <label class="form-label">对应开票公司</label>
+              <input class="form-input" v-model="formData.invoicesText" placeholder="多个用顿号分隔，如：苏州阿诺、天津吉恒">
+              <div class="form-hint">多个开票公司用顿号（、）分隔</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">区域总监</label>
+              <select class="form-select" v-model="formData.director">
+                <option value="">请选择</option>
+                <option v-for="d in directors" :key="d" :value="d">{{ d }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">状态</label>
+              <select class="form-select" v-model="formData.status">
+                <option value="active">激活</option>
+                <option value="inactive">停用</option>
+              </select>
+            </div>
+          </div>
+        </template>
+
+        <!-- Org fields -->
+        <template v-if="currentModule === 'org'">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">销售人员<span class="req">*</span></label>
+              <input class="form-input" v-model="formData.sales" placeholder="请输入销售人员姓名">
+            </div>
+            <div class="form-group">
+              <label class="form-label">区域总监<span class="req">*</span></label>
+              <select class="form-select" v-model="formData.regionDirector">
+                <option value="">请选择</option>
+                <option v-for="d in directors" :key="d" :value="d">{{ d }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">销售总监</label>
+              <input class="form-input" v-model="formData.salesDirector" placeholder="请输入销售总监姓名">
+            </div>
+            <div class="form-group">
+              <label class="form-label">总经理</label>
+              <input class="form-input" v-model="formData.gm" placeholder="请输入总经理姓名">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">状态</label>
+              <select class="form-select" v-model="formData.status">
+                <option value="active">启用</option>
+                <option value="inactive">停用</option>
+              </select>
+            </div>
+          </div>
+        </template>
+
+        <!-- Data Dict fields -->
+        <template v-if="currentModule === 'dataDict'">
+          <div class="form-row-full">
+            <div class="form-group">
+              <label class="form-label">开票公司<span class="req">*</span></label>
+              <input class="form-input" v-model="formData.invoice" placeholder="请输入开票公司名称">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">业绩归属</label>
+              <input class="form-input" v-model="formData.performance" placeholder="请输入业绩归属">
+            </div>
+            <div class="form-group">
+              <label class="form-label">销售大区</label>
+              <input class="form-input" v-model="formData.region" placeholder="请输入销售大区">
+            </div>
+          </div>
+        </template>
+
+      </div><!-- /modal-body -->
+      <div class="modal-footer">
+        <button class="btn" @click="showModal = false">取消</button>
+        <button class="btn btn-primary" @click="saveForm">💾 保存</button>
+      </div>
+    </div>
   </div>
 
-  <script>
-    const { createApp, ref, computed } = Vue;
+  <!-- ═══ Hierarchy ADD Modal ═══ -->
+  <div v-if="showHierarchyModal" class="modal-overlay" @click.self="showHierarchyModal = false">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>{{ editingHierarchyId ? '编辑' : '新增' }}产品分类</span>
+        <button class="modal-close" @click="showHierarchyModal = false">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">分类名称<span class="req">*</span></label>
+            <input class="form-input" v-model="hierarchyForm.name" placeholder="如：Holemaking">
+          </div>
+          <div class="form-group">
+            <label class="form-label">层级</label>
+            <select class="form-select" v-model="hierarchyForm.level">
+              <option value="1">一级</option>
+              <option value="2">二级</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row" v-if="hierarchyForm.level === '2'">
+          <div class="form-group">
+            <label class="form-label">上级分类</label>
+            <select class="form-select" v-model="hierarchyForm.parent">
+              <option value="">请选择</option>
+              <option v-for="cat in paList" :key="cat" :value="cat">{{ cat }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">编码</label>
+            <input class="form-input" v-model="hierarchyForm.code" placeholder="分类编码">
+          </div>
+        </div>
+        <div class="form-row-full">
+          <div class="form-group">
+            <label class="form-label">描述</label>
+            <textarea class="form-textarea" v-model="hierarchyForm.desc" placeholder="分类说明"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" @click="showHierarchyModal = false">取消</button>
+        <button class="btn btn-primary" @click="saveHierarchy">💾 保存</button>
+      </div>
+    </div>
+  </div>
 
-    const app = createApp({
-      setup() {
-        const activeTab = ref('customer');
-        const modalVisible = ref(false);
-        const modalTitle = ref('新增客户');
-        const editingId = ref(null);
-        const formRef = ref(null);
+  <!-- Toast -->
+  <div v-if="toast.text" class="toast" :class="'toast-' + toast.type">{{ toast.text }}</div>
 
-        const formData = ref({
-          name: '',
-          industry: '',
-          contact: '',
-          phone: ''
-        });
+</div>
 
-        const customerColumns = [
-          { title: '客户名称', dataIndex: 'name', key: 'name' },
-          { title: '行业', dataIndex: 'industry', key: 'industry' },
-          { title: '信用等级', dataIndex: 'creditLevel', key: 'creditLevel' },
-          { title: '联系人', dataIndex: 'contact', key: 'contact' },
-          { title: '电话', dataIndex: 'phone', key: 'phone' },
-          { title: '操作', key: 'action', width: 140 }
-        ];
+<script>
+const { createApp, ref, computed } = Vue;
 
-        const customers = ref([
-          { id: 1, name: '上海华东机械制造有限公司', industry: '工程机械', creditLevel: 'A级', contact: '张建国', phone: '021-68881234' },
-          { id: 2, name: '北京精密数控设备股份公司', industry: '数控机床', creditLevel: 'AA级', contact: '李明辉', phone: '010-62345678' },
-          { id: 3, name: '广州华南汽车配件有限公司', industry: '汽车制造', creditLevel: 'B级', contact: '王志刚', phone: '020-83345678' },
-          { id: 4, name: '深圳前海工业自动化公司', industry: '自动化设备', creditLevel: 'A级', contact: '陈晓东', phone: '0755-26881234' },
-          { id: 5, name: '成都西南重型装备制造公司', industry: '重型装备', creditLevel: 'AA级', contact: '刘伟明', phone: '028-87654321' },
-          { id: 6, name: '武汉中部智能制造科技有限公司', industry: '智能制造', creditLevel: 'A级', contact: '赵雪峰', phone: '027-85431234' },
-          { id: 7, name: '西安西北航空航天材料公司', industry: '航空航天', creditLevel: 'AAA级', contact: '孙海涛', phone: '029-88771234' },
-          { id: 8, name: '沈阳东北轨道交通装备公司', industry: '轨道交通', creditLevel: 'B级', contact: '周志远', phone: '024-23456789' },
-          { id: 9, name: '天津滨海新区精密仪器公司', industry: '精密仪器', creditLevel: 'A级', contact: '吴建华', phone: '022-26781234' },
-          { id: 10, name: '南京华东电子科技集团', industry: '电子科技', creditLevel: 'AA级', contact: '郑志强', phone: '025-58345678' }
-        ]);
+const app = createApp({
+  setup() {
+    const currentModule = ref('customer');
+    // Support ?tab=xxx URL param for cross-page navigation
+    const urlParams = new URLSearchParams(location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam) currentModule.value = tabParam;
 
-        const pagination = ref({
-          current: 1,
-          pageSize: 5,
-          total: customers.value.length,
-          showSizeChanger: false,
-          showTotal: (total) => `共 ${total} 条`
-        });
+    const keyword = ref('');
+    const filterStatus = ref('');
+    const filterValues = ref({});
+    const showModal = ref(false);
+    const editingId = ref(null);
+    const showHierarchyModal = ref(false);
+    const editingHierarchyId = ref(null);
+    const page = ref(1);
+    const toast = ref({ text: '', type: '' });
+    const priceFilter = ref({ pa: '', active: '' });
 
-        const customerData = computed(() => {
-          const start = (pagination.value.current - 1) * pagination.value.pageSize;
-          return customers.value.slice(start, start + pagination.value.pageSize);
-        });
+    // ── Master Data ──
+    const customers = ['昆山智造装备有限公司','苏州精工模具科技','无锡锐虎机械制造','常州高精汽车零部件','宁波海越航空部件'];
+    const invoiceCompanies = ['苏州阿诺医疗器械有限公司','苏州阿诺医疗科技有限公司','苏州百锐纳米科技有限公司','常熟阿诺切削工具有限公司','天津吉恒纳米科技有限公司','广东吉恒纳米科技有限公司','武汉阿诺精密工具有限公司','合肥阿诺精密工具有限公司','重庆阿诺威尔刀具有限公司'];
+    const regions = ['苏州销售部','东部销售大区','南部销售大区','常熟阿诺','苏州迈拓','新加坡阿诺','科而诺','常熟万克','常熟刀克'];
+    const performances = ['苏州销售部','东部销售大区-苏州','东部销售大区-杭州','南部销售大区-业务一组','北部销售大区-北京','西部销售大区-重庆','科而诺','苏州北部'];
+    const directors = ['李华东','陈志远','刘晓峰'];
+    const paList = ['Holemaking','Milling','Turning','Threading','ToolingSystem'];
+    const products = ['整体硬质合金钻头','可转位钻头','铰刀','方肩铣刀','圆刀片铣刀','外圆车刀','螺纹刀片','刀柄'];
 
-        const openAddModal = () => {
-          editingId.value = null;
-          modalTitle.value = '新增客户';
-          formData.value = { name: '', industry: '', contact: '', phone: '' };
-          modalVisible.value = true;
-        };
-
-        const openEditModal = (record) => {
-          editingId.value = record.id;
-          modalTitle.value = '编辑客户';
-          formData.value = {
-            name: record.name,
-            industry: record.industry,
-            contact: record.contact,
-            phone: record.phone
-          };
-          modalVisible.value = true;
-        };
-
-        const handleSave = async () => {
-          try {
-            await formRef.value.validate();
-            if (editingId.value) {
-              const idx = customers.value.findIndex(c => c.id === editingId.value);
-              if (idx !== -1) {
-                customers.value[idx] = { ...customers.value[idx], ...formData.value };
-              }
-            } else {
-              customers.value.push({
-                id: Date.now(),
-                ...formData.value,
-                creditLevel: 'B级'
-              });
-              pagination.value.total = customers.value.length;
-            }
-            modalVisible.value = false;
-          } catch (e) {
-            // validation failed
-          }
-        };
-
-        const deleteCustomer = (id) => {
-          customers.value = customers.value.filter(c => c.id !== id);
-          pagination.value.total = customers.value.length;
-        };
-
-        return {
-          activeTab,
-          customerColumns,
-          customerData,
-          pagination,
-          modalVisible,
-          modalTitle,
-          formData,
-          formRef,
-          openAddModal,
-          openEditModal,
-          handleSave,
-          deleteCustomer
-        };
+    // ── Navigation Groups ──
+    const navGroups = [
+      {
+        name: '销售预测管理',
+        items: [
+          { id: 'dashboard', name: 'Dashboard', icon: '📊', href: 'antd-dashboard.html' },
+          { id: 'forecast', name: '销售预测填报', icon: '📝', href: 'antd-forecast.html' },
+          { id: 'forecast-monthly', name: '销售预测填报（按月）', icon: '📅', href: 'antd-monthly-report.html' },
+          { id: 'approval', name: '销售预测审核', icon: '✅', href: 'antd-approval.html' },
+          { id: 'report', name: '分析报表', icon: '📈', href: 'antd-analysis-report.html' },
+        ]
+      },
+      {
+        name: '基础数据管理',
+        items: [
+          { id: 'org', name: '组织架构', icon: '👥' },
+          { id: 'customer', name: '客户信息', icon: '🏢' },
+          { id: 'invoiceCompany', name: '开票公司', icon: '🏛️' },
+          { id: 'productHierarchy', name: '产品分类', icon: '📦' },
+          { id: 'productLibrary', name: '产品库', icon: '🗃️' },
+          { id: 'productPricing', name: '产品价格', icon: '💰' },
+          { id: 'regionMapping', name: '区域映射', icon: '🗺️' },
+          { id: 'dataDict', name: '数据字典', icon: '📋' },
+        ]
+      },
+      {
+        name: '系统管理',
+        items: [
+          { id: 'users', name: '用户账号管理', icon: '👤', href: 'antd-users.html' },
+          { id: 'permissions', name: '角色和权限管理', icon: '🔐', href: 'antd-permissions.html' },
+          { id: 'fc-version', name: '预测周期管理', icon: '📅', href: 'antd-fc-version.html' },
+          { id: 'login-log', name: '系统登录日志', icon: '📋', href: 'antd-login-log.html' },
+          { id: 'system-log', name: '系统操作日志', icon: '🗒️', href: 'antd-system-log.html' },
+          { id: 'approval-flow', name: '审批流程配置', icon: '⚙️', href: 'antd-approval-flow.html' },
+        ]
       }
+    ];
+
+    const openGroups = ref(['销售预测管理', '基础数据管理', '系统管理']);
+    const currentGroup = ref('基础数据管理');
+
+    const toggleGroup = (name) => {
+      const idx = openGroups.value.indexOf(name);
+      if (idx >= 0) openGroups.value.splice(idx, 1);
+      else openGroups.value.push(name);
+    };
+    const navigateTo = (groupName, itemId) => {
+      currentGroup.value = groupName;
+      const group = navGroups.find(g => g.name === groupName);
+      const item = group.items.find(i => i.id === itemId);
+      if (item.href) { location.href = item.href; return; }
+      switchModule(itemId);
+    };
+
+    // ── Data Stores ──
+    const customerData = ref([
+      { id: 'c1', name: '昆山智造装备有限公司', code: 'CUST-001', type: '直接客户', contact: '王强', phone: '0512-5511001', email: 'wangq@kunshan.com', status: 'active' },
+      { id: 'c2', name: '苏州精工模具科技', code: 'CUST-002', type: '直接客户', contact: '李华', phone: '0512-5511002', email: 'lihua@szjg.com', status: 'active' },
+      { id: 'c3', name: '无锡锐虎机械制造', code: 'CUST-003', type: '渠道商', contact: '张伟', phone: '0510-5511003', email: 'zhangw@wxrh.com', status: 'active' },
+      { id: 'c4', name: '常州高精汽车零部件', code: 'CUST-004', type: '终端用户', contact: '陈志', phone: '0519-5511004', email: 'chenz@cqgj.com', status: 'active' },
+      { id: 'c5', name: '宁波海越航空部件', code: 'CUST-005', type: '直接客户', contact: '刘晓', phone: '0574-5511005', email: 'liux@nbhy.com', status: 'inactive' },
+    ]);
+
+    const invoiceCompanyData = ref([
+      { id: 'i1', name: '苏州阿诺医疗器械有限公司', code: 'INV-001', performance: '苏州销售部', region: '苏州销售部', taxNo: '91320500MA1N2C3Q4R', address: '苏州市工业园区星湖街328号', status: 'active' },
+      { id: 'i2', name: '苏州阿诺医疗科技有限公司', code: 'INV-002', performance: '东部销售大区-苏州', region: '东部销售大区', taxNo: '91320500MA1N2C3Q4S', address: '苏州市姑苏区干将东路888号', status: 'active' },
+      { id: 'i3', name: '苏州百锐纳米科技有限公司', code: 'INV-003', performance: '东部销售大区-杭州', region: '南部销售大区', taxNo: '91320500MA1N2C3Q4T', address: '苏州市吴中区木渎镇天平村', status: 'active' },
+      { id: 'i4', name: '常熟阿诺切削工具有限公司', code: 'INV-004', performance: '南部销售大区-业务一组', region: '常熟阿诺', taxNo: '91320581MA1N2C3Q4U', address: '常熟市虞山镇高新产业区', status: 'active' },
+      { id: 'i5', name: '天津吉恒纳米科技有限公司', code: 'INV-005', performance: '北部销售大区-北京', region: '苏州迈拓', taxNo: '91120000MA1N2C3Q4V', address: '天津市滨海新区经济技术开发区', status: 'active' },
+      { id: 'i6', name: '广东吉恒纳米科技有限公司', code: 'INV-006', performance: '西部销售大区-重庆', region: '新加坡阿诺', taxNo: '91440000MA1N2C3Q4W', address: '广州市南沙区万顷沙镇同兴工业园', status: 'inactive' },
+    ]);
+
+    const productHierarchy = ref([
+      {
+        name: 'Holemaking', code: 'PA-HM', desc: '孔加工产品', expanded: false,
+        children: [
+          { name: '整体硬质合金钻头', code: 'HM-001', desc: '整体硬质合金钻头系列' },
+          { name: '可转位钻头', code: 'HM-002', desc: '可转位刀片钻头' },
+          { name: '铰刀', code: 'HM-003', desc: '精密铰刀' },
+        ]
+      },
+      {
+        name: 'Milling', code: 'PA-ML', desc: '铣削产品', expanded: false,
+        children: [
+          { name: '方肩铣刀', code: 'ML-001', desc: '方肩铣刀系列' },
+          { name: '圆刀片铣刀', code: 'ML-002', desc: '圆刀片铣刀' },
+        ]
+      },
+      {
+        name: 'Turning', code: 'PA-TR', desc: '车削产品', expanded: false,
+        children: [
+          { name: '外圆车刀', code: 'TR-001', desc: '外圆车刀' },
+        ]
+      },
+      {
+        name: 'Threading', code: 'PA-TH', desc: '螺纹加工', expanded: false,
+        children: [
+          { name: '螺纹刀片', code: 'TH-001', desc: '螺纹刀片系列' },
+        ]
+      },
+      {
+        name: 'ToolingSystem', code: 'PA-TS', desc: '刀具系统', expanded: false,
+        children: [
+          { name: '刀柄', code: 'TS-001', desc: '刀具夹持系统' },
+        ]
+      },
+    ]);
+
+    const productData = ref([
+      { id: 'p1', name: '整体硬质合金钻头 3xD', code: 'HM-CA-3XD-001', pa: 'Holemaking', subpa: '3xD', spec: 'φ10mm', unit: '件', price: 1580, status: 'active' },
+      { id: 'p2', name: '整体硬质合金钻头 5xD', code: 'HM-CA-5XD-001', pa: 'Holemaking', subpa: '5xD', spec: 'φ12mm', unit: '件', price: 2180, status: 'active' },
+      { id: 'p3', name: '方肩铣刀 ME18', code: 'ML-FC-ME18', pa: 'Milling', subpa: 'ME', spec: 'φ18mm', unit: '把', price: 680, status: 'active' },
+      { id: 'p4', name: '外圆车刀 CNMG120408', code: 'TR-TN-CNMG120408', pa: 'Turning', subpa: 'CNMG', spec: 'CNMG120408', unit: '片', price: 85, status: 'active' },
+      { id: 'p5', name: '螺纹刀片 IC 1/2"-14', code: 'TH-TI-IC12', pa: 'Threading', subpa: 'IC', spec: '1/2"-14UN', unit: '片', price: 120, status: 'inactive' },
+    ]);
+
+    const pricingData = ref([
+      { id: 'pr1', product: '整体硬质合金钻头 3xD', pa: 'Holemaking', subpa: '3xD', invoice: '苏州阿诺医疗器械有限公司', customer: '通用（所有客户）', price: 1580, startDate: '2026-01-01', endDate: '2026-12-31', status: 'active' },
+      { id: 'pr2', product: '方肩铣刀 ME18', pa: 'Milling', subpa: 'ME', invoice: '苏州阿诺医疗科技有限公司', customer: '苏州精工模具科技', price: 720, startDate: '2026-01-01', endDate: '2026-06-30', status: 'active' },
+      { id: 'pr3', product: '外圆车刀 CNMG120408', pa: 'Turning', subpa: 'CNMG', invoice: '常熟阿诺切削工具有限公司', customer: '常州高精汽车零部件', price: 95, startDate: '2026-07-01', endDate: '2026-12-31', status: 'future' },
+    ]);
+
+    const regionMappingData = ref([
+      { id: 'rm1', region: '苏州销售部', performance: '苏州销售部', invoices: ['苏州阿诺医疗器械有限公司'], director: '李华东', status: 'active' },
+      { id: 'rm2', region: '东部销售大区', performance: '东部销售大区-苏州', invoices: ['苏州阿诺医疗科技有限公司'], director: '李华东', status: 'active' },
+      { id: 'rm3', region: '南部销售大区', performance: '南部销售大区-业务一组', invoices: ['苏州百锐纳米科技有限公司'], director: '陈志远', status: 'active' },
+      { id: 'rm4', region: '常熟阿诺', performance: '南部销售大区-业务一组', invoices: ['常熟阿诺切削工具有限公司'], director: '陈志远', status: 'active' },
+      { id: 'rm5', region: '苏州迈拓', performance: '北部销售大区-北京', invoices: ['天津吉恒纳米科技有限公司'], director: '刘晓峰', status: 'active' },
+      { id: 'rm6', region: '科而诺', performance: '科而诺', invoices: ['武汉阿诺精密工具有限公司'], director: '刘晓峰', status: 'active' },
+    ]);
+
+    const directorSalesMap = {
+      "李华东": ["张伟","李娜","王强","赵敏"],
+      "陈志远": ["孙磊","周婷","吴昊","郑楠"],
+      "刘晓峰": ["钱坤","冯宇","蒋宁","邓琳"]
+    };
+
+    const orgData = ref(
+      Object.entries(directorSalesMap).flatMap(([director, salesList], di) =>
+        salesList.map((sales, si) => ({
+          id: `org_${di}_${si}`,
+          director,
+          sales,
+          status: 'active'
+        }))
+      )
+    );
+
+    const invoiceMaster = [
+      { invoice: '苏州阿诺医疗器械有限公司', performance: '苏州销售部', region: '苏州销售部' },
+      { invoice: '苏州阿诺医疗科技有限公司', performance: '东部销售大区-苏州', region: '东部销售大区' },
+      { invoice: '苏州百锐纳米科技有限公司', performance: '东部销售大区-杭州', region: '南部销售大区' },
+      { invoice: '常熟阿诺切削工具有限公司', performance: '南部销售大区-业务一组', region: '常熟阿诺' },
+      { invoice: '天津吉恒纳米科技有限公司', performance: '北部销售大区-北京', region: '苏州迈拓' },
+      { invoice: '广东吉恒纳米科技有限公司', performance: '西部销售大区-重庆', region: '新加坡阿诺' },
+      { invoice: '武汉阿诺精密工具有限公司', performance: '科而诺', region: '科而诺' },
+      { invoice: '合肥阿诺精密工具有限公司', performance: '北部销售大区-北京', region: '苏州迈拓' },
+      { invoice: '重庆阿诺威尔刀具有限公司', performance: '西部销售大区-重庆', region: '西部销售大区' },
+    ];
+
+    const dataDictData = ref(invoiceMaster.map((item, i) => ({ ...item, id: `dd_${i}` })));
+
+    // ── Current Module Info ──
+    const currentModuleName = computed(() => modules.find(m => m.id === currentModule.value)?.name || '');
+
+    const addButtonLabel = computed(() => {
+      const map = { customer: '客户', invoiceCompany: '开票公司', productLibrary: '产品', productPricing: '价格规则', regionMapping: '映射关系', org: '组织', dataDict: '字典' };
+      return map[currentModule.value] || '记录';
     });
 
-    app.use(antd);
-    app.mount('#app');
-  </script>
+    const currentFilters = computed(() => {
+      const maps = {
+        customer: [{ key: 'type', label: '客户类型', options: ['直接客户','渠道商','终端用户'] }],
+        invoiceCompany: [{ key: 'performance', label: '业绩归属', options: performances }],
+        productLibrary: [{ key: 'pa', label: 'PA分类', options: paList }],
+        org: [],
+        dataDict: [],
+      };
+      return maps[currentModule.value] || [];
+    });
+
+    // ── Filtered Data ──
+    const filteredCustomers = computed(() => {
+      return customerData.value.filter(r => {
+        if (keyword.value && !r.name.includes(keyword.value) && !r.code.includes(keyword.value)) return false;
+        if (filterStatus.value && r.status !== filterStatus.value) return false;
+        if (filterValues.value.type && r.type !== filterValues.value.type) return false;
+        return true;
+      });
+    });
+
+    const filteredInvoiceCompanies = computed(() => {
+      return invoiceCompanyData.value.filter(r => {
+        if (keyword.value && !r.name.includes(keyword.value) && !r.code.includes(keyword.value)) return false;
+        if (filterStatus.value && r.status !== filterStatus.value) return false;
+        if (filterValues.value.performance && r.performance !== filterValues.value.performance) return false;
+        return true;
+      });
+    });
+
+    const filteredProducts = computed(() => {
+      return productData.value.filter(r => {
+        if (keyword.value && !r.sku.includes(keyword.value) && !r.subpa3.includes(keyword.value)) return false;
+        if (filterStatus.value && r.status !== filterStatus.value) return false;
+        if (filterValues.value.pa && r.pa !== filterValues.value.pa) return false;
+        return true;
+      });
+    });
+
+    const filteredPrices = computed(() => {
+      return pricingData.value.filter(r => {
+        if (priceFilter.value.pa && r.pa !== priceFilter.value.pa) return false;
+        return true;
+      });
+    });
+
+    const filteredMappings = computed(() => {
+      return regionMappingData.value.filter(r => {
+        if (keyword.value && !r.region.includes(keyword.value) && !r.performance.includes(keyword.value)) return false;
+        if (filterStatus.value && r.status !== filterStatus.value) return false;
+        return true;
+      });
+    });
+
+    const filteredOrgData = computed(() => {
+      return orgData.value.filter(r => {
+        if (keyword.value && !r.regionDirector.includes(keyword.value) && !r.sales.includes(keyword.value) && !r.salesDirector.includes(keyword.value) && !r.gm.includes(keyword.value)) return false;
+        if (filterStatus.value && r.status !== filterStatus.value) return false;
+        return true;
+      });
+    });
+
+    const filteredDataDictData = computed(() => {
+      return dataDictData.value.filter(r => {
+        if (keyword.value && !r.invoice.includes(keyword.value) && !r.performance.includes(keyword.value) && !r.region.includes(keyword.value)) return false;
+        return true;
+      });
+    });
+
+    // ── Price status ──
+    const priceStatusLabel = (r) => {
+      const today = '2026-04-15';
+      if (r.endDate && r.endDate < today) return '已失效';
+      if (r.startDate > today) return '待生效';
+      return '生效中';
+    };
+    const priceStatusClass = (r) => {
+      const today = '2026-04-15';
+      if (r.endDate && r.endDate < today) return 'badge-inactive';
+      if (r.startDate > today) return 'badge-pending';
+      return 'badge-active';
+    };
+
+    // ── Navigation ──
+    const switchModule = (id) => { currentModule.value = id; keyword.value = ''; filterStatus.value = ''; filterValues.value = {}; page.value = 1; };
+
+    // ── Hierarchy ──
+    const toggleCat = (cat) => { cat.expanded = !cat.expanded; };
+    const expandAllHierarchy = () => { productHierarchy.value.forEach(c => c.expanded = true); };
+    const collapseAllHierarchy = () => { productHierarchy.value.forEach(c => c.expanded = false); };
+
+    // ── Form ──
+    const formData = ref({});
+    const hierarchyForm = ref({ level: '1' });
+
+    const openAddDialog = () => {
+      editingId.value = null;
+      if (currentModule.value === 'productHierarchy') { openAddHierarchyDialog(); return; }
+      if (currentModule.value === 'org') { openAddOrgDialog(); return; }
+      if (currentModule.value === 'dataDict') { openAddDataDictDialog(); return; }
+      formData.value = { status: 'active' };
+      showModal.value = true;
+    };
+
+    const editItem = (module, item) => {
+      editingId.value = item.id;
+      formData.value = { ...item };
+      if (module === 'org') { openEditOrg(item); return; }
+      if (module === 'dataDict') { openEditDataDict(item); return; }
+      showModal.value = true;
+    };
+
+    const deleteItem = (module, item) => {
+      if (module === 'org') { deleteOrg(item); return; }
+      if (module === 'dataDict') { deleteDataDict(item); return; }
+      if (!confirm('确认删除 "' + item.name + '"？')) return;
+      const store = { customer: customerData, invoiceCompany: invoiceCompanyData, productLibrary: productData, productPricing: pricingData, regionMapping: regionMappingData }[module];
+      const idx = store.value.findIndex(r => r.id === item.id);
+      if (idx >= 0) store.value.splice(idx, 1);
+      showToast('已删除', 'success');
+    };
+
+    const saveForm = () => {
+      if (currentModule.value === 'org') { saveOrg(); return; }
+      if (currentModule.value === 'dataDict') { saveDataDict(); return; }
+      if (!formData.value.name) { showToast('请填写必填项', 'error'); return; }
+      if (editingId.value) {
+        const store = { customer: customerData, invoiceCompany: invoiceCompanyData, productLibrary: productData, productPricing: pricingData, regionMapping: regionMappingData }[currentModule.value];
+        const idx = store.value.findIndex(r => r.id === editingId.value);
+        if (idx >= 0) Object.assign(store.value[idx], formData.value);
+      } else {
+        const store = { customer: customerData, invoiceCompany: invoiceCompanyData, productLibrary: productData, productPricing: pricingData, regionMapping: regionMappingData }[currentModule.value];
+        formData.value.id = 'new_' + Date.now();
+        if (currentModule.value === 'regionMapping') {
+          formData.value.invoices = formData.value.invoicesText ? formData.value.invoicesText.split('、') : [];
+        }
+        store.value.push({ ...formData.value });
+      }
+      showModal.value = false;
+      showToast('保存成功', 'success');
+    };
+
+    // Hierarchy
+    const openAddHierarchyDialog = () => {
+      editingHierarchyId.value = null;
+      hierarchyForm.value = { level: '1', name: '', code: '', parent: '', desc: '' };
+      showHierarchyModal.value = true;
+    };
+    const editHierarchy = (cat) => {
+      editingHierarchyId.value = cat.name;
+      hierarchyForm.value = { level: '1', name: cat.name, code: cat.code, parent: '', desc: cat.desc };
+      showHierarchyModal.value = true;
+    };
+    const saveHierarchy = () => {
+      if (!hierarchyForm.value.name) { showToast('请填写分类名称', 'error'); return; }
+      if (hierarchyForm.value.level === '1') {
+        const existing = productHierarchy.value.find(c => c.name === hierarchyForm.value.name);
+        if (existing) { Object.assign(existing, hierarchyForm.value, { children: existing.children }); }
+        else { productHierarchy.value.push({ ...hierarchyForm.value, expanded: false, children: [] }); }
+      }
+      showHierarchyModal.value = false;
+      showToast('保存成功', 'success');
+    };
+
+    // Org
+    const openAddOrgDialog = () => {
+      editingId.value = null;
+      formData.value = { sales: '', regionDirector: '', salesDirector: '', gm: '', status: 'active' };
+      showModal.value = true;
+    };
+    const openEditOrg = (item) => {
+      editingId.value = item.id;
+      formData.value = { ...item };
+      showModal.value = true;
+    };
+    const saveOrg = () => {
+      if (!formData.value.regionDirector || !formData.value.sales) { showToast('请填写必填项', 'error'); return; }
+      if (editingId.value) {
+        const idx = orgData.value.findIndex(r => r.id === editingId.value);
+        if (idx >= 0) Object.assign(orgData.value[idx], formData.value);
+      } else {
+        formData.value.id = 'org_' + Date.now();
+        orgData.value.push({ ...formData.value });
+      }
+      showModal.value = false;
+      showToast('保存成功', 'success');
+    };
+    const deleteOrg = (item) => {
+      if (!confirm('确认删除 "' + item.sales + '"？')) return;
+      const idx = orgData.value.findIndex(r => r.id === item.id);
+      if (idx >= 0) orgData.value.splice(idx, 1);
+      showToast('已删除', 'success');
+    };
+
+    // Data Dict
+    const openAddDataDictDialog = () => {
+      editingId.value = null;
+      formData.value = { invoice: '', performance: '', region: '' };
+      showModal.value = true;
+    };
+    const openEditDataDict = (item) => {
+      editingId.value = item.id;
+      formData.value = { ...item };
+      showModal.value = true;
+    };
+    const saveDataDict = () => {
+      if (!formData.value.invoice) { showToast('请填写开票公司', 'error'); return; }
+      if (editingId.value) {
+        const idx = dataDictData.value.findIndex(r => r.id === editingId.value);
+        if (idx >= 0) Object.assign(dataDictData.value[idx], formData.value);
+      } else {
+        formData.value.id = 'dd_' + Date.now();
+        dataDictData.value.push({ ...formData.value });
+      }
+      showModal.value = false;
+      showToast('保存成功', 'success');
+    };
+    const deleteDataDict = (item) => {
+      if (!confirm('确认删除 "' + item.invoice + '"？')) return;
+      const idx = dataDictData.value.findIndex(r => r.id === item.id);
+      if (idx >= 0) dataDictData.value.splice(idx, 1);
+      showToast('已删除', 'success');
+    };
+
+    // ── Toolbar Actions ──
+    const exportData = () => { showToast('导出功能演示', 'success'); };
+    const importData = () => { showToast('导入功能演示', 'success'); };
+    const onSearch = () => { page.value = 1; };
+    const onFilter = () => { page.value = 1; };
+    const resetFilters = () => { keyword.value = ''; filterStatus.value = ''; filterValues.value = {}; priceFilter.value = { pa: '', active: '' }; };
+
+    // ── Toast ──
+    const showToast = (text, type) => {
+      toast.value = { text, type };
+      setTimeout(() => { toast.value.text = ''; }, 2500);
+    };
+
+    return {
+      openGroups, currentGroup, navGroups,
+      currentModule, currentModuleName, addButtonLabel, currentFilters,
+      keyword, filterStatus, filterValues, showModal, editingId, showHierarchyModal,
+      editingHierarchyId, formData, hierarchyForm, page, toast, priceFilter,
+      customers, invoiceCompanies, regions, performances, directors, paList, products,
+      customerData, filteredCustomers, invoiceCompanyData, filteredInvoiceCompanies,
+      productHierarchy, filteredProducts, productData, pricingData, filteredPrices,
+      regionMappingData, filteredMappings,
+      orgData, filteredOrgData, dataDictData, filteredDataDataDictData,
+      priceStatusLabel, priceStatusClass,
+      toggleGroup, navigateTo,
+      switchModule, toggleCat, expandAllHierarchy, collapseAllHierarchy,
+      openAddDialog, editItem, deleteItem, saveForm, openAddHierarchyDialog,
+      editHierarchy, saveHierarchy, exportData, importData, onSearch, onFilter, resetFilters,
+      openAddOrgDialog, openEditOrg, saveOrg, deleteOrg,
+      openAddDataDictDialog, openEditDataDict, saveDataDict, deleteDataDict,
+    };
+  }
+});
+
+app.use(antd);
+app.mount('#app');
+</script>
 </body>
 </html>

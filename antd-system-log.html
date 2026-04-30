@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>系统操作日志 - Sandvik Sales Forecast Tool</title>
+  <script src="./lib/vue.global.prod.js"></script>
+  <script src="./lib/dayjs.min.js"></script>
+  <script src="./lib/dayjs-plugin-advancedFormat.js"></script>
+  <script src="./lib/dayjs-plugin-customParseFormat.js"></script>
+  <script src="./lib/dayjs-plugin-localeData.js"></script>
+  <script src="./lib/zh-cn.min.js"></script>
+  <script src="./lib/antd-vue.min.js"></script>
+  <style>
+    :root {
+      --sandvik-blue: #0D3D92;
+      --sandvik-orange: #F5A623;
+      --bg-color: #F5F7FA;
+      --text-primary: #1F2937;
+      --text-secondary: #6B7280;
+      --border-color: #E5E7EB;
+      --success: #52C41A;
+      --warning: #FAAD14;
+      --danger: #FF4D4F;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-primary); min-height: 100vh; }
+    #app { min-height: 100vh; display: flex; flex-direction: column; }
+
+    .page-header { background: var(--sandvik-blue); color: #fff; padding: 0 24px; height: 56px; display: flex; align-items: center; box-shadow: 0 2px 8px rgba(13,61,146,0.2); }
+    .page-header h1 { font-size: 16px; font-weight: 600; }
+
+    .bd-layout { display: flex; flex: 1; overflow: hidden; }
+
+    .bd-sidebar { width: 220px; background: #fff; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; }
+    .bd-sidebar-header { padding: 14px 16px; border-bottom: 1px solid var(--border-color); font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; background: #fafafa; }
+    .bd-nav { flex: 1; overflow-y: auto; padding: 8px 0; }
+    .nav-group { margin-bottom: 4px; }
+    .nav-group-title { padding: 8px 16px 4px; font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+    .nav-group-title:hover { color: var(--sandvik-blue); }
+    .nav-group-arrow { font-size: 10px; transition: transform 0.2s; }
+    .nav-group-arrow.open { transform: rotate(90deg); }
+    .nav-sub-items { overflow: hidden; }
+    .nav-sub-item { display: flex; align-items: center; gap: 8px; padding: 8px 16px 8px 24px; font-size: 13px; cursor: pointer; color: var(--text-primary); border-left: 3px solid transparent; transition: all 0.15s; }
+    .nav-sub-item:hover { background: #f0f4ff; border-left-color: #c0d0f0; }
+    .nav-sub-item.active { background: #e8f0fe; color: var(--sandvik-blue); border-left-color: var(--sandvik-blue); font-weight: 600; }
+
+    .bd-content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+    .bd-toolbar { padding: 12px 20px; background: #fff; border-bottom: 1px solid var(--border-color); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .bd-toolbar-right { margin-left: auto; display: flex; gap: 8px; }
+
+    .filter-bar { display: flex; gap: 10px; padding: 12px 20px; background: #fafafa; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; }
+    .filter-item { display: flex; flex-direction: column; gap: 3px; }
+    .filter-label { font-size: 11px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; }
+    .filter-input, .filter-select { border: 1px solid var(--border-color); border-radius: 6px; padding: 5px 10px; font-size: 12px; min-width: 130px; background: #fff; }
+    .filter-input:focus, .filter-select:focus { outline: none; border-color: var(--sandvik-blue); }
+
+    .table-wrap { flex: 1; overflow: auto; padding: 0; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .data-table th { background: #f5f7fa; padding: 9px 12px; text-align: left; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border-color); white-space: nowrap; position: sticky; top: 0; z-index: 1; }
+    .data-table td { padding: 9px 12px; border-bottom: 1px solid var(--border-color); }
+    .data-table tr:hover td { background: #f9fafb; }
+
+    .btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; border: 1px solid var(--border-color); background: #fff; color: var(--text-primary); transition: all 0.15s; }
+    .btn:hover { border-color: var(--sandvik-blue); color: var(--sandvik-blue); }
+    .btn-primary { background: var(--sandvik-blue); color: #fff; border-color: var(--sandvik-blue); }
+    .btn-primary:hover { background: #0a3280; }
+    .btn-sm { padding: 3px 8px; font-size: 11px; }
+
+    .bd-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
+
+    .badge-status { display: inline-block; padding: 1px 7px; border-radius: 8px; font-size: 11px; font-weight: 600; }
+    .badge-success { background: #e6f7e6; color: #52c41a; }
+    .badge-warning { background: #fff7e6; color: #fa8c16; }
+    .badge-danger { background: #fff2f0; color: #ff4d4f; }
+
+    .empty-state { text-align: center; padding: 48px 24px; color: var(--text-secondary); }
+    .empty-state-icon { font-size: 36px; margin-bottom: 10px; }
+    .empty-state p { font-size: 13px; }
+
+    .toast { position: fixed; top: 20px; right: 20px; z-index: 2000; padding: 10px 18px; border-radius: 8px; font-size: 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .toast-success { background: #f6ffed; border: 1px solid #b7eb8f; color: #52c41a; }
+    .toast-error { background: #fff2f0; border: 1px solid #ffccc7; color: #ff4d4f; }
+
+    .table-footer { padding: 10px 20px; border-top: 1px solid var(--border-color); background: #fafafa; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-secondary); }
+    .pagination { display: flex; gap: 4px; }
+    .page-btn { padding: 3px 9px; border: 1px solid var(--border-color); border-radius: 4px; background: #fff; cursor: pointer; font-size: 12px; }
+    .page-btn.active { background: var(--sandvik-blue); color: #fff; border-color: var(--sandvik-blue); }
+    .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .action-tag { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+    .tag-create { background: #e6f7e6; color: #52c41a; }
+    .tag-update { background: #e6f0ff; color: #0D3D92; }
+    .tag-delete { background: #fff2f0; color: #ff4d4f; }
+    .tag-query { background: #f9f9f9; color: #666; }
+    .tag-approve { background: #fff7e6; color: #fa8c16; }
+    .tag-submit { background: #f0f0ff; color: #5959d1; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <div class="page-header">
+    <h1>📋 系统操作日志</h1>
+  </div>
+
+  <div class="bd-layout">
+
+    <div class="bd-sidebar">
+      <div class="bd-sidebar-header">📂 功能导航</div>
+      <div class="bd-nav">
+        <div v-for="group in navGroups" :key="group.name" class="nav-group">
+          <div class="nav-group-title" @click="toggleGroup(group.name)">
+            <span>{{ group.name }}</span>
+            <span class="nav-group-arrow" :class="{ open: openGroups.includes(group.name) }">▶</span>
+          </div>
+          <div class="nav-sub-items" v-show="openGroups.includes(group.name)">
+            <div v-for="item in group.items" :key="item.id"
+                 class="nav-sub-item"
+                 :class="{ active: currentGroup === group.name && currentModule === item.id }"
+                 @click="navigateTo(group.name, item.id)">
+              <span>{{ item.icon }} {{ item.name }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bd-content">
+
+      <div class="bd-toolbar">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;flex:1;"></div>
+        <div class="bd-toolbar-right">
+          <button class="btn btn-primary" @click="exportCSV">📥 导出 CSV</button>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <div class="filter-item">
+          <span class="filter-label">开始日期</span>
+          <input type="date" class="filter-input" v-model="filter.startDate" @change="applyFilter">
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">结束日期</span>
+          <input type="date" class="filter-input" v-model="filter.endDate" @change="applyFilter">
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">模块</span>
+          <select class="filter-select" v-model="filter.module" @change="applyFilter">
+            <option value="">全部</option>
+            <option value="预测填报">预测填报</option>
+            <option value="审核">审核</option>
+            <option value="基础数据">基础数据</option>
+            <option value="系统管理">系统管理</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">用户</span>
+          <select class="filter-select" v-model="filter.user" @change="applyFilter">
+            <option value="">全部</option>
+            <option v-for="u in userList" :key="u" :value="u">{{ u }}</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">操作类型</span>
+          <select class="filter-select" v-model="filter.action" @change="applyFilter">
+            <option value="">全部</option>
+            <option value="创建">创建</option>
+            <option value="更新">更新</option>
+            <option value="删除">删除</option>
+            <option value="查询">查询</option>
+            <option value="审批">审批</option>
+            <option value="提交">提交</option>
+          </select>
+        </div>
+        <button class="btn btn-sm" @click="resetFilter">🔄 重置</button>
+      </div>
+
+      <div class="bd-body">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>时间</th>
+                <th>用户</th>
+                <th>模块</th>
+                <th>操作类型</th>
+                <th>操作描述</th>
+                <th>IP地址</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in paginatedData" :key="r.id">
+                <td>{{ r.time }}</td>
+                <td><strong>{{ r.user }}</strong></td>
+                <td>{{ r.module }}</td>
+                <td><span class="action-tag" :class="actionTagClass(r.action)">{{ r.action }}</span></td>
+                <td>{{ r.description }}</td>
+                <td>{{ r.ip }}</td>
+              </tr>
+              <tr v-if="filteredData.length === 0">
+                <td colspan="6"><div class="empty-state"><div class="empty-state-icon">📋</div><p>暂无操作日志</p></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-footer">
+          <span>共 {{ filteredData.length }} 条，第 {{ currentPageNum }} / {{ totalPages }} 页</span>
+          <div class="pagination">
+            <button class="page-btn" :disabled="currentPageNum === 1" @click="currentPageNum--">‹</button>
+            <button class="page-btn" v-for="p in pageNumbers" :key="p" :class="{ active: p === currentPageNum }" @click="currentPageNum = p">{{ p }}</button>
+            <button class="page-btn" :disabled="currentPageNum === totalPages" @click="currentPageNum++">›</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div v-if="toast.text" class="toast" :class="'toast-' + toast.type">{{ toast.text }}</div>
+
+</div>
+
+<script>
+const { createApp, ref, computed } = Vue;
+
+const app = createApp({
+  setup() {
+    const currentPage = ref('system');
+    const toast = ref({ text: '', type: '' });
+    const currentPageNum = ref(1);
+    const pageSize = 10;
+
+    const navGroups = [
+      {
+        name: '销售预测管理',
+        items: [
+          { id: 'dashboard', name: 'Dashboard', icon: '📊', href: 'antd-dashboard.html' },
+          { id: 'forecast', name: '销售预测填报', icon: '📝', href: 'antd-forecast.html' },
+          { id: 'forecast-monthly', name: '销售预测填报（按月）', icon: '📅', href: 'antd-monthly-report.html' },
+          { id: 'approval', name: '销售预测审核', icon: '✅', href: 'antd-approval.html' },
+          { id: 'report', name: '分析报表', icon: '📈', href: 'antd-analysis-report.html' },
+        ]
+      },
+      {
+        name: '基础数据管理',
+        items: [
+          { id: 'org', name: '组织架构', icon: '👥', href: 'antd-basedata.html', tab: 'org' },
+          { id: 'customer', name: '客户信息', icon: '🏢', href: 'antd-basedata.html', tab: 'customer' },
+          { id: 'invoiceCompany', name: '开票公司', icon: '🏛️', href: 'antd-basedata.html', tab: 'invoiceCompany' },
+          { id: 'productHierarchy', name: '产品分类', icon: '📦', href: 'antd-basedata.html', tab: 'productHierarchy' },
+          { id: 'productLibrary', name: '产品库', icon: '🗃️', href: 'antd-basedata.html', tab: 'productLibrary' },
+          { id: 'productPricing', name: '产品价格', icon: '💰', href: 'antd-basedata.html', tab: 'productPricing' },
+          { id: 'regionMapping', name: '区域映射', icon: '🗺️', href: 'antd-basedata.html', tab: 'regionMapping' },
+          { id: 'dataDict', name: '数据字典', icon: '📋', href: 'antd-basedata.html', tab: 'dataDict' },
+        ]
+      },
+      {
+        name: '系统管理',
+        items: [
+          { id: 'users', name: '用户账号管理', icon: '👤', href: 'antd-users.html' },
+          { id: 'permissions', name: '角色和权限管理', icon: '🔐', href: 'antd-permissions.html' },
+          { id: 'fc-version', name: '预测周期管理', icon: '📅', href: 'antd-fc-version.html' },
+          { id: 'login-log', name: '系统登录日志', icon: '📋', href: 'antd-login-log.html' },
+          { id: 'system-log', name: '系统操作日志', icon: '🗒️', href: 'antd-system-log.html' },
+          { id: 'approval-flow', name: '审批流程配置', icon: '⚙️', href: 'antd-approval-flow.html' },
+        ]
+      }
+    ];
+    const openGroups = ref(['销售预测管理', '基础数据管理', '系统管理']);
+    const currentGroup = ref('系统管理');
+    const currentModule = ref('system-log');
+
+    const toggleGroup = (name) => {
+      const idx = openGroups.value.indexOf(name);
+      if (idx >= 0) openGroups.value.splice(idx, 1);
+      else openGroups.value.push(name);
+    };
+    const navigateTo = (groupName, itemId) => {
+      currentGroup.value = groupName;
+      currentModule.value = itemId;
+      const group = navGroups.find(g => g.name === groupName);
+      const item = group.items.find(i => i.id === itemId);
+      if (item.href) { location.href = item.href + (item.tab ? '?tab=' + item.tab : ''); }
+    };
+
+    const filter = ref({ startDate: '', endDate: '', module: '', user: '', action: '' });
+
+    const userList = ['张伟', '李娜', '王强', '赵敏', '孙磊', '周婷', '吴昊', '郑楠', '钱坤', '刘晓峰'];
+
+    const allData = ref([
+      { id: 1, time: '2026-04-30 08:32:15', user: '张伟', module: '预测填报', action: '提交', description: '提交2026年Q2销售预测数据', ip: '10.0.1.101' },
+      { id: 2, time: '2026-04-30 08:45:22', user: '李娜', module: '审核', action: '审批', description: '审批张伟的Q2预测，通过', ip: '10.0.1.102' },
+      { id: 3, time: '2026-04-30 09:12:08', user: '郑楠', module: '基础数据', action: '创建', description: '新增客户：昆山智造装备有限公司', ip: '10.0.0.50' },
+      { id: 4, time: '2026-04-30 09:30:44', user: '王强', module: '预测填报', action: '更新', description: '修改2026FC2预测数据，金额调整+12%', ip: '192.168.1.201' },
+      { id: 5, time: '2026-04-30 09:45:17', user: '赵敏', module: '系统管理', action: '查询', description: '导出2026年3月财务对账报表', ip: '10.0.1.103' },
+      { id: 6, time: '2026-04-30 10:02:33', user: '孙磊', module: '预测填报', action: '提交', description: '提交2026年Q2销售预测数据', ip: '10.0.1.104' },
+      { id: 7, time: '2026-04-30 10:15:55', user: '郑楠', module: '基础数据', action: '更新', description: '更新产品价格：整体硬质合金钻头3xD', ip: '10.0.0.50' },
+      { id: 8, time: '2026-04-30 10:30:10', user: '周婷', module: '审核', action: '审批', description: '审批王强的FC2预测申请，驳回要求重填', ip: '10.0.1.105' },
+      { id: 9, time: '2026-04-30 10:48:29', user: '吴昊', module: '预测填报', action: '创建', description: '新建2026FC3预测版本', ip: '192.168.1.205' },
+      { id: 10, time: '2026-04-30 11:05:41', user: '刘晓峰', module: '系统管理', action: '查询', description: '查看系统操作日志', ip: '10.0.1.108' },
+      { id: 11, time: '2026-04-30 11:22:17', user: '张伟', module: '基础数据', action: '查询', description: '查询客户列表', ip: '10.0.1.101' },
+      { id: 12, time: '2026-04-30 11:40:50', user: '李娜', module: '审核', action: '审批', description: '批量审批8条预测待审核', ip: '10.0.1.102' },
+      { id: 13, time: '2026-04-30 13:15:33', user: '郑楠', module: '系统管理', action: '创建', description: '创建新用户：陈明（销售）', ip: '10.0.0.50' },
+      { id: 14, time: '2026-04-30 13:42:08', user: '钱坤', module: '预测填报', action: '提交', description: '提交2026年Q2销售预测数据', ip: '10.0.1.107' },
+      { id: 15, time: '2026-04-30 14:05:22', user: '赵敏', module: '基础数据', action: '删除', description: '删除废弃产品价格规则ID:PR-2025-003', ip: '10.0.1.103' },
+      { id: 16, time: '2026-04-29 08:35:12', user: '王强', module: '预测填报', action: '提交', description: '提交2026FC1最终版', ip: '192.168.1.201' },
+      { id: 17, time: '2026-04-29 09:05:44', user: '孙磊', module: '审核', action: '审批', description: '审批王强FC1预测，通过', ip: '10.0.1.104' },
+      { id: 18, time: '2026-04-29 09:22:30', user: '郑楠', module: '基础数据', action: '创建', description: '新增开票公司：武汉阿诺精密工具有限公司', ip: '10.0.0.50' },
+      { id: 19, time: '2026-04-29 10:05:55', user: '周婷', module: '预测填报', action: '更新', description: '调整南部大区Q2预测，+8%', ip: '10.0.1.105' },
+      { id: 20, time: '2026-04-29 10:40:03', user: '吴昊', module: '系统管理', action: '查询', description: '查看角色权限配置', ip: '192.168.1.205' },
+      { id: 21, time: '2026-04-29 11:02:17', user: '刘晓峰', module: '审核', action: '审批', description: '驳回孙磊FC2延期申请', ip: '10.0.1.108' },
+      { id: 22, time: '2026-04-29 11:30:45', user: '张伟', module: '基础数据', action: '更新', description: '更新客户联系人信息', ip: '10.0.1.101' },
+      { id: 23, time: '2026-04-29 13:15:20', user: '李娜', module: '预测填报', action: '查询', description: '查看各区域预测汇总', ip: '10.0.1.102' },
+      { id: 24, time: '2026-04-29 14:00:11', user: '郑楠', module: '系统管理', action: '更新', description: '修改FC版本延期截止时间', ip: '10.0.0.50' },
+      { id: 25, time: '2026-04-29 14:30:38', user: '赵敏', module: '基础数据', action: '查询', description: '导出产品价格表Excel', ip: '10.0.1.103' },
+    ]);
+
+    const actionTagClass = (action) => {
+      const map = { '创建': 'tag-create', '更新': 'tag-update', '删除': 'tag-delete', '查询': 'tag-query', '审批': 'tag-approve', '提交': 'tag-submit' };
+      return map[action] || 'tag-query';
+    };
+
+    const filteredData = computed(() => {
+      return allData.value.filter(r => {
+        if (filter.value.module && r.module !== filter.value.module) return false;
+        if (filter.value.user && r.user !== filter.value.user) return false;
+        if (filter.value.action && r.action !== filter.value.action) return false;
+        if (filter.value.startDate && r.time < filter.value.startDate) return false;
+        if (filter.value.endDate && r.time > filter.value.endDate + ' 23:59:59') return false;
+        return true;
+      });
+    });
+
+    const totalPages = computed(() => Math.max(1, Math.ceil(filteredData.value.length / pageSize)));
+
+    const paginatedData = computed(() => {
+      const start = (currentPageNum.value - 1) * pageSize;
+      return filteredData.value.slice(start, start + pageSize);
+    });
+
+    const pageNumbers = computed(() => {
+      const pages = [];
+      for (let i = 1; i <= totalPages.value; i++) {
+        if (i === 1 || i === totalPages.value || (i >= currentPageNum.value - 1 && i <= currentPageNum.value + 1)) {
+          pages.push(i);
+        }
+      }
+      return pages;
+    });
+
+    const applyFilter = () => { currentPageNum.value = 1; };
+
+    const resetFilter = () => {
+      filter.value = { startDate: '', endDate: '', module: '', user: '', action: '' };
+      currentPageNum.value = 1;
+      showToast('筛选已重置', 'success');
+    };
+
+    const exportCSV = () => {
+      const headers = ['时间', '用户', '模块', '操作类型', '操作描述', 'IP地址'];
+      const rows = filteredData.value.map(r => [r.time, r.user, r.module, r.action, r.description, r.ip]);
+      const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '系统操作日志_' + new Date().toISOString().slice(0,10) + '.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('导出成功，共 ' + filteredData.value.length + ' 条记录', 'success');
+    };
+
+    const showToast = (text, type) => {
+      toast.value = { text, type };
+      setTimeout(() => { toast.value.text = ''; }, 2500);
+    };
+
+    return {
+      toast, navGroups, openGroups, currentGroup, currentModule,
+      toggleGroup, navigateTo,
+      filter, userList, allData, filteredData, paginatedData,
+      totalPages, currentPageNum, pageNumbers,
+      actionTagClass, applyFilter, resetFilter, exportCSV
+    };
+  }
+});
+
+app.use(antd);
+app.mount('#app');
+</script>
+</body>
+</html>

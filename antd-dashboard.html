@@ -3,25 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sandvik 销售预测仪表盘</title>
-  <!-- Local Resources -->
-  <script src="./lib/vue.global.prod.js"></script>
-  <script src="./lib/dayjs.min.js"></script>
-  <script src="./lib/dayjs-plugin-advancedFormat.js"></script>
-  <script src="./lib/dayjs-plugin-customParseFormat.js"></script>
-  <script src="./lib/dayjs-plugin-localeData.js"></script>
-  <script src="./lib/zh-cn.min.js"></script>
-  <script src="./lib/dayjs-plugin-quarterOfYear.js"></script>
-  <script src="./lib/dayjs-plugin-weekOfYear.js"></script>
-  <script src="./lib/dayjs-plugin-weekYear.js"></script>
-  <script src="./lib/dayjs-plugin-weekday.js"></script>
-  <script>dayjs.locale('zh-cn');</script>
-  <link rel="stylesheet" href="./lib/reset.css">
-  <script src="./lib/antd-vue.min.js"></script>
-  <script src="./lib/echarts.min.js"></script>
+  <title>Sandvik FC数据看板</title>
+  <!-- CDN Resources -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/dayjs.min.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/locale/zh-cn.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/plugin/advancedFormat.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/plugin/customParseFormat.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/plugin/localeData.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/plugin/quarterOfYear.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/plugin/weekOfYear.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/plugin/weekYear.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/plugin/weekday.js"></script>
+  <script src="https://unpkg.com/ant-design-vue@4.0.0/dist/antd.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/ant-design-vue@4.0.0/dist/reset.css">
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <style>
     :root {
       --primary: #0D3D92;
+      --primary-light: #2E6BD8;
+      --primary-lighter: #5A8FE8;
       --secondary: #F5A623;
       --bg: #F5F7FA;
       --card-bg: #FFFFFF;
@@ -73,67 +74,102 @@
       color: var(--text-secondary);
     }
 
-    /* Cycle Info Bar */
-    .cycle-info-bar {
+    /* Period Info Bar */
+    .period-info-bar {
       display: flex;
       align-items: center;
-      gap: 24px;
+      gap: 32px;
       background: #ffffff;
       border-radius: 12px;
-      padding: 14px 20px;
+      padding: 16px 24px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-      margin-bottom: 24px;
+      margin-bottom: 20px;
       flex-wrap: wrap;
     }
-    .cycle-info-item {
+    .period-info-item {
       display: flex;
       flex-direction: column;
       gap: 2px;
     }
-    .cycle-info-label {
+    .period-info-label {
       font-size: 12px;
       color: var(--text-secondary);
     }
-    .cycle-info-value {
-      font-size: 14px;
+    .period-info-value {
+      font-size: 15px;
       font-weight: 600;
-      color: var(--text-primary);
+      color: var(--primary);
     }
-    .cycle-info-divider {
+    .period-info-divider {
       width: 1px;
-      height: 36px;
+      height: 40px;
       background: var(--border);
     }
 
-    /* Cycle Info Bar */
+    /* Metric Mode Tabs */
+    .metric-tabs {
+      display: flex;
+      gap: 4px;
+      background: #f0f0f0;
+      padding: 4px;
+      border-radius: 10px;
+      margin-bottom: 24px;
+    }
+    .metric-tab {
+      padding: 10px 28px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+    }
+    .metric-tab.active {
+      background: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(13, 61, 146, 0.3);
+    }
+    .metric-tab:hover:not(.active) {
+      color: var(--primary);
+    }
+
+    /* KPI Grid */
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 24px;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
       margin-bottom: 24px;
     }
 
-    @media (max-width: 1200px) {
+    @media (max-width: 1400px) {
+      .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    @media (max-width: 1100px) {
+      .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 768px) {
       .kpi-grid { grid-template-columns: repeat(2, 1fr); }
     }
-
-    @media (max-width: 768px) {
+    @media (max-width: 500px) {
       .kpi-grid { grid-template-columns: 1fr; }
     }
 
     .kpi-card {
       background: var(--card-bg);
       border-radius: 16px;
-      padding: 24px;
+      padding: 20px;
       display: flex;
-      align-items: flex-start;
-      gap: 16px;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-      transition: box-shadow 0.3s ease;
+      transition: box-shadow 0.3s ease, transform 0.3s ease;
     }
-
     .kpi-card:hover {
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
     }
 
     .kpi-icon {
@@ -144,40 +180,80 @@
       align-items: center;
       justify-content: center;
       font-size: 22px;
-      flex-shrink: 0;
+      margin-bottom: 12px;
     }
 
-    .kpi-icon.blue { background: rgba(13, 61, 146, 0.1); color: var(--primary); }
-    .kpi-icon.green { background: rgba(82, 196, 26, 0.1); color: var(--success); }
-    .kpi-icon.orange { background: rgba(245, 166, 35, 0.1); color: var(--warning); }
-    .kpi-icon.red { background: rgba(255, 77, 79, 0.1); color: var(--error); }
-
-    .kpi-content {
-      flex: 1;
-      min-width: 0;
-    }
+    .kpi-icon.blue { background: rgba(13, 61, 146, 0.1); }
+    .kpi-icon.green { background: rgba(82, 196, 26, 0.1); }
+    .kpi-icon.orange { background: rgba(245, 166, 35, 0.1); }
+    .kpi-icon.red { background: rgba(255, 77, 79, 0.1); }
+    .kpi-icon.purple { background: rgba(137, 89, 168, 0.1); }
 
     .kpi-label {
-      font-size: 14px;
+      font-size: 13px;
       color: var(--text-secondary);
-      margin-bottom: 6px;
+      margin-bottom: 8px;
+      line-height: 1.3;
     }
 
     .kpi-value {
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 700;
       color: var(--text-primary);
       line-height: 1.2;
-      margin-bottom: 6px;
     }
 
     .kpi-sub {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text-secondary);
+      margin-top: 6px;
     }
 
     .kpi-sub .trend-up { color: var(--success); font-weight: 600; }
     .kpi-sub .trend-down { color: var(--error); font-weight: 600; }
+
+    /* Pending KPI Row */
+    .kpi-pending-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 768px) {
+      .kpi-pending-row { flex-direction: column; }
+    }
+
+    .kpi-pending-card {
+      flex: 1;
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .kpi-pending-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      background: rgba(255, 77, 79, 0.1);
+    }
+    .kpi-pending-content {
+      flex: 1;
+    }
+    .kpi-pending-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .kpi-pending-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
 
     /* Charts Grid */
     .charts-grid {
@@ -208,24 +284,12 @@
       margin-bottom: 20px;
       padding-bottom: 12px;
       border-bottom: 1px solid var(--border);
-    }
-
-    .back-btn {
-      display: inline-flex;
+      display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      background: #F3F4F6;
-      border: 1px solid #D1D5DB;
-      border-radius: 8px;
-      font-size: 13px;
-      color: #374151;
-      cursor: pointer;
-      transition: all 0.2s;
+      gap: 8px;
     }
-    .back-btn:hover {
-      background: #E5E7EB;
-      color: #111827;
+    .chart-title-icon {
+      font-size: 18px;
     }
 
     .chart-container {
@@ -237,46 +301,6 @@
       height: 360px;
     }
 
-    .gauge-svg {
-      width: 180px;
-      height: 180px;
-      transform: rotate(-90deg);
-    }
-    .gauge-bg {
-      fill: none;
-      stroke: #E5E7EB;
-      stroke-width: 14;
-    }
-    .gauge-fill {
-      fill: none;
-      stroke: #0D3D92;
-      stroke-width: 14;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 1s ease;
-    }
-    .gauge-wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 320px;
-      gap: 16px;
-      position: relative;
-    }
-    .gauge-label {
-      font-size: 14px;
-      color: var(--text-secondary);
-      text-align: center;
-    }
-    .gauge-label .gauge-value {
-      font-size: 18px;
-      font-weight: 700;
-      color: #1F2937;
-    }
-    .gauge-label .gauge-sub {
-      margin-top: 4px;
-    }
-
     /* Loading state */
     .loading-container {
       display: flex;
@@ -286,663 +310,882 @@
       color: var(--text-secondary);
     }
 
-    /* Layout */
-    .sider-logo {
+    /* Period Badge */
+    .period-badge {
+      display: inline-block;
+      background: var(--primary);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    /* Navigation Bar */
+    .nav-bar {
+      background: var(--primary);
+      padding: 0 24px;
       height: 64px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      border-bottom: 1px solid #E5E7EB;
+      box-shadow: 0 2px 8px rgba(13,61,146,0.15);
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .sider-logo-icon {
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-right: 40px;
+    }
+    .nav-logo-icon {
       width: 36px;
       height: 36px;
-      background: #0D3D92;
-      color: #fff;
+      background: rgba(255,255,255,0.2);
       border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
-      font-weight: 700;
     }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-left: 16px;
-      flex: 1;
-    }
-    .logo-icon {
-      width: 32px;
-      height: 32px;
-      background: rgba(255,255,255,0.2);
-      color: #fff;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      font-weight: 700;
-    }
-    .logo-text {
+    .nav-logo-text {
       color: #fff;
       font-size: 15px;
       font-weight: 500;
       white-space: nowrap;
     }
-
-    .trigger {
-      color: #fff;
-      font-size: 18px;
-      cursor: pointer;
-      padding: 0 12px;
+    .nav-links {
+      display: flex;
+      gap: 8px;
+      flex: 1;
     }
-
-    .header-actions {
+    .nav-link {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .nav-link:hover, .nav-link.active {
+      color: #fff;
+      background: rgba(255,255,255,0.15);
+    }
+    .nav-actions {
       display: flex;
       align-items: center;
       gap: 16px;
-      margin-left: auto;
     }
-    .notification-btn {
-      color: #fff;
+    .nav-action-btn {
+      color: rgba(255,255,255,0.8);
       font-size: 18px;
       cursor: pointer;
+      padding: 8px;
+      border-radius: 6px;
+      transition: all 0.2s;
     }
-    .user-dropdown {
+    .nav-action-btn:hover {
+      color: #fff;
+      background: rgba(255,255,255,0.15);
+    }
+    .nav-user {
       display: flex;
       align-items: center;
       gap: 8px;
       color: #fff;
-      cursor: pointer;
       font-size: 14px;
-      padding: 0 8px;
+      padding: 6px 12px;
       border-radius: 6px;
+      cursor: pointer;
       transition: background 0.2s;
     }
-    .user-dropdown:hover {
-      background: rgba(255,255,255,0.15);
-    }
+    .bd-layout { display: flex; flex: 1; overflow: hidden; }
+    .bd-sidebar { width: 220px; background: #fff; border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+    .bd-sidebar-header { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; background: #fafafa; }
+    .bd-nav { flex: 1; overflow-y: auto; padding: 8px 0; }
+    .nav-group { margin-bottom: 4px; }
+    .nav-group-title { padding: 8px 16px 4px; font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+    .nav-group-title:hover { color: var(--primary); }
+    .nav-group-arrow { font-size: 10px; transition: transform 0.2s; }
+    .nav-group-arrow.open { transform: rotate(90deg); }
+    .nav-sub-items { overflow: hidden; }
+    .nav-sub-item { display: flex; align-items: center; gap: 8px; padding: 8px 16px 8px 24px; font-size: 13px; cursor: pointer; color: var(--text-primary); border-left: 3px solid transparent; transition: all 0.15s; }
+    .nav-sub-item:hover { background: #f0f4ff; border-left-color: #c0d0f0; }
+    .nav-sub-item.active { background: #e8f0fe; color: var(--primary); border-left-color: var(--primary); font-weight: 600; }
 
-    .ant-menu-item {
-      font-size: 14px !important;
-    }
-    .ant-menu-item .anticon {
-      font-size: 16px !important;
-    }
+    /* Dashboard Main Content */
+    .dashboard-main { flex: 1; overflow-y: auto; padding: 24px; min-width: 0; }
 
-    /* Dashboard inner content */
-    .dashboard-content {
+    /* Footer */
+    .dashboard-footer {
+      text-align: center;
       padding: 24px;
-      max-width: 1600px;
-      margin: 0 auto;
+      color: var(--text-secondary);
+      font-size: 13px;
     }
   </style>
 </head>
 <body>
   <div id="app">
-    <a-layout style="min-height: 100vh;">
-      <!-- Sider -->
-      <a-layout-sider v-model:collapsed="collapsed" :trigger="null" collapsible :width="220" :collapsed-width="80" style="background: #ffffff; box-shadow: 2px 0 8px rgba(0,0,0,0.05);">
-        <div class="sider-logo">
-          <img class="sider-logo-icon" src="https://www.home.sandvik/logo/logo_dark.svg" alt="Sandvik" style="width:36px;height:36px;object-fit:contain;">
+    <div class="bd-layout">
+      <!-- Left Sidebar -->
+      <div class="bd-sidebar">
+        <div class="bd-sidebar-header">📂 功能导航</div>
+        <div class="bd-nav">
+          <div v-for="group in navGroups" :key="group.name" class="nav-group">
+            <div class="nav-group-title" @click="toggleGroup(group.name)">
+              <span>{{ group.name }}</span>
+              <span class="nav-group-arrow" :class="{ open: openGroups.includes(group.name) }">▶</span>
+            </div>
+            <div class="nav-sub-items" v-show="openGroups.includes(group.name)">
+              <div v-for="item in group.items" :key="item.id"
+                   class="nav-sub-item"
+                   :class="{ active: currentGroup === group.name && currentModule === item.id }"
+                   @click="navigateTo(group.name, item.id)">
+                <span>{{ item.icon }} {{ item.name }}</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <a-menu v-model:selectedKeys="selectedKeys" mode="inline" :inline-collapsible="true" style="border-right: none; margin-top: 8px;">
-          <a-menu-item key="dashboard">
-            <template #icon><dashboard-outlined /></template>
-            <span>销售预测仪表盘</span>
-          </a-menu-item>
-          <a-menu-item key="forecast" @click="navigateTo('antd-forecast.html')">
-            <template #icon><form-outlined /></template>
-            <span>销售预测填报</span>
-          </a-menu-item>
-          <a-menu-item key="approval" @click="navigateTo('antd-approval.html')">
-            <template #icon><check-circle-outlined /></template>
-            <span>销售预测审核</span>
-          </a-menu-item>
-          <a-menu-item key="fc-version">
-            <template #icon><calendar-outlined /></template>
-            <span>预测周期管理</span>
-          </a-menu-item>
-          <a-menu-item key="base-data" @click="navigateTo('antd-basedata.html')">
-            <template #icon><setting-outlined /></template>
-            <span>基础数据管理</span>
-          </a-menu-item>
-        </a-menu>
-      </a-layout-sider>
+      </div>
 
-      <a-layout>
-        <!-- Header -->
-        <a-layout-header style="background: #0D3D92; padding: 0 16px; height: 64px; display: flex; align-items: center; box-shadow: 0 2px 8px rgba(13,61,146,0.15);">
-          <menu-fold-outlined class="trigger" @click="() => collapsed = !collapsed" />
-          <div class="logo">
-            <img class="logo-icon" src="https://www.home.sandvik/logo/logo_dark.svg" alt="Sandvik" style="width:32px;height:32px;object-fit:contain;margin-right:8px;">
-            <span class="logo-text">China Division Sales Forecast Tool</span>
-          </div>
-          <div class="header-actions">
-            <a-badge :count="3" :offset="[-2, 2]">
-              <bell-outlined class="notification-btn" />
-            </a-badge>
-            <a-dropdown>
-              <div class="user-dropdown">
-                <user-outlined />
-                <span>Admin User</span>
-              </div>
-              <template #overlay>
-                <a-menu>
-                  <a-menu-item key="profile">
-                    <user-outlined style="margin-right: 8px;" />Profile
-                  </a-menu-item>
-                  <a-menu-item key="settings">
-                    <setting-outlined style="margin-right: 8px;" />Settings
-                  </a-menu-item>
-                  <a-menu-divider />
-                  <a-menu-item key="logout">
-                    <logout-outlined style="margin-right: 8px;" />Logout
-                  </a-menu-item>
-                </a-menu>
-              </template>
-            </a-dropdown>
-          </div>
-        </a-layout-header>
+      <!-- Dashboard Main Content -->
+      <div class="dashboard-main">
+      </div>
+      <div class="nav-actions">
+        <span class="nav-action-btn">🔔</span>
+        <div class="nav-user">
+          <span>👤</span>
+          <span>Admin User</span>
+        </div>
+      </div>
+    </div>
 
-        <!-- Content -->
-        <a-layout-content style="background: #F5F7FA; min-height: calc(100vh - 64px);">
-          <div class="dashboard-content">
-            <!-- Page Header -->
-            <div class="page-header">
-              <div class="page-header-left">
-                <h1>销售预测仪表盘</h1>
-                <p>实时监控销售预测数据与业务指标</p>
-              </div>
-            </div>
+    <div class="dashboard-container">
+      <!-- Page Header -->
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>📊 FC数据看板</h1>
+          <p>实时监控销售预测数据与业务指标</p>
+        </div>
+      </div>
 
-            <!-- Cycle Info Bar -->
-            <div class="cycle-info-bar">
-              <div class="cycle-info-item">
-                <span class="cycle-info-label">预测年月区间</span>
-                <div style="display:flex;align-items:center;gap:6px;margin-top:2px;">
-                  <a-month-picker v-model="filterStart" :key="'start'" style="width:110px;" placeholder="开始月份" @change="onFilterChange" format="YYYY-MM" :month-cell-render="monthCellRender"></a-month-picker>
-                  <span style="color:#888;">至</span>
-                  <a-month-picker v-model="filterEnd" :key="'end'" style="width:110px;" placeholder="结束月份" @change="onFilterChange" format="YYYY-MM" :month-cell-render="monthCellRender"></a-month-picker>
-                </div>
-              </div>
-              <div class="cycle-info-divider"></div>
-              <div class="cycle-info-item">
-                <span class="cycle-info-label">预测周期名称</span>
-                <span class="cycle-info-value">{{ currentCycle.name }}</span>
-              </div>
-            </div>
+      <!-- Period Info Bar -->
+      <div class="period-info-bar">
+        <div class="period-info-item">
+          <span class="period-info-label">本期预测周期</span>
+          <span class="period-info-value" id="dashboard-current-period">2026FC1</span>
+        </div>
+        <div class="period-info-divider"></div>
+        <div class="period-info-item">
+          <span class="period-info-label">开放时间窗口</span>
+          <span class="period-info-value" id="dashboard-current-window">2026-01-01 ~ 2026-04-30</span>
+        </div>
+        <div class="period-info-divider"></div>
+        <div class="period-info-item">
+          <span class="period-info-label">开放月份数</span>
+          <span class="period-info-value" id="dashboard-current-months">4个月</span>
+        </div>
+      </div>
 
-      <!-- KPI Cards Row -->
+      <!-- Month Range Selector -->
+      <div class="period-info-bar" style="margin-bottom: 16px;">
+        <div class="period-info-item">
+          <span class="period-info-label">起始月</span>
+          <a-select v-model="startMonth" style="width: 100px; margin-top: 4px;" @change="onMonthRangeChange">
+            <a-select-option value="0">1月 (Jan)</a-select-option>
+            <a-select-option value="1">2月 (Feb)</a-select-option>
+            <a-select-option value="2">3月 (Mar)</a-select-option>
+            <a-select-option value="3">4月 (Apr)</a-select-option>
+            <a-select-option value="4">5月 (May)</a-select-option>
+            <a-select-option value="5">6月 (Jun)</a-select-option>
+            <a-select-option value="6">7月 (Jul)</a-select-option>
+            <a-select-option value="7">8月 (Aug)</a-select-option>
+            <a-select-option value="8">9月 (Sep)</a-select-option>
+            <a-select-option value="9">10月 (Oct)</a-select-option>
+            <a-select-option value="10">11月 (Nov)</a-select-option>
+            <a-select-option value="11">12月 (Dec)</a-select-option>
+          </a-select>
+        </div>
+        <div class="period-info-item">
+          <span class="period-info-label">结束月</span>
+          <a-select v-model="endMonth" style="width: 100px; margin-top: 4px;" @change="onMonthRangeChange">
+            <a-select-option value="0">1月 (Jan)</a-select-option>
+            <a-select-option value="1">2月 (Feb)</a-select-option>
+            <a-select-option value="2">3月 (Mar)</a-select-option>
+            <a-select-option value="3">4月 (Apr)</a-select-option>
+            <a-select-option value="4">5月 (May)</a-select-option>
+            <a-select-option value="5">6月 (Jun)</a-select-option>
+            <a-select-option value="6">7月 (Jul)</a-select-option>
+            <a-select-option value="7">8月 (Aug)</a-select-option>
+            <a-select-option value="8">9月 (Sep)</a-select-option>
+            <a-select-option value="9">10月 (Oct)</a-select-option>
+            <a-select-option value="10">11月 (Nov)</a-select-option>
+            <a-select-option value="11">12月 (Dec)</a-select-option>
+          </a-select>
+        </div>
+      </div>
+
+      <!-- Metric Mode Toggle -->
+      <div class="metric-tabs">
+        <button class="metric-tab" :class="{ active: metricMode === 'order' }" @click="setMetricMode('order')">
+          📦 订单
+        </button>
+        <button class="metric-tab" :class="{ active: metricMode === 'invoice' }" @click="setMetricMode('invoice')">
+          🧾 开票
+        </button>
+      </div>
+
+      <!-- KPI Cards Grid (10 cards) -->
       <div class="kpi-grid">
+        <!-- KPI 1: 订单总数量 -->
         <div class="kpi-card">
-          <div class="kpi-icon blue">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-            </svg>
+          <div class="kpi-icon blue">📋</div>
+          <div class="kpi-label">订单总数量</div>
+          <div class="kpi-value" id="kpi-order-qty">{{ currentMetrics.orderQty }}</div>
+          <div class="kpi-sub">笔</div>
+        </div>
+
+        <!-- KPI 2: 订单总金额 -->
+        <div class="kpi-card">
+          <div class="kpi-icon green">💰</div>
+          <div class="kpi-label">订单总金额</div>
+          <div class="kpi-value" id="kpi-order-amt">¥{{ formatAmount(currentMetrics.orderAmt) }}</div>
+          <div class="kpi-sub">万元</div>
+        </div>
+
+        <!-- KPI 3: 订单金额同比 -->
+        <div class="kpi-card">
+          <div class="kpi-icon orange">📈</div>
+          <div class="kpi-label">订单金额同比 YoY%</div>
+          <div class="kpi-value" id="kpi-order-yoy">
+            <span :class="currentMetrics.orderYoY >= 0 ? 'trend-up' : 'trend-down'">
+              {{ currentMetrics.orderYoY >= 0 ? '↑' : '↓' }}{{ Math.abs(currentMetrics.orderYoY) }}%
+            </span>
           </div>
-          <div class="kpi-content">
-            <div class="kpi-label">订单总金额</div>
-            <div class="kpi-value">¥{{ (kpiData.order / 10000).toFixed(1) }}万</div>
-            <div class="kpi-sub"><span class="trend-up">↑12%</span> 同比</div>
+          <div class="kpi-sub">较去年同期</div>
+        </div>
+
+        <!-- KPI 4: 开票总数量 -->
+        <div class="kpi-card">
+          <div class="kpi-icon blue">📄</div>
+          <div class="kpi-label">开票总数量</div>
+          <div class="kpi-value" id="kpi-inv-qty">{{ currentMetrics.invQty }}</div>
+          <div class="kpi-sub">笔</div>
+        </div>
+
+        <!-- KPI 5: 开票总金额 -->
+        <div class="kpi-card">
+          <div class="kpi-icon green">💵</div>
+          <div class="kpi-label">开票总金额</div>
+          <div class="kpi-value" id="kpi-inv-amt">¥{{ formatAmount(currentMetrics.invAmt) }}</div>
+          <div class="kpi-sub">万元</div>
+        </div>
+
+        <!-- KPI 6: 开票金额同比 -->
+        <div class="kpi-card">
+          <div class="kpi-icon orange">📊</div>
+          <div class="kpi-label">开票金额同比 YoY%</div>
+          <div class="kpi-value" id="kpi-inv-yoy">
+            <span :class="currentMetrics.invYoY >= 0 ? 'trend-up' : 'trend-down'">
+              {{ currentMetrics.invYoY >= 0 ? '↑' : '↓' }}{{ Math.abs(currentMetrics.invYoY) }}%
+            </span>
           </div>
+          <div class="kpi-sub">较去年同期</div>
+        </div>
+
+        <!-- KPI 7: 填报完成比率 -->
+        <div class="kpi-card">
+          <div class="kpi-icon purple">🎯</div>
+          <div class="kpi-label">填报完成比率</div>
+          <div class="kpi-value" id="kpi-completion">{{ currentMetrics.completion }}%</div>
+          <div class="kpi-sub">已完成填报</div>
+        </div>
+
+        <!-- KPI 8-10: Period info (空占位，保持5列布局) -->
+        <div class="kpi-card">
+          <div class="kpi-icon blue">🗓️</div>
+          <div class="kpi-label">预测周期</div>
+          <div class="kpi-value">2026FC1</div>
+          <div class="kpi-sub">1月-4月</div>
         </div>
 
         <div class="kpi-card">
-          <div class="kpi-icon green">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 12h6M9 16h6M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/>
-              <path d="M13 3v5h5"/>
-            </svg>
-          </div>
-          <div class="kpi-content">
-            <div class="kpi-label">开票总金额</div>
-            <div class="kpi-value">¥{{ (kpiData.invoice / 10000).toFixed(1) }}万</div>
-            <div class="kpi-sub"><span class="trend-up">↑8%</span> 同比</div>
-          </div>
+          <div class="kpi-icon green">📅</div>
+          <div class="kpi-label">预测月份</div>
+          <div class="kpi-value">4个月</div>
+          <div class="kpi-sub">Jan - Apr</div>
         </div>
 
         <div class="kpi-card">
-          <div class="kpi-icon orange">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-              <polyline points="22 4 12 14.01 9 11.01"/>
-            </svg>
-          </div>
-          <div class="kpi-content">
-            <div class="kpi-label">填报完成比率</div>
-            <div class="kpi-value">{{ kpiData.completion }}%</div>
-            <div class="kpi-sub">{{ kpiData.completion }}% 填报</div>
+          <div class="kpi-icon orange">🔄</div>
+          <div class="kpi-label">数据状态</div>
+          <div class="kpi-value">活跃</div>
+          <div class="kpi-sub">实时更新</div>
+        </div>
+      </div>
+
+      <!-- Pending Items Row -->
+      <div class="kpi-pending-row">
+        <div class="kpi-pending-card">
+          <div class="kpi-pending-icon">⏳</div>
+          <div class="kpi-pending-content">
+            <div class="kpi-pending-label">待审批总数</div>
+            <div class="kpi-pending-value" id="kpi-pending">{{ pendingTotal }}</div>
           </div>
         </div>
-
-        <div class="kpi-card">
-          <div class="kpi-icon red">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M12 8v4M12 16h.01"/>
-            </svg>
+        <div class="kpi-pending-card">
+          <div class="kpi-pending-icon">👔</div>
+          <div class="kpi-pending-content">
+            <div class="kpi-pending-label">区总待审批</div>
+            <div class="kpi-pending-value" id="kpi-pending-sub">{{ pendingDirector }}</div>
           </div>
-          <div class="kpi-content">
-            <div class="kpi-label">待审批数</div>
-            <div class="kpi-value">{{ kpiData.pending }}</div>
-            <div class="kpi-sub">区总{{ kpiData.pending }} / 财务{{ kpiData.pending }}</div>
+        </div>
+        <div class="kpi-pending-card">
+          <div class="kpi-pending-icon">💼</div>
+          <div class="kpi-pending-content">
+            <div class="kpi-pending-label">财务待审批</div>
+            <div class="kpi-pending-value" id="kpi-pending-fin">{{ pendingFinance }}</div>
           </div>
         </div>
       </div>
 
       <!-- Charts Grid -->
       <div class="charts-grid">
-        <!-- 月度趋势预测对比 -->
-        <div class="chart-card">
-          <div class="chart-title">月度趋势预测对比</div>
-          <div class="chart-container" id="line-chart-monthly"></div>
+        <!-- Chart 1: 月度趋势预测对比 (Full Width) -->
+        <div class="chart-card full-width">
+          <div class="chart-title">
+            <span class="chart-title-icon">📈</span>
+            月度趋势预测对比
+          </div>
+          <div class="chart-container tall" id="line-chart-monthly"></div>
         </div>
 
-        <!-- 销售大区金额占比 -->
+        <!-- Chart 2: 销售大区金额占比 -->
         <div class="chart-card">
-          <div class="chart-title">销售大区金额占比</div>
+          <div class="chart-title">
+            <span class="chart-title-icon">🗺️</span>
+            销售大区金额占比
+          </div>
           <div class="chart-container" id="pie-chart-region"></div>
         </div>
 
-        <!-- 行业分类销售额占比 -->
-        <div class="chart-card">
-          <div class="chart-title">行业分类销售额占比</div>
-          <div class="chart-container" id="pie-chart-industry"></div>
-        </div>
-
-        <!-- PA产品线销售额占比（可下钻） -->
+        <!-- Chart 3: PA 产品线金额占比 -->
         <div class="chart-card">
           <div class="chart-title">
-            <span v-if="productDrillLevel === 0">PA 产品线销售额占比（点击下钻）</span>
-            <span v-else>PA 产品线 - {{ currentProduct }} 下钻数据</span>
-          </div>
-          <div v-if="productDrillLevel > 0" style="margin-bottom:12px;text-align:left;">
-            <button class="back-btn" @click="resetProductDrill">← 返回 PA 产品线</button>
+            <span class="chart-title-icon">🏭</span>
+            PA 产品线金额占比
           </div>
           <div class="chart-container" id="pie-chart-product"></div>
         </div>
 
-        <!-- 客户 TOP 5 -->
+        <!-- Chart 4: 行业分类销售额占比 -->
         <div class="chart-card">
-          <div class="chart-title">客户 TOP 5</div>
+          <div class="chart-title">
+            <span class="chart-title-icon">🏭</span>
+            行业分类销售额占比
+          </div>
+          <div class="chart-container" id="pie-chart-industry"></div>
+        </div>
+
+        <!-- Chart 5: 客户 TOP 5 -->
+        <div class="chart-card">
+          <div class="chart-title">
+            <span class="chart-title-icon">🏢</span>
+            客户 TOP 5
+          </div>
           <div class="chart-container" id="bar-chart-customer"></div>
         </div>
 
-        <!-- 开票公司 TOP 5 -->
+        <!-- Chart 6: 开票公司 TOP 5 -->
         <div class="chart-card">
-          <div class="chart-title">开票公司 TOP 5</div>
+          <div class="chart-title">
+            <span class="chart-title-icon">🏛️</span>
+            开票公司 TOP 5
+          </div>
           <div class="chart-container" id="bar-chart-company"></div>
         </div>
 
+        <!-- Chart 7: 销售人员 TOP 5 -->
+        <div class="chart-card">
+          <div class="chart-title">
+            <span class="chart-title-icon">👨‍💼</span>
+            销售人员 TOP 5
+          </div>
+          <div class="chart-container" id="bar-chart-sales"></div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="dashboard-footer">
+        <p>Sandvik China Division Sales Forecast Tool © 2026 | 数据更新时间: {{ currentTime }}</p>
       </div>
     </div>
-  </a-layout-content>
-  </a-layout>
   </div>
-</div>
 
   <script>
-    const { createApp, ref, onMounted } = Vue;
+    // Setup dayjs plugins
+    dayjs.extend(dayjs_plugin_advancedFormat);
+    dayjs.extend(dayjs_plugin_customParseFormat);
+    dayjs.extend(dayjs_plugin_localeData);
+    dayjs.extend(dayjs_plugin_quarterOfYear);
+    dayjs.extend(dayjs_plugin_weekOfYear);
+    dayjs.extend(dayjs_plugin_weekYear);
+    dayjs.extend(dayjs_plugin_weekday);
+    dayjs.locale('zh-cn');
 
-    // PA产品线二级数据（Sub PA-2）
-    const subPA2Data = {
-      '刀具': [
-        { name: 'CNC刀具', amount: 620 },
-        { name: '焊接刀具', amount: 540 },
-        { name: '可转位刀具', amount: 480 },
-        { name: '精密刀具', amount: 380 },
-        { name: '硬质合金刀具', amount: 320 },
-        { name: '金刚石刀具', amount: 280 },
-        { name: '陶瓷刀具', amount: 220 },
-        { name: '超硬刀具', amount: 180 },
-        { name: '涂层刀具', amount: 150 },
-        { name: '断屑槽刀具', amount: 130 },
+    const { createApp, ref, reactive, computed, onMounted, watch, nextTick } = Vue;
+
+    // Mock Data
+    const mockData = {
+      period: '2026FC1',
+      openWindow: '2026-01-01 ~ 2026-04-30',
+      openMonths: 4,
+      // 16 Customers
+      customers: [
+        { name: '三一重工股份有限公司', orderAmt: 2850, invAmt: 2650 },
+        { name: '中联重科股份有限公司', orderAmt: 2420, invAmt: 2280 },
+        { name: '徐工集团工程机械有限公司', orderAmt: 2180, invAmt: 2050 },
+        { name: '卡特彼勒(中国)投资有限公司', orderAmt: 1950, invAmt: 1820 },
+        { name: '小松(中国)投资有限公司', orderAmt: 1680, invAmt: 1550 },
+        { name: '柳工机械股份有限公司', orderAmt: 1420, invAmt: 1300 },
+        { name: '龙工机械有限公司', orderAmt: 1280, invAmt: 1150 },
+        { name: '山河智能装备股份有限公司', orderAmt: 1150, invAmt: 1020 },
+        { name: '福田雷沃国际重工股份有限公司', orderAmt: 980, invAmt: 880 },
+        { name: '山东临工工程机械有限公司', orderAmt: 850, invAmt: 760 },
+        { name: '厦工机械股份有限公司', orderAmt: 720, invAmt: 650 },
+        { name: '安徽合力股份有限公司', orderAmt: 680, invAmt: 610 },
+        { name: '杭叉集团股份有限公司', orderAmt: 620, invAmt: 550 },
+        { name: '林德(中国)叉车有限公司', orderAmt: 580, invAmt: 520 },
+        { name: '比亚迪股份有限公司', orderAmt: 520, invAmt: 480 },
+        { name: '特变电工股份有限公司', orderAmt: 450, invAmt: 400 },
       ],
-      '铣刀': [
-        { name: '面铣刀', amount: 450 },
-        { name: '立铣刀', amount: 380 },
-        { name: '球头铣刀', amount: 320 },
-        { name: '成型铣刀', amount: 280 },
-        { name: '玉米铣刀', amount: 240 },
-        { name: '槽铣刀', amount: 210 },
-        { name: '角度铣刀', amount: 180 },
-        { name: 'T型槽铣刀', amount: 150 },
-        { name: '斜度铣刀', amount: 120 },
-        { name: '雕刻铣刀', amount: 100 },
+      // 9 Invoice Companies
+      invoiceCompanies: [
+        { name: '上海Sandvik机械有限公司', orderAmt: 4200, invAmt: 3950 },
+        { name: '北京山特维克商贸有限公司', orderAmt: 3580, invAmt: 3350 },
+        { name: '广州山特维克进出口有限公司', orderAmt: 2950, invAmt: 2780 },
+        { name: '深圳精密机械有限公司', orderAmt: 2480, invAmt: 2320 },
+        { name: '成都工程设备有限公司', orderAmt: 1980, invAmt: 1850 },
+        { name: '武汉 Sandvik 机械有限公司', orderAmt: 1650, invAmt: 1520 },
+        { name: '西安山特维克机电设备有限公司', orderAmt: 1380, invAmt: 1280 },
+        { name: '南京精密机械股份有限公司', orderAmt: 1150, invAmt: 1050 },
+        { name: '沈阳重型机械有限公司', orderAmt: 920, invAmt: 850 },
       ],
-      '车刀': [
-        { name: '外圆车刀', amount: 380 },
-        { name: '内孔车刀', amount: 320 },
-        { name: '螺纹车刀', amount: 280 },
-        { name: '切断刀', amount: 240 },
-        { name: '切槽刀', amount: 210 },
-        { name: '端面车刀', amount: 180 },
-        { name: '仿形车刀', amount: 150 },
-        { name: '精车刀', amount: 120 },
-        { name: '偏心车刀', amount: 95 },
-        { name: '多功能车刀', amount: 80 },
+      // 12 Sales People + 3 Directors
+      salesPeople: [
+        { name: '张伟', region: '东部大区', orderAmt: 2850, invAmt: 2680 },
+        { name: '李娜', region: '南部大区', orderAmt: 2520, invAmt: 2380 },
+        { name: '王强', region: '西部大区', orderAmt: 2280, invAmt: 2150 },
+        { name: '赵丽', region: '北部大区', orderAmt: 1980, invAmt: 1850 },
+        { name: '陈明', region: '东部大区', orderAmt: 1750, invAmt: 1620 },
+        { name: '刘芳', region: '南部大区', orderAmt: 1580, invAmt: 1480 },
+        { name: '杨洋', region: '西部大区', orderAmt: 1420, invAmt: 1320 },
+        { name: '周杰', region: '北部大区', orderAmt: 1280, invAmt: 1180 },
+        { name: '吴静', region: '东部大区', orderAmt: 1150, invAmt: 1050 },
+        { name: '郑军', region: '南部大区', orderAmt: 980, invAmt: 890 },
+        { name: '孙磊', region: '西部大区', orderAmt: 850, invAmt: 780 },
+        { name: '钱婷', region: '北部大区', orderAmt: 720, invAmt: 650 },
       ],
-      '螺纹': [
-        { name: '螺纹铣刀', amount: 350 },
-        { name: '螺纹丝锥', amount: 290 },
-        { name: '螺纹板牙', amount: 240 },
-        { name: '螺纹梳刀', amount: 200 },
-        { name: '螺纹滚压头', amount: 170 },
-        { name: '管螺纹刀具', amount: 145 },
-        { name: '梯形螺纹刀', amount: 120 },
-        { name: '锥螺纹刀', amount: 100 },
-        { name: '蜗杆铣刀', amount: 85 },
-        { name: '螺纹切槽刀', amount: 70 },
+      directors: [
+        { name: '孙建国', title: '东区总', pendingCount: 12 },
+        { name: '李秀英', title: '南区总', pendingCount: 8 },
+        { name: '周志远', title: '西区总', pendingCount: 15 },
       ],
-      '系统': [
-        { name: '数控系统', amount: 250 },
-        { name: '伺服系统', amount: 210 },
-        { name: '测量系统', amount: 180 },
-        { name: '控制系统', amount: 155 },
-        { name: '驱动系统', amount: 130 },
-        { name: '传感系统', amount: 110 },
-        { name: '安全系统', amount: 95 },
-        { name: '通信系统', amount: 80 },
-        { name: '诊断系统', amount: 65 },
-        { name: '仿真系统', amount: 50 },
+      // 5 Sales Regions
+      regions: [
+        { name: '东部大区', orderAmt: 7250, invAmt: 6800 },
+        { name: '南部大区', orderAmt: 5050, invAmt: 4750 },
+        { name: '西部大区', orderAmt: 4550, invAmt: 4250 },
+        { name: '北部大区', orderAmt: 3930, invAmt: 3680 },
+        { name: '中部大区', orderAmt: 1510, invAmt: 1420 },
+      ],
+      // PA Product Lines
+      productLines: [
+        { name: '刀具', orderAmt: 5800, invAmt: 5450 },
+        { name: '铣刀', orderAmt: 4850, invAmt: 4580 },
+        { name: '车刀', orderAmt: 3980, invAmt: 3750 },
+        { name: '螺纹', orderAmt: 3250, invAmt: 3050 },
+        { name: '系统', orderAmt: 2680, invAmt: 2520 },
+      ],
+      // Monthly forecast data (Jan-Apr)
+      monthlyCurrent: [8500, 9200, 10800, 12500],
+      monthlyPrevious: [7200, 8100, 9500, 11200],
+      months: ['1月', '2月', '3月', '4月'],
+      // Industry data
+      industries: [
+        { name: '航空航天', orderAmt: 285, invAmt: 268 },
+        { name: '汽车制造', orderAmt: 423, invAmt: 398 },
+        { name: '医疗器械', orderAmt: 198, invAmt: 185 },
+        { name: '电子信息', orderAmt: 156, invAmt: 145 },
+        { name: '模具制造', orderAmt: 112, invAmt: 105 },
+        { name: '通用机械', orderAmt: 98, invAmt: 92 },
       ],
     };
 
     const app = createApp({
       setup() {
-        const productDrillLevel = ref(0);
-        const currentProduct = ref('');
-        const filterYear = ref('2026');
-        const filterMonth = ref('all');
+        const metricMode = ref('order'); // 'order' or 'invoice'
+        const currentTime = ref(dayjs().format('YYYY-MM-DD HH:mm:ss'));
+        const startMonth = ref(0); // Jan = 0
+        const endMonth = ref(3);   // Apr = 3
 
-        // Mock cycles - key is "YYYY-Q" format (quarter derived from start month)
-        const cyclesDB = {
-          '2026-Q1': { name: '2026Q1预测', salesStart: '2026-01', salesEnd: '2026-03' },
-          '2026-Q2': { name: '2026Q2预测', salesStart: '2026-04', salesEnd: '2026-06' },
-          '2026-Q3': { name: '2026Q3预测', salesStart: '2026-07', salesEnd: '2026-09' },
-          '2026-Q4': { name: '2026Q4预测', salesStart: '2026-10', salesEnd: '2026-12' },
-          '2026-上半年': { name: '2026Q1-Q2预测', salesStart: '2026-01', salesEnd: '2026-06' },
-          '2026-下半年': { name: '2026Q3-Q4预测', salesStart: '2026-07', salesEnd: '2026-12' },
-          '2025-Q1': { name: '2025Q1预测', salesStart: '2025-01', salesEnd: '2025-03' },
-          '2025-Q2': { name: '2025Q2预测', salesStart: '2025-04', salesEnd: '2025-06' },
-          '2025-Q3': { name: '2025Q3预测', salesStart: '2025-07', salesEnd: '2025-09' },
-          '2025-Q4': { name: '2025Q4预测', salesStart: '2025-10', salesEnd: '2025-12' },
-          '2025-上半年': { name: '2025Q1-Q2预测', salesStart: '2025-01', salesEnd: '2025-06' },
-          '2025-下半年': { name: '2025Q3-Q4预测', salesStart: '2025-07', salesEnd: '2025-12' },
-          '2024-Q1': { name: '2024Q1预测', salesStart: '2024-01', salesEnd: '2024-03' },
-          '2024-Q2': { name: '2024Q2预测', salesStart: '2024-04', salesEnd: '2024-06' },
-          '2024-Q3': { name: '2024Q3预测', salesStart: '2024-07', salesEnd: '2024-09' },
-          '2024-Q4': { name: '2024Q4预测', salesStart: '2024-10', salesEnd: '2024-12' },
-          '2024-上半年': { name: '2024Q1-Q2预测', salesStart: '2024-01', salesEnd: '2024-06' },
-          '2024-下半年': { name: '2024Q3-Q4预测', salesStart: '2024-07', salesEnd: '2024-12' },
+        // Pending items
+        const pendingTotal = computed(() => mockData.directors.reduce((sum, d) => sum + d.pendingCount, 0) + 5); // +5 for finance
+        const pendingDirector = computed(() => mockData.directors.reduce((sum, d) => sum + d.pendingCount, 0));
+        const pendingFinance = ref(5);
+
+        // ── Navigation ──
+        const navGroups = [
+          {
+            name: '销售预测管理',
+            items: [
+              { id: 'dashboard', name: 'Dashboard', icon: '📊', href: 'antd-dashboard.html' },
+              { id: 'forecast', name: '销售预测填报', icon: '📝', href: 'antd-forecast.html' },
+              { id: 'forecast-monthly', name: '销售预测填报（按月）', icon: '📅', href: 'antd-monthly-report.html' },
+              { id: 'approval', name: '销售预测审核', icon: '✅', href: 'antd-approval.html' },
+              { id: 'report', name: '分析报表', icon: '📈', href: 'antd-analysis-report.html' },
+            ]
+          },
+          {
+            name: '基础数据管理',
+            items: [
+              { id: 'org', name: '组织架构', icon: '👥', href: 'antd-basedata.html' },
+              { id: 'customer', name: '客户信息', icon: '🏢', href: 'antd-basedata.html' },
+              { id: 'invoiceCompany', name: '开票公司', icon: '🏛️', href: 'antd-basedata.html' },
+              { id: 'productHierarchy', name: '产品分类', icon: '📦', href: 'antd-basedata.html' },
+              { id: 'productLibrary', name: '产品库', icon: '🗃️', href: 'antd-basedata.html' },
+              { id: 'productPricing', name: '产品价格', icon: '💰', href: 'antd-basedata.html' },
+              { id: 'regionMapping', name: '区域映射', icon: '🗺️', href: 'antd-basedata.html' },
+              { id: 'dataDict', name: '数据字典', icon: '📋', href: 'antd-basedata.html' },
+            ]
+          },
+          {
+            name: '系统管理',
+            items: [
+              { id: 'users', name: '用户账号管理', icon: '👤', href: 'antd-users.html' },
+              { id: 'permissions', name: '角色和权限管理', icon: '🔐', href: 'antd-permissions.html' },
+              { id: 'fc-version', name: '预测周期管理', icon: '📅', href: 'antd-fc-version.html' },
+              { id: 'login-log', name: '系统登录日志', icon: '📋', href: 'antd-login-log.html' },
+              { id: 'system-log', name: '系统操作日志', icon: '🗒️', href: 'antd-system-log.html' },
+              { id: 'approval-flow', name: '审批流程配置', icon: '⚙️', href: 'antd-approval-flow.html' },
+            ]
+          }
+        ];
+        const openGroups = ref(['销售预测管理', '基础数据管理', '系统管理']);
+        const currentGroup = ref('销售预测管理');
+        const currentModule = ref('dashboard');
+
+        const toggleGroup = (name) => {
+          const idx = openGroups.value.indexOf(name);
+          if (idx >= 0) openGroups.value.splice(idx, 1);
+          else openGroups.value.push(name);
+        };
+        const navigateTo = (groupName, itemId) => {
+          currentGroup.value = groupName;
+          currentModule.value = itemId;
+          const group = navGroups.find(g => g.name === groupName);
+          const item = group.items.find(i => i.id === itemId);
+          if (item.href) { location.href = item.href; }
         };
 
-        const currentCycle = ref({ name: '2026Q1-Q2预测', salesStart: '2026-01', salesEnd: '2026-06' });
+        // Current metrics based on mode
+        const currentMetrics = computed(() => {
+          const mode = metricMode.value;
+          const customers = mockData.customers;
+          const invoiceCompanies = mockData.invoiceCompanies;
 
-        // Month range picker refs (dayjs objects)
-        const filterStart = ref(dayjs('2026-01'));
-        const filterEnd = ref(dayjs('2026-06'));
+          const orderQty = customers.length * 12; // Estimated order count
+          const invQty = invoiceCompanies.length * 8; // Estimated invoice count
+          const orderAmt = customers.reduce((sum, c) => sum + c.orderAmt, 0);
+          const invAmt = invoiceCompanies.reduce((sum, c) => sum + c.invAmt, 0);
 
-        // Filter multiplier - simulates different data per year
-        function getMultiplier() {
-          if (!filterStart.value) return 1.0;
-          const y = filterStart.value.format('YYYY');
-          if (y === '2026') return 1.0;
-          if (y === '2025') return 0.85;
-          return 0.72;
-        }
-
-        onMounted(() => {
-          initCharts();
+          return {
+            orderQty: orderQty,
+            invQty: invQty,
+            orderAmt: orderAmt,
+            invAmt: invAmt,
+            orderYoY: 12.5,
+            invYoY: 8.3,
+            completion: 85,
+          };
         });
 
-        // Store chart instances for re-render on filter change
+        // Charts instances
         let charts = {};
+
+        function setMetricMode(mode) {
+          metricMode.value = mode;
+          nextTick(() => {
+            renderAllCharts();
+          });
+        }
+
+        function onMonthRangeChange() {
+          nextTick(() => {
+            renderAllCharts();
+          });
+        }
+
+        function formatAmount(value) {
+          return (value / 10000).toFixed(1);
+        }
 
         function initCharts() {
           charts.monthly = echarts.init(document.getElementById('line-chart-monthly'));
           charts.region = echarts.init(document.getElementById('pie-chart-region'));
-          charts.industry = echarts.init(document.getElementById('pie-chart-industry'));
           charts.product = echarts.init(document.getElementById('pie-chart-product'));
+          charts.industry = echarts.init(document.getElementById('pie-chart-industry'));
           charts.customer = echarts.init(document.getElementById('bar-chart-customer'));
           charts.company = echarts.init(document.getElementById('bar-chart-company'));
-
-          // Product drill click
-          charts.product.on('click', function(params) {
-            if (productDrillLevel.value === 0 && params.name) {
-              currentProduct.value = params.name;
-              productDrillLevel.value = 1;
-              renderProductDetail(params.name);
-            }
-          });
+          charts.sales = echarts.init(document.getElementById('bar-chart-sales'));
 
           renderAllCharts();
+
           window.addEventListener('resize', () => {
             Object.values(charts).forEach(c => c && c.resize());
           });
+
+          // Update time every second
+          setInterval(() => {
+            currentTime.value = dayjs().format('YYYY-MM-DD HH:mm:ss');
+          }, 1000);
         }
 
         function renderAllCharts() {
-          const m = getMultiplier();
-          const yr = filterYear.value;
+          const mode = metricMode.value;
+          const getAmt = (item) => mode === 'order' ? item.orderAmt : item.invAmt;
+          const color = '#0D3D92';
+          const colorLight = '#5A8FE8';
 
-          // Determine which months to show based on range picker
-          const allMonths = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-          const allValues = [820, 950, 1100, 980, 1150, 1280, 1350, 1200, 1420, 1550, 1620, 1700];
-
-          let activeMonths = allMonths.map((label, i) => ({ label, value: allValues[i], idx: i + 1 }));
-          if (filterStart.value && filterEnd.value) {
-            const start = parseInt(filterStart.value.format('YYYYMM'));
-            const end = parseInt(filterEnd.value.format('YYYYMM'));
-            activeMonths = activeMonths.filter(item => {
-              const yyyy = 2026; // base year for labels
-              const ym = yyyy * 100 + item.idx;
-              return ym >= start && ym <= end;
-            });
-          }
-
-          const showMonths = activeMonths.length > 0 ? activeMonths.map(m => m.label) : allMonths;
-          const showData = activeMonths.length > 0 ? activeMonths.map(m => Math.round(m.value * m)) : allValues.map(v => Math.round(v * m));
-
-          // KPI reactive update
-          kpiData.value = {
-            order: Math.round(12345678 * m),
-            invoice: Math.round(9876543 * m),
-            completion: Math.round(78 + (yr === '2026' ? 0 : yr === '2025' ? -8 : -15)),
-            pending: Math.round(12 * m),
-          };
-
-          // 1. Monthly line chart
+          // 1. Monthly Line Chart
           charts.monthly.setOption({
-            color: ['#0D3D92'],
-            tooltip: { trigger: 'axis', formatter: '{b}: {c}万' },
-            grid: { left: 60, right: 20, top: 10, bottom: 30 },
-            xAxis: { type: 'category', data: showMonths },
-            yAxis: { type: 'value', axisLabel: { formatter: v => v + '万' } },
+            color: [color, '#F5A623'],
+            tooltip: {
+              trigger: 'axis',
+              formatter: function(params) {
+                let result = params[0].name + '<br/>';
+                params.forEach(p => {
+                  result += p.marker + ' ' + p.seriesName + ': ' + p.value + '万元<br/>';
+                });
+                return result;
+              }
+            },
+            legend: {
+              data: ['2026年预测', '2025年同期'],
+              bottom: 0
+            },
+            grid: { left: 60, right: 30, top: 20, bottom: 50 },
+            xAxis: {
+              type: 'category',
+              data: mockData.months,
+              axisLabel: { fontSize: 12 }
+            },
+            yAxis: {
+              type: 'value',
+              axisLabel: { formatter: v => v + '万', fontSize: 12 }
+            },
+            series: [
+              {
+                name: '2026年预测',
+                type: 'line',
+                smooth: true,
+                data: mockData.monthlyCurrent,
+                lineStyle: { width: 3, color: color },
+                areaStyle: {
+                  color: {
+                    type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                    colorStops: [
+                      { offset: 0, color: 'rgba(13,61,146,0.3)' },
+                      { offset: 1, color: 'rgba(13,61,146,0.05)' }
+                    ]
+                  }
+                },
+                symbol: 'circle',
+                symbolSize: 8,
+                itemStyle: { color: color }
+              },
+              {
+                name: '2025年同期',
+                type: 'line',
+                smooth: true,
+                data: mockData.monthlyPrevious,
+                lineStyle: { width: 2, color: '#F5A623', type: 'dashed' },
+                symbol: 'circle',
+                symbolSize: 6,
+                itemStyle: { color: '#F5A623' }
+              }
+            ]
+          });
+
+          // 2. Region Pie Chart
+          const regionData = mockData.regions.map(r => ({ name: r.name, value: getAmt(r) }));
+          charts.region.setOption({
+            tooltip: { trigger: 'item', formatter: '{b}: {c}万 ({d}%)' },
+            legend: { orient: 'vertical', right: 10, top: 'center', textStyle: { fontSize: 12 } },
+            color: ['#0D3D92', '#2E6BD8', '#5A8FE8', '#7EABEF', '#A8C5F5'],
             series: [{
-              name: '预测金额',
-              type: 'line',
-              smooth: true,
-              data: showData,
-              lineStyle: { width: 2.5, color: '#0D3D92' },
-              areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(13,61,146,0.3)' }, { offset: 1, color: 'rgba(13,61,146,0.05)' }] } },
-              symbol: 'circle',
-              symbolSize: 6
+              type: 'pie',
+              radius: ['50%', '75%'],
+              center: ['40%', '50%'],
+              avoidLabelOverlap: false,
+              label: { show: false },
+              emphasis: {
+                label: { show: true, fontSize: 14, fontWeight: 'bold' }
+              },
+              data: regionData
             }]
           });
 
-          // 2. Region pie chart
-          const regionData = [
-            { name: '东部大区', value: Math.round(4200 * m) },
-            { name: '南部大区', value: Math.round(3100 * m) },
-            { name: '西部大区', value: Math.round(2800 * m) },
-            { name: '北部大区', value: Math.round(1900 * m) },
-            { name: '其他', value: Math.round(600 * m) },
-          ];
-          charts.region.setOption({
+          // 3. Product Line Pie Chart
+          const productData = mockData.productLines.map(p => ({ name: p.name, value: getAmt(p) }));
+          charts.product.setOption({
             tooltip: { trigger: 'item', formatter: '{b}: {c}万 ({d}%)' },
-            legend: { orient: 'vertical', right: 10, top: 'center' },
-            color: ['#0D3D92', '#2E6BD8', '#5A8FE8', '#F5A623', '#52C41A'],
-            series: [{ type: 'pie', radius: ['55%', '80%'], center: ['40%', '50%'], avoidLabelOverlap: false, label: { show: false }, emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } }, data: regionData }]
+            legend: { orient: 'vertical', right: 10, top: 'center', textStyle: { fontSize: 12 } },
+            color: ['#0D3D92', '#2E6BD8', '#5A8FE8', '#7EABEF', '#F5A623'],
+            series: [{
+              type: 'pie',
+              radius: ['50%', '75%'],
+              center: ['40%', '50%'],
+              avoidLabelOverlap: false,
+              label: { show: false },
+              emphasis: {
+                label: { show: true, fontSize: 14, fontWeight: 'bold' }
+              },
+              data: productData
+            }]
           });
 
-          // 3. Industry pie chart
-          const industryData = [
-            { name: '工程机械', value: Math.round(5100 * m) },
-            { name: '汽车制造', value: Math.round(3800 * m) },
-            { name: '航空航天', value: Math.round(2900 * m) },
-            { name: '能源装备', value: Math.round(2100 * m) },
-            { name: '轨道交通', value: Math.round(1600 * m) },
-            { name: '其他', value: Math.round(800 * m) },
-          ];
+          // 4. Industry Pie Chart
+          const industryData = mockData.industries.map(i => ({ name: i.name, value: getAmt(i) }));
           charts.industry.setOption({
             tooltip: { trigger: 'item', formatter: '{b}: {c}万 ({d}%)' },
-            legend: { orient: 'vertical', right: 10, top: 'center' },
-            color: ['#0D3D92', '#2E6BD8', '#5A8FE8', '#7EABEF', '#F5A623', '#52C41A'],
-            series: [{ type: 'pie', radius: ['55%', '80%'], center: ['40%', '50%'], avoidLabelOverlap: false, label: { show: false }, emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } }, data: industryData }]
+            legend: { orient: 'vertical', right: 10, top: 'center', textStyle: { fontSize: 12 } },
+            color: ['#0D3D92', '#2E6BD8', '#5A8FE8', '#7EABEF', '#A8C5F5', '#F5A623'],
+            series: [{
+              type: 'pie',
+              radius: ['50%', '75%'],
+              center: ['40%', '50%'],
+              avoidLabelOverlap: false,
+              label: { show: false },
+              emphasis: {
+                label: { show: true, fontSize: 14, fontWeight: 'bold' }
+              },
+              data: industryData
+            }]
           });
 
-          // 4. Product pie chart
-          const productData = [
-            { name: '刀具', value: Math.round(3800 * m) },
-            { name: '铣刀', value: Math.round(3200 * m) },
-            { name: '车刀', value: Math.round(2700 * m) },
-            { name: '螺纹', value: Math.round(2100 * m) },
-            { name: '系统', value: Math.round(1500 * m) },
-          ];
-          charts.product.setOption({
-            tooltip: { trigger: 'item', formatter: '{b}: {c}万 ({d}%)' },
-            legend: { orient: 'vertical', right: 10, top: 'center' },
-            color: ['#0D3D92', '#2E6BD8', '#5A8FE8', '#7EABEF', '#F5A623'],
-            series: [{ type: 'pie', radius: ['55%', '80%'], center: ['40%', '50%'], avoidLabelOverlap: false, label: { show: false }, emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } }, data: productData }]
-          });
-
-          // 5. Customer bar chart
-          const customerData = [
-            { customer: '三一重工股份有限公司', amount: Math.round(1850 * m) },
-            { customer: '中联重科股份有限公司', amount: Math.round(1620 * m) },
-            { customer: '徐工集团工程机械有限公司', amount: Math.round(1380 * m) },
-            { customer: '卡特彼勒(中国)投资有限公司', amount: Math.round(1150 * m) },
-            { customer: '小松(中国)投资有限公司', amount: Math.round(980 * m) },
-          ];
+          // 5. Customer TOP 5 Bar Chart
+          const top5Customers = [...mockData.customers]
+            .sort((a, b) => getAmt(b) - getAmt(a))
+            .slice(0, 5);
+          const customerNames = top5Customers.map(c => c.name.length > 8 ? c.name.substring(0, 8) + '...' : c.name);
           charts.customer.setOption({
             tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-            grid: { left: 200, right: 20, top: 10, bottom: 30 },
-            xAxis: { type: 'value', axisLabel: { formatter: v => v + '万' } },
-            yAxis: { type: 'category', data: customerData.map(d => d.customer).reverse(), axisLabel: { formatter: v => v.length > 8 ? v.substring(0, 8) + '...' : v } },
-            series: [{ type: 'bar', data: customerData.map((d, i) => ({ value: d.amount, itemStyle: { color: ['#0D3D92', '#2E6BD8', '#5A8FE8', '#7EABEF', '#A8C5F5'][i], borderRadius: [0, 4, 4, 0] } })).reverse(), barMaxWidth: 24, label: { show: true, position: 'right', formatter: v => v.value + '万', fontSize: 12, color: '#6B7280' } }]
+            grid: { left: 180, right: 40, top: 10, bottom: 30 },
+            xAxis: { type: 'value', axisLabel: { formatter: v => v + '万', fontSize: 11 } },
+            yAxis: {
+              type: 'category',
+              data: customerNames.reverse(),
+              axisLabel: { fontSize: 11 }
+            },
+            series: [{
+              type: 'bar',
+              data: top5Customers.map((c, i) => ({
+                value: getAmt(c),
+                itemStyle: {
+                  color: ['#0D3D92', '#2E6BD8', '#5A8FE8', '#7EABEF', '#A8C5F5'][i],
+                  borderRadius: [0, 4, 4, 0]
+                }
+              })).reverse(),
+              barMaxWidth: 28,
+              label: { show: true, position: 'right', formatter: v => v.value + '万', fontSize: 11, color: '#6B7280' }
+            }]
           });
 
-          // 6. Company bar chart
-          const companyData = [
-            { company: '上海Sandvik机械有限公司', amount: Math.round(2800 * m) },
-            { company: '北京山特维克商贸有限公司', amount: Math.round(2350 * m) },
-            { company: '广州山特维克进出口有限公司', amount: Math.round(1980 * m) },
-            { company: '深圳精密机械有限公司', amount: Math.round(1650 * m) },
-            { company: '成都工程设备有限公司', amount: Math.round(1290 * m) },
-          ];
+          // 5. Invoice Company TOP 5 Bar Chart
+          const top5Companies = [...mockData.invoiceCompanies]
+            .sort((a, b) => getAmt(b) - getAmt(a))
+            .slice(0, 5);
+          const companyNames = top5Companies.map(c => c.name.length > 10 ? c.name.substring(0, 10) + '...' : c.name);
           charts.company.setOption({
             tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-            grid: { left: 220, right: 20, top: 10, bottom: 30 },
-            xAxis: { type: 'value', axisLabel: { formatter: v => v + '万' } },
-            yAxis: { type: 'category', data: companyData.map(d => d.company).reverse(), axisLabel: { formatter: v => v.length > 10 ? v.substring(0, 10) + '...' : v } },
-            series: [{ type: 'bar', data: companyData.map((d, i) => ({ value: d.amount, itemStyle: { color: ['#0D3D92', '#2E6BD8', '#5A8FE8', '#7EABEF', '#A8C5F5'][i], borderRadius: [0, 4, 4, 0] } })).reverse(), barMaxWidth: 24, label: { show: true, position: 'right', formatter: v => v.value + '万', fontSize: 12, color: '#6B7280' } }]
+            grid: { left: 200, right: 40, top: 10, bottom: 30 },
+            xAxis: { type: 'value', axisLabel: { formatter: v => v + '万', fontSize: 11 } },
+            yAxis: {
+              type: 'category',
+              data: companyNames.reverse(),
+              axisLabel: { fontSize: 11 }
+            },
+            series: [{
+              type: 'bar',
+              data: top5Companies.map((c, i) => ({
+                value: getAmt(c),
+                itemStyle: {
+                  color: ['#0D3D92', '#2E6BD8', '#5A8FE8', '#7EABEF', '#A8C5F5'][i],
+                  borderRadius: [0, 4, 4, 0]
+                }
+              })).reverse(),
+              barMaxWidth: 28,
+              label: { show: true, position: 'right', formatter: v => v.value + '万', fontSize: 11, color: '#6B7280' }
+            }]
+          });
+
+          // 6. Sales Person TOP 5 Bar Chart
+          const top5Sales = [...mockData.salesPeople]
+            .sort((a, b) => getAmt(b) - getAmt(a))
+            .slice(0, 5);
+          const salesNames = top5Sales.map(s => s.name + '(' + s.region.substring(0, 2) + ')');
+          charts.sales.setOption({
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            grid: { left: 150, right: 40, top: 10, bottom: 30 },
+            xAxis: { type: 'value', axisLabel: { formatter: v => v + '万', fontSize: 11 } },
+            yAxis: {
+              type: 'category',
+              data: salesNames.reverse(),
+              axisLabel: { fontSize: 11 }
+            },
+            series: [{
+              type: 'bar',
+              data: top5Sales.map((s, i) => ({
+                value: getAmt(s),
+                itemStyle: {
+                  color: ['#0D3D92', '#2E6BD8', '#5A8FE8', '#7EABEF', '#A8C5F5'][i],
+                  borderRadius: [0, 4, 4, 0]
+                }
+              })).reverse(),
+              barMaxWidth: 28,
+              label: { show: true, position: 'right', formatter: v => v.value + '万', fontSize: 11, color: '#6B7280' }
+            }]
           });
         }
 
-        function renderProductDetail(productName) {
-          const subData = (subPA2Data[productName] || []).map(d => ({ name: d.name, value: d.amount }));
-          charts.product.setOption({
-            tooltip: { trigger: 'item', formatter: '{b}: {c}万 ({d}%)' },
-            legend: { orient: 'vertical', right: 10, top: 'center' },
-            color: ['#0D3D92', '#2E6BD8', '#5A8FE8', '#A8C5F5'],
-            series: [{ type: 'pie', radius: ['45%', '75%'], center: ['40%', '50%'], avoidLabelOverlap: false, label: { show: false }, emphasis: { label: { show: true, fontSize: 13, fontWeight: 'bold' } }, data: subData }]
+        onMounted(() => {
+          nextTick(() => {
+            initCharts();
           });
-        }
-
-        function resetProductDrill() {
-          productDrillLevel.value = 0;
-          currentProduct.value = '';
-          const m = getMultiplier();
-          const productData = [
-            { name: '刀具', value: Math.round(3800 * m) },
-            { name: '铣刀', value: Math.round(3200 * m) },
-            { name: '车刀', value: Math.round(2700 * m) },
-            { name: '螺纹', value: Math.round(2100 * m) },
-            { name: '系统', value: Math.round(1500 * m) },
-          ];
-          charts.product.setOption({
-            tooltip: { trigger: 'item', formatter: '{b}: {c}万 ({d}%)' },
-            legend: { orient: 'vertical', right: 10, top: 'center' },
-            color: ['#0D3D92', '#2E6BD8', '#5A8FE8', '#7EABEF', '#F5A623'],
-            series: [{ type: 'pie', radius: ['55%', '80%'], center: ['40%', '50%'], avoidLabelOverlap: false, label: { show: false }, emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } }, data: productData }]
-          });
-        }
-
-        function onFilterChange() {
-          if (!filterStart.value || !filterEnd.value) return;
-
-          // Determine quarter and half-year from start month
-          const m = filterStart.value.month(); // 0-11
-          let cycleKey = filterStart.value.format('YYYY-') + (m < 3 ? 'Q1' : m < 6 ? 'Q2' : m < 9 ? 'Q3' : 'Q4');
-          if (m < 6) cycleKey = filterStart.value.format('YYYY-') + '上半年';
-          else cycleKey = filterStart.value.format('YYYY-') + '下半年';
-
-          const found = cyclesDB[cycleKey];
-          if (found) {
-            currentCycle.value = found;
-            filterYear.value = filterStart.value.format('YYYY');
-          }
-
-          renderAllCharts();
-          productDrillLevel.value = 0;
-          currentProduct.value = '';
-        }
-
-        // KPI data as reactive ref
-        const kpiData = ref({
-          order: 12345678,
-          invoice: 9876543,
-          completion: 78,
-          pending: 12,
         });
 
-        const monthCellRender = (date) => {
-          try {
-            // date from antd-vue month picker: {current: dayjsInstance, locale: object}
-            const d = (date && date.current) ? date.current : (date && typeof date.month === 'function' ? date : dayjs(date));
-            return d.isValid() ? (d.month() + 1) + '月' : '?';
-          } catch(e) {
-            return '错';
-          }
-        };
-
         return {
-          productDrillLevel,
-          currentProduct,
-          resetProductDrill,
-          monthCellRender,
-          collapsed: ref(false),
-          selectedKeys: ref(['dashboard']),
-          navigateTo(url) { window.location.href = url; },
-          filterYear,
-          filterMonth,
-          onFilterChange,
-          currentCycle,
-          kpiData,
-          filterStart,
-          filterEnd,
+          metricMode,
+          setMetricMode,
+          currentMetrics,
+          currentTime,
+          pendingTotal,
+          pendingDirector,
+          pendingFinance,
+          formatAmount,
+          startMonth,
+          endMonth,
+          onMonthRangeChange,
+          navGroups, openGroups, currentGroup, currentModule,
+          toggleGroup, navigateTo,
         };
       }
     });
+
     app.use(antd);
-    dayjs.locale('zh-cn');
-    const zhCN = { locale: 'zh_CN', monthBeforeYear: false };
-    app.use(antd.ConfigProvider, { locale: zhCN });
     app.mount('#app');
   </script>
 </body>
