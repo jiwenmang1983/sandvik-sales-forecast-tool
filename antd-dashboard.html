@@ -117,6 +117,19 @@
       height: 40px;
       background: var(--border);
     }
+    .forecast-month-item {
+      flex-direction: column;
+      gap: 8px;
+    }
+    .forecast-month-subfields {
+      display: flex;
+      gap: 24px;
+    }
+    .forecast-month-subfield {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
 
     /* Metric Mode Tabs */
     .metric-tabs {
@@ -287,6 +300,10 @@
 
     .chart-card.full-width {
       grid-column: 1 / -1;
+    }
+
+    .chart-card.half-width {
+      grid-column: span 1;
     }
 
     .chart-title {
@@ -541,56 +558,122 @@
       <!-- Period Info Bar -->
       <div class="period-info-bar">
         <div class="period-info-item">
-          <span class="period-info-label">本期预测周期</span>
+          <span class="period-info-label">预测周期名称</span>
           <span class="period-info-value" id="dashboard-current-period">2026FC1</span>
         </div>
         <div class="period-info-divider"></div>
         <div class="period-info-item">
-          <span class="period-info-label">开放时间窗口</span>
+          <span class="period-info-label">填报时间</span>
           <span class="period-info-value" id="dashboard-current-window">2026-01-01 ~ 2026-04-30</span>
         </div>
         <div class="period-info-divider"></div>
-        <div class="period-info-item">
-          <span class="period-info-label">开放月份数</span>
-          <span class="period-info-value" id="dashboard-current-months">4个月</span>
-        </div>
-      </div>
-
-      <!-- Month Range Selector -->
-      <div class="period-info-bar" style="margin-bottom: 16px;">
-        <div class="period-info-item">
-          <span class="period-info-label">起始月</span>
-          <a-select v-model="startMonth" style="width: 100px; margin-top: 4px;" @change="onMonthRangeChange">
-            <a-select-option value="0">1月 (Jan)</a-select-option>
-            <a-select-option value="1">2月 (Feb)</a-select-option>
-            <a-select-option value="2">3月 (Mar)</a-select-option>
-            <a-select-option value="3">4月 (Apr)</a-select-option>
-            <a-select-option value="4">5月 (May)</a-select-option>
-            <a-select-option value="5">6月 (Jun)</a-select-option>
-            <a-select-option value="6">7月 (Jul)</a-select-option>
-            <a-select-option value="7">8月 (Aug)</a-select-option>
-            <a-select-option value="8">9月 (Sep)</a-select-option>
-            <a-select-option value="9">10月 (Oct)</a-select-option>
-            <a-select-option value="10">11月 (Nov)</a-select-option>
-            <a-select-option value="11">12月 (Dec)</a-select-option>
-          </a-select>
-        </div>
-        <div class="period-info-item">
-          <span class="period-info-label">结束月</span>
-          <a-select v-model="endMonth" style="width: 100px; margin-top: 4px;" @change="onMonthRangeChange">
-            <a-select-option value="0">1月 (Jan)</a-select-option>
-            <a-select-option value="1">2月 (Feb)</a-select-option>
-            <a-select-option value="2">3月 (Mar)</a-select-option>
-            <a-select-option value="3">4月 (Apr)</a-select-option>
-            <a-select-option value="4">5月 (May)</a-select-option>
-            <a-select-option value="5">6月 (Jun)</a-select-option>
-            <a-select-option value="6">7月 (Jul)</a-select-option>
-            <a-select-option value="7">8月 (Aug)</a-select-option>
-            <a-select-option value="8">9月 (Sep)</a-select-option>
-            <a-select-option value="9">10月 (Oct)</a-select-option>
-            <a-select-option value="10">11月 (Nov)</a-select-option>
-            <a-select-option value="11">12月 (Dec)</a-select-option>
-          </a-select>
+        <div class="period-info-item" style="flex-direction: column; gap: 4px;">
+          <div style="display: flex; gap: 24px;">
+            <span class="period-info-label">预测起始年月</span>
+            <span class="period-info-label">预测结束年月</span>
+          </div>
+          <div style="display: flex; gap: 24px;">
+            <a-select v-model:value="startMonth" style="width: 100px;" @change="onMonthRangeChange">
+              <a-select-option value="2025-01">2025-01</a-select-option>
+              <a-select-option value="2025-02">2025-02</a-select-option>
+              <a-select-option value="2025-03">2025-03</a-select-option>
+              <a-select-option value="2025-04">2025-04</a-select-option>
+              <a-select-option value="2025-05">2025-05</a-select-option>
+              <a-select-option value="2025-06">2025-06</a-select-option>
+              <a-select-option value="2025-07">2025-07</a-select-option>
+              <a-select-option value="2025-08">2025-08</a-select-option>
+              <a-select-option value="2025-09">2025-09</a-select-option>
+              <a-select-option value="2025-10">2025-10</a-select-option>
+              <a-select-option value="2025-11">2025-11</a-select-option>
+              <a-select-option value="2025-12">2025-12</a-select-option>
+              <a-select-option value="2026-01">2026-01</a-select-option>
+              <a-select-option value="2026-02">2026-02</a-select-option>
+              <a-select-option value="2026-03">2026-03</a-select-option>
+              <a-select-option value="2026-04">2026-04</a-select-option>
+              <a-select-option value="2026-05">2026-05</a-select-option>
+              <a-select-option value="2026-06">2026-06</a-select-option>
+              <a-select-option value="2026-07">2026-07</a-select-option>
+              <a-select-option value="2026-08">2026-08</a-select-option>
+              <a-select-option value="2026-09">2026-09</a-select-option>
+              <a-select-option value="2026-10">2026-10</a-select-option>
+              <a-select-option value="2026-11">2026-11</a-select-option>
+              <a-select-option value="2026-12">2026-12</a-select-option>
+              <a-select-option value="2027-01">2027-01</a-select-option>
+              <a-select-option value="2027-02">2027-02</a-select-option>
+              <a-select-option value="2027-03">2027-03</a-select-option>
+              <a-select-option value="2027-04">2027-04</a-select-option>
+              <a-select-option value="2027-05">2027-05</a-select-option>
+              <a-select-option value="2027-06">2027-06</a-select-option>
+              <a-select-option value="2027-07">2027-07</a-select-option>
+              <a-select-option value="2027-08">2027-08</a-select-option>
+              <a-select-option value="2027-09">2027-09</a-select-option>
+              <a-select-option value="2027-10">2027-10</a-select-option>
+              <a-select-option value="2027-11">2027-11</a-select-option>
+              <a-select-option value="2027-12">2027-12</a-select-option>
+              <a-select-option value="2028-01">2028-01</a-select-option>
+              <a-select-option value="2028-02">2028-02</a-select-option>
+              <a-select-option value="2028-03">2028-03</a-select-option>
+              <a-select-option value="2028-04">2028-04</a-select-option>
+              <a-select-option value="2028-05">2028-05</a-select-option>
+              <a-select-option value="2028-06">2028-06</a-select-option>
+              <a-select-option value="2028-07">2028-07</a-select-option>
+              <a-select-option value="2028-08">2028-08</a-select-option>
+              <a-select-option value="2028-09">2028-09</a-select-option>
+              <a-select-option value="2028-10">2028-10</a-select-option>
+              <a-select-option value="2028-11">2028-11</a-select-option>
+              <a-select-option value="2028-12">2028-12</a-select-option>
+            </a-select>
+            <a-select v-model:value="endMonth" style="width: 100px;" @change="onMonthRangeChange">
+              <a-select-option value="2025-01">2025-01</a-select-option>
+              <a-select-option value="2025-02">2025-02</a-select-option>
+              <a-select-option value="2025-03">2025-03</a-select-option>
+              <a-select-option value="2025-04">2025-04</a-select-option>
+              <a-select-option value="2025-05">2025-05</a-select-option>
+              <a-select-option value="2025-06">2025-06</a-select-option>
+              <a-select-option value="2025-07">2025-07</a-select-option>
+              <a-select-option value="2025-08">2025-08</a-select-option>
+              <a-select-option value="2025-09">2025-09</a-select-option>
+              <a-select-option value="2025-10">2025-10</a-select-option>
+              <a-select-option value="2025-11">2025-11</a-select-option>
+              <a-select-option value="2025-12">2025-12</a-select-option>
+              <a-select-option value="2026-01">2026-01</a-select-option>
+              <a-select-option value="2026-02">2026-02</a-select-option>
+              <a-select-option value="2026-03">2026-03</a-select-option>
+              <a-select-option value="2026-04">2026-04</a-select-option>
+              <a-select-option value="2026-05">2026-05</a-select-option>
+              <a-select-option value="2026-06">2026-06</a-select-option>
+              <a-select-option value="2026-07">2026-07</a-select-option>
+              <a-select-option value="2026-08">2026-08</a-select-option>
+              <a-select-option value="2026-09">2026-09</a-select-option>
+              <a-select-option value="2026-10">2026-10</a-select-option>
+              <a-select-option value="2026-11">2026-11</a-select-option>
+              <a-select-option value="2026-12">2026-12</a-select-option>
+              <a-select-option value="2027-01">2027-01</a-select-option>
+              <a-select-option value="2027-02">2027-02</a-select-option>
+              <a-select-option value="2027-03">2027-03</a-select-option>
+              <a-select-option value="2027-04">2027-04</a-select-option>
+              <a-select-option value="2027-05">2027-05</a-select-option>
+              <a-select-option value="2027-06">2027-06</a-select-option>
+              <a-select-option value="2027-07">2027-07</a-select-option>
+              <a-select-option value="2027-08">2027-08</a-select-option>
+              <a-select-option value="2027-09">2027-09</a-select-option>
+              <a-select-option value="2027-10">2027-10</a-select-option>
+              <a-select-option value="2027-11">2027-11</a-select-option>
+              <a-select-option value="2027-12">2027-12</a-select-option>
+              <a-select-option value="2028-01">2028-01</a-select-option>
+              <a-select-option value="2028-02">2028-02</a-select-option>
+              <a-select-option value="2028-03">2028-03</a-select-option>
+              <a-select-option value="2028-04">2028-04</a-select-option>
+              <a-select-option value="2028-05">2028-05</a-select-option>
+              <a-select-option value="2028-06">2028-06</a-select-option>
+              <a-select-option value="2028-07">2028-07</a-select-option>
+              <a-select-option value="2028-08">2028-08</a-select-option>
+              <a-select-option value="2028-09">2028-09</a-select-option>
+              <a-select-option value="2028-10">2028-10</a-select-option>
+              <a-select-option value="2028-11">2028-11</a-select-option>
+              <a-select-option value="2028-12">2028-12</a-select-option>
+            </a-select>
+          </div>
         </div>
       </div>
 
@@ -604,127 +687,48 @@
         </button>
       </div>
 
-      <!-- KPI Cards Grid (10 cards) -->
-      <div class="kpi-grid">
-        <!-- KPI 1: 订单总数量 -->
-        <div class="kpi-card">
-          <div class="kpi-icon blue">📋</div>
-          <div class="kpi-label">订单总数量</div>
-          <div class="kpi-value" id="kpi-order-qty">{{ currentMetrics.orderQty }}</div>
-          <div class="kpi-sub">笔</div>
-        </div>
-
-        <!-- KPI 2: 订单总金额 -->
+      <!-- KPI Cards Grid (4 cards) -->
+      <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr);">
+        <!-- KPI 1: 订单金额 -->
         <div class="kpi-card">
           <div class="kpi-icon green">💰</div>
-          <div class="kpi-label">订单总金额</div>
-          <div class="kpi-value" id="kpi-order-amt">¥{{ formatAmount(currentMetrics.orderAmt) }}</div>
-          <div class="kpi-sub">万元</div>
+          <div class="kpi-label">订单金额</div>
+          <div class="kpi-value">6,840,183</div>
+          <div class="kpi-sub">数量：80,825 | 同比：<span class="trend-up">↑2.4%</span></div>
         </div>
 
-        <!-- KPI 3: 订单金额同比 -->
+        <!-- KPI 2: 开票金额 -->
         <div class="kpi-card">
-          <div class="kpi-icon orange">📈</div>
-          <div class="kpi-label">订单金额同比 YoY%</div>
-          <div class="kpi-value" id="kpi-order-yoy">
-            <span :class="currentMetrics.orderYoY >= 0 ? 'trend-up' : 'trend-down'">
-              {{ currentMetrics.orderYoY >= 0 ? '↑' : '↓' }}{{ Math.abs(currentMetrics.orderYoY) }}%
-            </span>
-          </div>
-          <div class="kpi-sub">较去年同期</div>
+          <div class="kpi-icon blue">💵</div>
+          <div class="kpi-label">开票金额</div>
+          <div class="kpi-value">5,986,814</div>
+          <div class="kpi-sub">数量：70,777 | 同比：<span class="trend-up">↑5.5%</span></div>
         </div>
 
-        <!-- KPI 4: 开票总数量 -->
-        <div class="kpi-card">
-          <div class="kpi-icon blue">📄</div>
-          <div class="kpi-label">开票总数量</div>
-          <div class="kpi-value" id="kpi-inv-qty">{{ currentMetrics.invQty }}</div>
-          <div class="kpi-sub">笔</div>
-        </div>
-
-        <!-- KPI 5: 开票总金额 -->
-        <div class="kpi-card">
-          <div class="kpi-icon green">💵</div>
-          <div class="kpi-label">开票总金额</div>
-          <div class="kpi-value" id="kpi-inv-amt">¥{{ formatAmount(currentMetrics.invAmt) }}</div>
-          <div class="kpi-sub">万元</div>
-        </div>
-
-        <!-- KPI 6: 开票金额同比 -->
-        <div class="kpi-card">
-          <div class="kpi-icon orange">📊</div>
-          <div class="kpi-label">开票金额同比 YoY%</div>
-          <div class="kpi-value" id="kpi-inv-yoy">
-            <span :class="currentMetrics.invYoY >= 0 ? 'trend-up' : 'trend-down'">
-              {{ currentMetrics.invYoY >= 0 ? '↑' : '↓' }}{{ Math.abs(currentMetrics.invYoY) }}%
-            </span>
-          </div>
-          <div class="kpi-sub">较去年同期</div>
-        </div>
-
-        <!-- KPI 7: 填报完成比率 -->
+        <!-- KPI 3: 填报完成率 -->
         <div class="kpi-card">
           <div class="kpi-icon purple">🎯</div>
-          <div class="kpi-label">填报完成比率</div>
-          <div class="kpi-value" id="kpi-completion">{{ currentMetrics.completion }}%</div>
-          <div class="kpi-sub">已完成填报</div>
+          <div class="kpi-label">填报完成率</div>
+          <div class="kpi-value">80%</div>
+          <div class="kpi-sub">进度：80/100</div>
         </div>
 
-        <!-- KPI 8-10: Period info (空占位，保持5列布局) -->
+        <!-- KPI 4: 待审批总量 -->
         <div class="kpi-card">
-          <div class="kpi-icon blue">🗓️</div>
-          <div class="kpi-label">预测周期</div>
-          <div class="kpi-value">2026FC1</div>
-          <div class="kpi-sub">1月-4月</div>
-        </div>
-
-        <div class="kpi-card">
-          <div class="kpi-icon green">📅</div>
-          <div class="kpi-label">预测月份</div>
-          <div class="kpi-value">4个月</div>
-          <div class="kpi-sub">Jan - Apr</div>
-        </div>
-
-        <div class="kpi-card">
-          <div class="kpi-icon orange">🔄</div>
-          <div class="kpi-label">数据状态</div>
-          <div class="kpi-value">活跃</div>
-          <div class="kpi-sub">实时更新</div>
-        </div>
-      </div>
-
-      <!-- Pending Items Row -->
-      <div class="kpi-pending-row">
-        <div class="kpi-pending-card">
-          <div class="kpi-pending-icon">⏳</div>
-          <div class="kpi-pending-content">
-            <div class="kpi-pending-label">待审批总数</div>
-            <div class="kpi-pending-value" id="kpi-pending">{{ pendingTotal }}</div>
-          </div>
-        </div>
-        <div class="kpi-pending-card">
-          <div class="kpi-pending-icon">👔</div>
-          <div class="kpi-pending-content">
-            <div class="kpi-pending-label">区总待审批</div>
-            <div class="kpi-pending-value" id="kpi-pending-sub">{{ pendingDirector }}</div>
-          </div>
-        </div>
-        <div class="kpi-pending-card">
-          <div class="kpi-pending-icon">💼</div>
-          <div class="kpi-pending-content">
-            <div class="kpi-pending-label">财务待审批</div>
-            <div class="kpi-pending-value" id="kpi-pending-fin">{{ pendingFinance }}</div>
-          </div>
+          <div class="kpi-icon orange">⏳</div>
+          <div class="kpi-label">待审批总量</div>
+          <div class="kpi-value">5</div>
+          <div class="kpi-sub">区总3 / 财务2</div>
         </div>
       </div>
 
       <!-- Charts Grid -->
       <div class="charts-grid">
-        <!-- Chart 1: 月度趋势预测对比 (Full Width) -->
-        <div class="chart-card full-width">
+        <!-- Chart 1: 月度预测趋势 (Half Width, left) -->
+        <div class="chart-card half-width">
           <div class="chart-title">
             <span class="chart-title-icon">📈</span>
-            月度趋势预测对比
+            月度预测趋势
           </div>
           <div class="chart-container tall" id="line-chart-monthly"></div>
         </div>
@@ -742,7 +746,8 @@
         <div class="chart-card">
           <div class="chart-title">
             <span class="chart-title-icon">🏭</span>
-            PA 产品线金额占比
+            <span>PA 产品线金额占比</span>
+            <button v-if="productDrillLevel > 0" @click="onProductChartBack" style="margin-left: auto; padding: 4px 12px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">← 返回</button>
           </div>
           <div class="chart-container" id="pie-chart-product"></div>
         </div>
@@ -774,14 +779,6 @@
           <div class="chart-container" id="bar-chart-company"></div>
         </div>
 
-        <!-- Chart 7: 销售人员 TOP 5 -->
-        <div class="chart-card">
-          <div class="chart-title">
-            <span class="chart-title-icon">👨‍💼</span>
-            销售人员 TOP 5
-          </div>
-          <div class="chart-container" id="bar-chart-sales"></div>
-        </div>
       </div>
 
       <!-- Footer -->
@@ -878,6 +875,19 @@
         { name: '螺纹', orderAmt: 3250, invAmt: 3050 },
         { name: '系统', orderAmt: 2680, invAmt: 2520 },
       ],
+      // Sub PA-1 (drill-down from product lines)
+      subPA1: [
+        { name: 'Holemaking', orderAmt: 2200, invAmt: 2080 },
+        { name: 'Milling', orderAmt: 1850, invAmt: 1740 },
+        { name: 'Turning', orderAmt: 1450, invAmt: 1360 },
+        { name: 'Threading', orderAmt: 1200, invAmt: 1130 },
+      ],
+      // Sub PA-2 (drill-down from Sub PA-1)
+      subPA2: [
+        { name: 'Drill Bits', orderAmt: 880, invAmt: 830 },
+        { name: 'reamers', orderAmt: 720, invAmt: 680 },
+        { name: 'Taps', orderAmt: 600, invAmt: 570 },
+      ],
       // Monthly forecast data (Jan-Apr)
       monthlyCurrent: [8500, 9200, 10800, 12500],
       monthlyPrevious: [7200, 8100, 9500, 11200],
@@ -897,8 +907,12 @@
       setup() {
         const metricMode = ref('order'); // 'order' or 'invoice'
         const currentTime = ref(dayjs().format('YYYY-MM-DD HH:mm:ss'));
-        const startMonth = ref(0); // Jan = 0
-        const endMonth = ref(3);   // Apr = 3
+        const startMonth = ref("2026-07"); // 2026-07
+        const endMonth = ref("2027-03");   // 2027-03
+
+        // Product chart drill-down state
+        const productDrillLevel = ref(0); // 0 = top level, 1 = Sub PA-1, 2 = Sub PA-2
+        const selectedProduct = ref(null);
 
         // Pending items
         const pendingTotal = computed(() => mockData.directors.reduce((sum, d) => sum + d.pendingCount, 0) + 5); // +5 for finance
@@ -1001,6 +1015,78 @@
           return (value / 10000).toFixed(1);
         }
 
+        // Product chart drill-down functions
+        function onProductChartClick(params) {
+          if (productDrillLevel.value === 0) {
+            // Drill down to Sub PA-1
+            selectedProduct.value = params.name;
+            productDrillLevel.value = 1;
+          } else if (productDrillLevel.value === 1) {
+            // Drill down to Sub PA-2
+            productDrillLevel.value = 2;
+          }
+          nextTick(() => {
+            renderProductChart();
+          });
+        }
+
+        function onProductChartBack() {
+          if (productDrillLevel.value > 0) {
+            productDrillLevel.value--;
+            if (productDrillLevel.value === 0) {
+              selectedProduct.value = null;
+            }
+          }
+          nextTick(() => {
+            renderProductChart();
+          });
+        }
+
+        function getProductChartTitle() {
+          if (productDrillLevel.value === 0) return 'PA 产品线金额占比';
+          if (productDrillLevel.value === 1) return 'Sub PA-1: ' + selectedProduct.value;
+          if (productDrillLevel.value === 2) return 'Sub PA-2: ' + selectedProduct.value;
+          return 'PA 产品线金额占比';
+        }
+
+        function renderProductChart() {
+          const mode = metricMode.value;
+          const getAmt = (item) => mode === 'order' ? item.orderAmt : item.invAmt;
+          const color = '#0D3D92';
+
+          let chartData;
+          if (productDrillLevel.value === 0) {
+            chartData = mockData.productLines.map(p => ({ name: p.name, value: getAmt(p) }));
+          } else if (productDrillLevel.value === 1) {
+            chartData = mockData.subPA1.map(p => ({ name: p.name, value: getAmt(p) }));
+          } else {
+            chartData = mockData.subPA2.map(p => ({ name: p.name, value: getAmt(p) }));
+          }
+
+          charts.product.setOption({
+            tooltip: { trigger: 'item', formatter: '{b}: {c}万 ({d}%)' },
+            legend: { orient: 'vertical', right: 10, top: 'center', textStyle: { fontSize: 12 } },
+            color: ['#0D3D92', '#2E6BD8', '#5A8FE8', '#7EABEF', '#F5A623'],
+            series: [{
+              type: 'pie',
+              radius: ['50%', '75%'],
+              center: ['40%', '50%'],
+              avoidLabelOverlap: false,
+              label: { show: false },
+              emphasis: {
+                label: { show: true, fontSize: 14, fontWeight: 'bold' }
+              },
+              data: chartData
+            }]
+          }, false);
+
+          // Update title in DOM
+          const titleEl = document.querySelector('#pie-chart-product').closest('.chart-card').querySelector('.chart-title span:last-child');
+          if (titleEl) {
+            titleEl.textContent = getProductChartTitle();
+          }
+        }
+
         function initCharts() {
           charts.monthly = echarts.init(document.getElementById('line-chart-monthly'));
           charts.region = echarts.init(document.getElementById('pie-chart-region'));
@@ -1008,7 +1094,9 @@
           charts.industry = echarts.init(document.getElementById('pie-chart-industry'));
           charts.customer = echarts.init(document.getElementById('bar-chart-customer'));
           charts.company = echarts.init(document.getElementById('bar-chart-company'));
-          charts.sales = echarts.init(document.getElementById('bar-chart-sales'));
+
+          // Product chart click handler for drill-down
+          charts.product.on('click', onProductChartClick);
 
           renderAllCharts();
 
@@ -1028,9 +1116,9 @@
           const color = '#0D3D92';
           const colorLight = '#5A8FE8';
 
-          // 1. Monthly Line Chart
+          // 1. Monthly Line Chart (Forecast only, no comparison)
           charts.monthly.setOption({
-            color: [color, '#F5A623'],
+            color: [color],
             tooltip: {
               trigger: 'axis',
               formatter: function(params) {
@@ -1042,10 +1130,10 @@
               }
             },
             legend: {
-              data: ['2026年预测', '2025年同期'],
+              data: ['2026年预测'],
               bottom: 0
             },
-            grid: { left: 60, right: 30, top: 20, bottom: 50 },
+            grid: { left: 60, right: 60, top: 20, bottom: 50 },
             xAxis: {
               type: 'category',
               data: mockData.months,
@@ -1074,16 +1162,6 @@
                 symbol: 'circle',
                 symbolSize: 8,
                 itemStyle: { color: color }
-              },
-              {
-                name: '2025年同期',
-                type: 'line',
-                smooth: true,
-                data: mockData.monthlyPrevious,
-                lineStyle: { width: 2, color: '#F5A623', type: 'dashed' },
-                symbol: 'circle',
-                symbolSize: 6,
-                itemStyle: { color: '#F5A623' }
               }
             ]
           });
@@ -1200,34 +1278,6 @@
               label: { show: true, position: 'right', formatter: v => v.value + '万', fontSize: 11, color: '#6B7280' }
             }]
           });
-
-          // 6. Sales Person TOP 5 Bar Chart
-          const top5Sales = [...mockData.salesPeople]
-            .sort((a, b) => getAmt(b) - getAmt(a))
-            .slice(0, 5);
-          const salesNames = top5Sales.map(s => s.name + '(' + s.region.substring(0, 2) + ')');
-          charts.sales.setOption({
-            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-            grid: { left: 150, right: 40, top: 10, bottom: 30 },
-            xAxis: { type: 'value', axisLabel: { formatter: v => v + '万', fontSize: 11 } },
-            yAxis: {
-              type: 'category',
-              data: salesNames.reverse(),
-              axisLabel: { fontSize: 11 }
-            },
-            series: [{
-              type: 'bar',
-              data: top5Sales.map((s, i) => ({
-                value: getAmt(s),
-                itemStyle: {
-                  color: ['#0D3D92', '#2E6BD8', '#5A8FE8', '#7EABEF', '#A8C5F5'][i],
-                  borderRadius: [0, 4, 4, 0]
-                }
-              })).reverse(),
-              barMaxWidth: 28,
-              label: { show: true, position: 'right', formatter: v => v.value + '万', fontSize: 11, color: '#6B7280' }
-            }]
-          });
         }
 
         onMounted(() => {
@@ -1250,6 +1300,8 @@
           onMonthRangeChange,
           navGroups, openGroups, currentGroup, currentModule,
           toggleGroup, navigateTo,
+          productDrillLevel,
+          onProductChartBack,
         };
       }
     });
