@@ -4,13 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>基础数据管理 - Sandvik Sales Forecast Tool</title>
-  <script src="./lib/vue.global.prod.js"></script>
-  <script src="./lib/dayjs.min.js"></script>
-  <script src="./lib/dayjs-plugin-advancedFormat.js"></script>
-  <script src="./lib/dayjs-plugin-customParseFormat.js"></script>
-  <script src="./lib/dayjs-plugin-localeData.js"></script>
-  <script src="./lib/zh-cn.min.js"></script>
-  <script src="./lib/antd-vue.min.js"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/dayjs.min.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/locale/zh-cn.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/plugin/advancedFormat.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/plugin/customParseFormat.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/plugin/localeData.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/plugin/quarterOfYear.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/plugin/weekOfYear.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/plugin/weekYear.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/plugin/weekday.js"></script>
+  <script src="https://unpkg.com/ant-design-vue@4.0.0/dist/antd.min.js"></script>
   <style>
     :root {
       --sandvik-blue: #0D3D92;
@@ -913,6 +917,16 @@
 </div>
 
 <script>
+    // Setup dayjs plugins (same as dashboard)
+    dayjs.extend(dayjs_plugin_advancedFormat);
+    dayjs.extend(dayjs_plugin_customParseFormat);
+    dayjs.extend(dayjs_plugin_localeData);
+    dayjs.extend(dayjs_plugin_quarterOfYear);
+    dayjs.extend(dayjs_plugin_weekOfYear);
+    dayjs.extend(dayjs_plugin_weekYear);
+    dayjs.extend(dayjs_plugin_weekday);
+    dayjs.locale('zh-cn');
+
 const { createApp, ref, computed } = Vue;
 
 const app = createApp({
@@ -1106,7 +1120,11 @@ const app = createApp({
     const dataDictData = ref(invoiceMaster.map((item, i) => ({ ...item, id: `dd_${i}` })));
 
     // ── Current Module Info ──
-    const currentModuleName = computed(() => modules.find(m => m.id === currentModule.value)?.name || '');
+    const currentModuleName = computed(() => {
+      const group = navGroups.find(g => g.name === '基础数据管理');
+      const mod = group?.items?.find(m => m.id === currentModule.value);
+      return mod?.name || '';
+    });
 
     const addButtonLabel = computed(() => {
       const map = { customer: '客户', invoiceCompany: '开票公司', productLibrary: '产品', productPricing: '价格规则', regionMapping: '映射关系', org: '组织', dataDict: '字典' };
@@ -1359,7 +1377,7 @@ const app = createApp({
       customerData, filteredCustomers, invoiceCompanyData, filteredInvoiceCompanies,
       productHierarchy, filteredProducts, productData, pricingData, filteredPrices,
       regionMappingData, filteredMappings,
-      orgData, filteredOrgData, dataDictData, filteredDataDataDictData,
+      orgData, filteredOrgData, dataDictData, filteredDataDictData,
       priceStatusLabel, priceStatusClass,
       toggleGroup, navigateTo,
       switchModule, toggleCat, expandAllHierarchy, collapseAllHierarchy,
