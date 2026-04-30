@@ -41,6 +41,18 @@
       box-sizing: border-box;
     }
 
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #app {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       background: var(--bg);
@@ -49,9 +61,9 @@
     }
 
     .dashboard-container {
-      max-width: 1600px;
-      margin: 0 auto;
+      width: 100%;
       padding: 24px;
+      box-sizing: border-box;
     }
 
     /* Page Header */
@@ -400,7 +412,59 @@
       cursor: pointer;
       transition: background 0.2s;
     }
-    .bd-layout { display: flex; flex: 1; overflow: hidden; }
+    /* Top Header Bar */
+    .top-header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 52px;
+      padding: 0 20px;
+      background: #001529;
+      color: #fff;
+      flex-shrink: 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .top-header-left {
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .top-header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .nav-action-btn {
+      cursor: pointer;
+      font-size: 18px;
+      opacity: 0.8;
+    }
+    .nav-action-btn:hover { opacity: 1; }
+    .nav-user {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    /* Main Content Area */
+    .bd-content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .bd-layout {
+      display: flex;
+      flex-direction: row;
+      flex: 1;
+      overflow: hidden;
+    }
     .bd-sidebar { width: 220px; background: #fff; border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
     .bd-sidebar-header { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; background: #fafafa; }
     .bd-nav { flex: 1; overflow-y: auto; padding: 8px 0; }
@@ -414,8 +478,7 @@
     .nav-sub-item:hover { background: #f0f4ff; border-left-color: #c0d0f0; }
     .nav-sub-item.active { background: #e8f0fe; color: var(--primary); border-left-color: var(--primary); font-weight: 600; }
 
-    /* Dashboard Main Content */
-    .dashboard-main { flex: 1; overflow-y: auto; padding: 24px; min-width: 0; }
+    /* Dashboard Main Content removed - now uses bd-content */
 
     /* Footer */
     .dashboard-footer {
@@ -428,6 +491,20 @@
 </head>
 <body>
   <div id="app">
+    <!-- Top Header Bar -->
+    <div class="top-header-bar">
+      <div class="top-header-left">
+        <span>🏭 Sandvik FC</span>
+      </div>
+      <div class="top-header-right">
+        <span class="nav-action-btn">🔔</span>
+        <div class="nav-user">
+          <span>👤</span>
+          <span>Admin User</span>
+        </div>
+      </div>
+    </div>
+
     <div class="bd-layout">
       <!-- Left Sidebar -->
       <div class="bd-sidebar">
@@ -450,19 +527,9 @@
         </div>
       </div>
 
-      <!-- Dashboard Main Content -->
-      <div class="dashboard-main">
-      </div>
-      <div class="nav-actions">
-        <span class="nav-action-btn">🔔</span>
-        <div class="nav-user">
-          <span>👤</span>
-          <span>Admin User</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="dashboard-container">
+      <!-- Main Content Area -->
+      <div class="bd-content">
+        <div class="dashboard-container">
       <!-- Page Header -->
       <div class="page-header">
         <div class="page-header-left">
@@ -720,6 +787,8 @@
       <!-- Footer -->
       <div class="dashboard-footer">
         <p>Sandvik China Division Sales Forecast Tool © 2026 | 数据更新时间: {{ currentTime }}</p>
+      </div>
+        </div>
       </div>
     </div>
   </div>
