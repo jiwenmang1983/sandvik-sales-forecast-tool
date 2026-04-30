@@ -1,0 +1,128 @@
+{
+  "format": 1,
+  "restore": {
+    "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/SandvikForecast.Infrastructure.csproj": {}
+  },
+  "projects": {
+    "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/SandvikForecast.Core.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/SandvikForecast.Core.csproj",
+        "projectName": "SandvikForecast.Core",
+        "projectPath": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/SandvikForecast.Core.csproj",
+        "packagesPath": "/home/markji/.nuget/packages/",
+        "outputPath": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/markji/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/8.0.126/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/SandvikForecast.Infrastructure.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/SandvikForecast.Infrastructure.csproj",
+        "projectName": "SandvikForecast.Infrastructure",
+        "projectPath": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/SandvikForecast.Infrastructure.csproj",
+        "packagesPath": "/home/markji/.nuget/packages/",
+        "outputPath": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/markji/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/SandvikForecast.Core.csproj": {
+                "projectPath": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/SandvikForecast.Core.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.Extensions.Caching.StackExchangeRedis": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Pomelo.EntityFrameworkCore.MySql": {
+              "target": "Package",
+              "version": "[8.0.2, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/8.0.126/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
