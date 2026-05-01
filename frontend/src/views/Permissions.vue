@@ -1,81 +1,75 @@
 <template>
   <div class="permissions-page">
-    <a-row :gutter="24">
-      <!-- Left: Role List -->
-      <a-col :span="8">
-        <a-card :bordered="false" title="角色列表">
-          <template #extra>
-            <a-button type="primary" size="small" @click="openAddRoleDialog">➕ 添加角色</a-button>
-          </template>
-          <div class="role-list">
-            <div
-              v-for="role in roles"
-              :key="role.id"
-              class="role-item"
-              :class="{ active: selectedRole?.id === role.id }"
-              @click="selectRole(role)"
-            >
-              <div class="role-info">
-                <div class="role-name">{{ role.name }}</div>
-                <div class="role-desc">{{ role.desc }}</div>
-                <div class="role-count">{{ role.userCount }} 人</div>
-              </div>
-              <div class="role-actions">
-                <a-button size="small" @click.stop="editRole(role)">✏️</a-button>
-                <a-button size="small" danger @click.stop="deleteRole(role)">🗑️</a-button>
-              </div>
-            </div>
-          </div>
-        </a-card>
-      </a-col>
+    <!-- Filter Bar -->
+    <a-card :bordered="false" class="filter-card">
+      <div class="filter-bar">
+        <div class="filter-item">
+          <span class="filter-label">角色</span>
+          <a-select v-model:value="selectedRoleId" style="width:180px" placeholder="选择角色" @change="onRoleChange">
+            <a-select-option value="">选择角色</a-select-option>
+            <a-select-option v-for="r in roles" :key="r.id" :value="r.id">{{ r.name }}</a-select-option>
+          </a-select>
+        </div>
+        <div class="filter-actions">
+          <a-button type="primary" @click="savePermissions" :disabled="!selectedRoleId">保存权限</a-button>
+          <a-button @click="resetPermissions" :disabled="!selectedRoleId">恢复默认</a-button>
+        </div>
+      </div>
+    </a-card>
 
-      <!-- Right: Permission Tree -->
-      <a-col :span="16">
-        <a-card :bordered="false" :title="selectedRole ? '权限配置 - ' + selectedRole.name : '请选择角色'">
-          <template #extra>
-            <a-button v-if="selectedRole" type="primary" @click="savePermissions">💾 保存配置</a-button>
-          </template>
-          <div v-if="selectedRole" class="permission-tree-wrap">
-            <a-tree
-              v-model:checkedKeys="checkedPermissions"
-              :tree-data="permissionTree"
-              checkable
-              :expand-all="true"
-              @check="onPermissionChange"
-            >
-              <template #title="{ title, key }">
-                <span>
-                  <span v-if="permissionIcons[key]" style="margin-right:6px;">{{ permissionIcons[key] }}</span>
-                  {{ title }}
-                </span>
-              </template>
-            </a-tree>
-          </div>
-          <a-empty v-else description="请从左侧选择一个角色" />
-        </a-card>
-      </a-col>
-    </a-row>
-
-    <!-- Add/Edit Role Modal -->
-    <a-modal
-      v-model:open="showRoleModal"
-      :title="editingRole ? '编辑角色' : '新增角色'"
-      @ok="saveRole"
-      @cancel="showRoleModal = false"
-    >
-      <div class="form-group">
-        <label class="form-label">角色名称<span style="color:#ff4d4f">*</span></label>
-        <a-input v-model:value="roleForm.name" placeholder="如：区域总监" />
+    <!-- Permissions Table -->
+    <a-card :bordered="false" class="table-card">
+      <div class="table-wrap">
+        <table class="forecast-table permission-table" v-if="selectedRoleId">
+          <thead>
+            <tr>
+              <th>模块</th>
+              <th>权限项</th>
+              <th>查看</th>
+              <th>新增</th>
+              <th>编辑</th>
+              <th>删除</th>
+              <th>导出</th>
+              <th>审批</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template v-for="module in permissionModules" :key="module.key">
+              <tr class="module-row">
+                <td :rowspan="module.permissions.length + 1" class="module-cell">
+                  <span class="module-icon">{{ module.icon }}</span>
+                  <span class="module-name">{{ module.name }}</span>
+                </td>
+              </tr>
+              <tr v-for="perm in module.permissions" :key="perm.key" class="permission-row">
+                <td class="perm-name">{{ perm.name }}</td>
+                <td class="perm-check">
+                  <a-checkbox v-model="perm.view" @change="updatePermission(module.key, perm.key, 'view', perm.view)" />
+                </td>
+                <td class="perm-check">
+                  <a-checkbox v-model="perm.add" @change="updatePermission(module.key, perm.key, 'add', perm.add)" />
+                </td>
+                <td class="perm-check">
+                  <a-checkbox v-model="perm.edit" @change="updatePermission(module.key, perm.key, 'edit', perm.edit)" />
+                </td>
+                <td class="perm-check">
+                  <a-checkbox v-model="perm.delete" @change="updatePermission(module.key, perm.key, 'delete', perm.delete)" />
+                </td>
+                <td class="perm-check">
+                  <a-checkbox v-model="perm.export" @change="updatePermission(module.key, perm.key, 'export', perm.export)" />
+                </td>
+                <td class="perm-check">
+                  <a-checkbox v-model="perm.approve" @change="updatePermission(module.key, perm.key, 'approve', perm.approve)" />
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+        <div v-else class="empty-state">
+          <span>请从上方选择一个角色</span>
+        </div>
       </div>
-      <div class="form-group" style="margin-top:12px;">
-        <label class="form-label">角色描述</label>
-        <a-input v-model:value="roleForm.desc" placeholder="描述角色职责" />
-      </div>
-      <div class="form-group" style="margin-top:12px;">
-        <label class="form-label">关联用户数</label>
-        <a-input-number v-model:value="roleForm.userCount" :min="0" style="width:100%" />
-      </div>
-    </a-modal>
+    </a-card>
   </div>
 </template>
 
@@ -83,161 +77,234 @@
 import { ref, reactive, computed } from 'vue'
 import { message } from 'ant-design-vue'
 
-const selectedRole = ref(null)
-const showRoleModal = ref(false)
-const editingRole = ref(null)
-const checkedPermissions = ref([])
-
-const roleForm = reactive({ name: '', desc: '', userCount: 0 })
+const selectedRoleId = ref('')
 
 const roles = ref([
-  { id: 1, name: '管理员', desc: '系统全部权限', userCount: 2 },
-  { id: 2, name: '区域总监', desc: '区域内预测管理审批', userCount: 4 },
-  { id: 3, name: '财务', desc: '财务审核权限', userCount: 2 },
-  { id: 4, name: '销售', desc: '填报和查看本人数据', userCount: 12 }
+  { id: 1, name: '管理员', desc: '系统全部权限' },
+  { id: 2, name: '区域总监', desc: '区域内预测管理审批' },
+  { id: 3, name: '财务', desc: '财务审核权限' },
+  { id: 4, name: '销售', desc: '填报和查看本人数据' }
 ])
 
-const permissionCategories = [
+const permissionModules = reactive([
   {
-    title: '📊 销售预测',
     key: 'forecast',
-    children: [
-      { title: '查看预测', key: 'forecast:view', icon: '👁' },
-      { title: '填报预测', key: 'forecast:edit', icon: '✏️' },
-      { title: '提交审批', key: 'forecast:submit', icon: '🚀' },
-      { title: '删除预测', key: 'forecast:delete', icon: '🗑️' },
-      { title: '导出数据', key: 'forecast:export', icon: '📥' }
+    icon: '📊',
+    name: '销售预测',
+    permissions: [
+      { key: 'forecast_view', name: '查看预测', view: false, add: false, edit: false, delete: false, export: false, approve: false },
+      { key: 'forecast_edit', name: '填报预测', view: false, add: false, edit: false, delete: false, export: false, approve: false },
+      { key: 'forecast_submit', name: '提交审批', view: false, add: false, edit: false, delete: false, export: false, approve: false }
     ]
   },
   {
-    title: '✅ 审批管理',
     key: 'approval',
-    children: [
-      { title: '查看审批', key: 'approval:view', icon: '👁' },
-      { title: '通过审批', key: 'approval:approve', icon: '✅' },
-      { title: '驳回审批', key: 'approval:reject', icon: '❌' },
-      { title: '批量审批', key: 'approval:batch', icon: '📋' }
+    icon: '✅',
+    name: '审批管理',
+    permissions: [
+      { key: 'approval_view', name: '查看审批', view: false, add: false, edit: false, delete: false, export: false, approve: false },
+      { key: 'approval_approve', name: '通过审批', view: false, add: false, edit: false, delete: false, export: false, approve: false },
+      { key: 'approval_reject', name: '驳回审批', view: false, add: false, edit: false, delete: false, export: false, approve: false }
     ]
   },
   {
-    title: '🗂 基础数据',
     key: 'basedata',
-    children: [
-      { title: '查看基础数据', key: 'basedata:view', icon: '👁' },
-      { title: '管理产品', key: 'basedata:product', icon: '📦' },
-      { title: '管理客户', key: 'basedata:customer', icon: '🏢' },
-      { title: '管理区域', key: 'basedata:region', icon: '🗺️' },
-      { title: '管理价格', key: 'basedata:price', icon: '💰' }
+    icon: '🗂',
+    name: '基础数据',
+    permissions: [
+      { key: 'basedata_view', name: '查看数据', view: false, add: false, edit: false, delete: false, export: false, approve: false },
+      { key: 'basedata_product', name: '管理产品', view: false, add: false, edit: false, delete: false, export: false, approve: false },
+      { key: 'basedata_customer', name: '管理客户', view: false, add: false, edit: false, delete: false, export: false, approve: false }
     ]
   },
   {
-    title: '👤 用户权限',
     key: 'users',
-    children: [
-      { title: '查看用户', key: 'users:view', icon: '👁' },
-      { title: '添加用户', key: 'users:add', icon: '➕' },
-      { title: '编辑用户', key: 'users:edit', icon: '✏️' },
-      { title: '删除用户', key: 'users:delete', icon: '🗑️' },
-      { title: '管理角色', key: 'users:role', icon: '🎭' }
+    icon: '👤',
+    name: '用户权限',
+    permissions: [
+      { key: 'users_view', name: '查看用户', view: false, add: false, edit: false, delete: false, export: false, approve: false },
+      { key: 'users_add', name: '添加用户', view: false, add: false, edit: false, delete: false, export: false, approve: false },
+      { key: 'users_edit', name: '编辑用户', view: false, add: false, edit: false, delete: false, export: false, approve: false },
+      { key: 'users_delete', name: '删除用户', view: false, add: false, edit: false, delete: false, export: false, approve: false }
     ]
   },
   {
-    title: '⚙️ 系统配置',
     key: 'system',
-    children: [
-      { title: '预测周期管理', key: 'system:period', icon: '📅' },
-      { title: '审批流程配置', key: 'system:flow', icon: '🔄' },
-      { title: '查看日志', key: 'system:log', icon: '📋' },
-      { title: '系统设置', key: 'system:setting', icon: '⚙️' }
+    icon: '⚙️',
+    name: '系统配置',
+    permissions: [
+      { key: 'system_period', name: '预测周期管理', view: false, add: false, edit: false, delete: false, export: false, approve: false },
+      { key: 'system_flow', name: '审批流程配置', view: false, add: false, edit: false, delete: false, export: false, approve: false },
+      { key: 'system_log', name: '查看日志', view: false, add: false, edit: false, delete: false, export: false, approve: false }
     ]
   }
-]
+])
 
-const permissionIcons = {
-  'forecast:view': '👁', 'forecast:edit': '✏️', 'forecast:submit': '🚀', 'forecast:delete': '🗑️', 'forecast:export': '📥',
-  'approval:view': '👁', 'approval:approve': '✅', 'approval:reject': '❌', 'approval:batch': '📋',
-  'basedata:view': '👁', 'basedata:product': '📦', 'basedata:customer': '🏢', 'basedata:region': '🗺️', 'basedata:price': '💰',
-  'users:view': '👁', 'users:add': '➕', 'users:edit': '✏️', 'users:delete': '🗑️', 'users:role': '🎭',
-  'system:period': '📅', 'system:flow': '🔄', 'system:log': '📋', 'system:setting': '⚙️'
+// Role default permissions
+const roleDefaults = {
+  1: ['forecast_view', 'forecast_edit', 'forecast_submit', 'approval_view', 'approval_approve', 'approval_reject', 'basedata_view', 'basedata_product', 'basedata_customer', 'users_view', 'users_add', 'users_edit', 'users_delete', 'system_period', 'system_flow', 'system_log'],
+  2: ['forecast_view', 'forecast_edit', 'forecast_submit', 'approval_view', 'approval_approve', 'approval_reject', 'basedata_view'],
+  3: ['forecast_view', 'approval_view', 'approval_approve', 'basedata_view'],
+  4: ['forecast_view', 'forecast_edit', 'forecast_submit']
 }
 
-// Convert to tree nodes
-const permissionTree = permissionCategories.map(cat => ({
-  title: cat.title,
-  key: cat.key,
-  children: cat.children.map(ch => ({ title: ch.title, key: ch.key }))
-}))
+const rolePermissions = reactive({
+  1: ['forecast_view', 'forecast_edit', 'forecast_submit', 'approval_view', 'approval_approve', 'approval_reject', 'basedata_view', 'basedata_product', 'basedata_customer', 'users_view', 'users_add', 'users_edit', 'users_delete', 'system_period', 'system_flow', 'system_log'],
+  2: ['forecast_view', 'forecast_edit', 'forecast_submit', 'approval_view', 'approval_approve', 'approval_reject', 'basedata_view'],
+  3: ['forecast_view', 'approval_view', 'approval_approve', 'basedata_view'],
+  4: ['forecast_view', 'forecast_edit', 'forecast_submit']
+})
 
-// Role -> permissions mapping
-const rolePermissions = {
-  1: ['forecast:view','forecast:edit','forecast:submit','forecast:delete','forecast:export','approval:view','approval:approve','approval:reject','approval:batch','basedata:view','basedata:product','basedata:customer','basedata:region','basedata:price','users:view','users:add','users:edit','users:delete','users:role','system:period','system:flow','system:log','system:setting'],
-  2: ['forecast:view','forecast:edit','forecast:submit','basedata:view','approval:view','approval:approve','approval:reject'],
-  3: ['forecast:view','basedata:view','approval:view','approval:approve'],
-  4: ['forecast:view','forecast:edit','forecast:submit']
+const onRoleChange = (roleId) => {
+  if (!roleId) return
+  const perms = rolePermissions[roleId] || []
+  permissionModules.forEach(mod => {
+    mod.permissions.forEach(perm => {
+      perm.view = perms.includes(perm.key)
+      perm.add = perms.includes(perm.key + '_add')
+      perm.edit = perms.includes(perm.key + '_edit')
+      perm.delete = perms.includes(perm.key + '_delete')
+      perm.export = perms.includes(perm.key + '_export')
+      perm.approve = perms.includes(perm.key + '_approve')
+    })
+  })
 }
 
-const selectRole = (role) => {
-  selectedRole.value = role
-  checkedPermissions.value = rolePermissions[role.id] || []
-}
-
-const onPermissionChange = (checked) => {
-  // Handle permission change
-}
-
-const openAddRoleDialog = () => {
-  editingRole.value = null
-  roleForm.name = ''
-  roleForm.desc = ''
-  roleForm.userCount = 0
-  showRoleModal.value = true
-}
-
-const editRole = (role) => {
-  editingRole.value = role
-  Object.assign(roleForm, role)
-  showRoleModal.value = true
-}
-
-const deleteRole = (role) => {
-  const idx = roles.value.findIndex(r => r.id === role.id)
-  if (idx >= 0) roles.value.splice(idx, 1)
-  if (selectedRole.value?.id === role.id) selectedRole.value = null
-  message.success('角色已删除')
-}
-
-const saveRole = () => {
-  if (!roleForm.name) { message.error('请填写角色名称'); return }
-  if (editingRole.value) {
-    const idx = roles.value.findIndex(r => r.id === editingRole.value.id)
-    if (idx >= 0) Object.assign(roles.value[idx], { ...roleForm })
-    message.success('角色已更新')
-  } else {
-    roles.value.push({ id: Date.now(), ...roleForm })
-    message.success('角色已添加')
-  }
-  showRoleModal.value = false
+const updatePermission = (moduleKey, permKey, action, value) => {
+  // Update logic handled by v-model
 }
 
 const savePermissions = () => {
-  if (!selectedRole.value) return
-  rolePermissions[selectedRole.value.id] = [...checkedPermissions.value]
+  if (!selectedRoleId.value) return
+  
+  const enabledPerms = []
+  permissionModules.forEach(mod => {
+    mod.permissions.forEach(perm => {
+      if (perm.view) enabledPerms.push(perm.key)
+      if (perm.add) enabledPerms.push(perm.key + '_add')
+      if (perm.edit) enabledPerms.push(perm.key + '_edit')
+      if (perm.delete) enabledPerms.push(perm.key + '_delete')
+      if (perm.export) enabledPerms.push(perm.key + '_export')
+      if (perm.approve) enabledPerms.push(perm.key + '_approve')
+    })
+  })
+  
+  rolePermissions[selectedRoleId.value] = enabledPerms
   message.success('权限配置已保存')
+}
+
+const resetPermissions = () => {
+  if (!selectedRoleId.value) return
+  
+  const defaults = roleDefaults[selectedRoleId.value] || []
+  rolePermissions[selectedRoleId.value] = [...defaults]
+  
+  permissionModules.forEach(mod => {
+    mod.permissions.forEach(perm => {
+      perm.view = defaults.includes(perm.key)
+      perm.add = defaults.includes(perm.key + '_add')
+      perm.edit = defaults.includes(perm.key + '_edit')
+      perm.delete = defaults.includes(perm.key + '_delete')
+      perm.export = defaults.includes(perm.key + '_export')
+      perm.approve = defaults.includes(perm.key + '_approve')
+    })
+  })
+  
+  message.success('已恢复默认权限')
 }
 </script>
 
 <style scoped>
-.permissions-page { }
-.role-list { display: flex; flex-direction: column; gap: 8px; }
-.role-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border: 1px solid #E5E7EB; border-radius: 8px; cursor: pointer; transition: all 0.15s; background: #fff; }
-.role-item:hover { border-color: #0D3D92; background: #f8faff; }
-.role-item.active { border-color: #0D3D92; background: #e8f0fe; }
-.role-info { flex: 1; }
-.role-name { font-weight: 600; font-size: 14px; color: #1F2937; }
-.role-desc { font-size: 12px; color: #6B7280; margin-top: 2px; }
-.role-count { font-size: 11px; color: #0D3D92; margin-top: 4px; }
-.role-actions { display: flex; gap: 4px; }
-.permission-tree-wrap { padding: 8px 0; }
-.form-group { display: flex; flex-direction: column; gap: 4px; }
-.form-label { font-size: 12px; font-weight: 600; color: #6B7280; }
+.permissions-page {
+  padding: 0;
+}
+
+.filter-card,
+.table-card {
+  margin-bottom: 16px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(13, 61, 146, 0.06);
+}
+
+.filter-bar {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-label {
+  font-size: 11px;
+  color: #6B7280;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.permission-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.permission-table th {
+  background: #F8FAFC;
+  color: #475569;
+  font-weight: 600;
+  text-align: center;
+  padding: 12px 16px;
+  border-bottom: 2px solid #E2E8F0;
+}
+
+.permission-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #F1F5F9;
+  color: #1E293B;
+}
+
+.module-cell {
+  background: #F8FAFC;
+  vertical-align: middle;
+}
+
+.module-icon {
+  font-size: 16px;
+  margin-right: 8px;
+}
+
+.module-name {
+  font-weight: 600;
+  color: #0D3D92;
+}
+
+.perm-name {
+  text-align: left;
+  padding-left: 24px;
+}
+
+.perm-check {
+  text-align: center;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 64px 32px;
+  color: #94A3B8;
+  font-size: 14px;
+}
 </style>

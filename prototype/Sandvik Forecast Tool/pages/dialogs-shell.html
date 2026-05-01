@@ -1,0 +1,127 @@
+<dialog id="info-dialog"><h3 id="dialog-title">模块说明</h3><p id="dialog-content"></p><button id="close-dialog-btn" class="primary">关闭</button></dialog>
+<dialog id="add-forecast-dialog" class="add-forecast-dialog">
+  <div class="add-dialog-header">
+    <h3 id="add-dialog-title">新增预测行</h3>
+    <p>填写维度信息与各月份订单/开票数据，单价自动计算。</p>
+  </div>
+  <div class="add-dialog-form-grid">
+    <label>客户
+      <select id="add-customer"></select>
+    </label>
+    <label>开票公司
+      <select id="add-invoice"></select>
+    </label>
+    <label>业绩归属
+      <select id="add-performance"></select>
+    </label>
+    <label>销售大区
+      <select id="add-region"></select>
+    </label>
+    <label>PA
+      <select id="add-pa"></select>
+    </label>
+    <label>Sub PA-1
+      <select id="add-subpa1"></select>
+    </label>
+    <label>Sub PA-2
+      <select id="add-subpa2"></select>
+    </label>
+  </div>
+  <div id="add-month-metrics" class="add-dialog-metrics"></div>
+  <div class="add-dialog-actions">
+    <button id="add-dialog-cancel" type="button">取消</button>
+    <button id="add-dialog-save" type="button">保存</button>
+  </div>
+</dialog>
+<dialog id="fc-version-dialog" class="add-forecast-dialog">
+  <div class="add-dialog-header">
+    <h3 id="fc-version-dialog-title">新增预测周期</h3>
+    <p>维护 FC Name、销售预测月份区间、填报窗口及延期填报人员。</p>
+  </div>
+  <div class="add-dialog-form-grid">
+    <label>FC Name
+      <input id="fc-version-name" type="text" placeholder="例如：2026FC3" />
+    </label>
+    <label>销售预测开始年月
+      <input id="fc-sales-start-month" type="month" />
+    </label>
+    <label>销售预测结束年月
+      <input id="fc-sales-end-month" type="month" />
+    </label>
+    <label>填报开始时间
+      <input id="fc-open-start" type="datetime-local" />
+    </label>
+    <label>填报结束时间
+      <input id="fc-open-end" type="datetime-local" />
+    </label>
+    <label>延期填报开始时间
+      <input id="fc-delay-start" type="datetime-local" />
+    </label>
+    <label>延期填报结束时间
+      <input id="fc-delay-end" type="datetime-local" />
+    </label>
+    <label>延期人员搜索
+      <input id="fc-delay-sales-search" type="text" placeholder="输入人员姓名或区域总监" />
+    </label>
+  </div>
+  <div id="fc-delay-sales-list" class="fc-delay-sales-list"></div>
+  <div class="add-dialog-actions">
+    <button id="fc-version-cancel-btn" type="button">取消</button>
+    <button id="fc-version-save-btn" type="button">保存</button>
+  </div>
+</dialog>
+<dialog id="approval-opinion-dialog" class="add-forecast-dialog">
+  <div class="add-dialog-header">
+    <h3 id="approval-opinion-title">填写审批意见</h3>
+  </div>
+  <div class="add-dialog-form-grid">
+    <label class="grid-span-all">审批意见
+      <textarea id="approval-opinion-input" rows="4"></textarea>
+    </label>
+  </div>
+  <div class="add-dialog-actions">
+    <button id="approval-opinion-cancel-btn" type="button">取消</button>
+    <button id="approval-opinion-confirm-btn" type="button">提交</button>
+  </div>
+</dialog>
+<dialog id="approval-adjust-dialog" class="add-forecast-dialog">
+  <div class="add-dialog-header">
+    <h3>调整并退回</h3>
+    <p>输入调整后的订单/开票总数量与总金额，并填写备注说明。提交后默认执行退回。</p>
+  </div>
+  <div class="add-dialog-form-grid">
+    <label>调整订单总金额为
+      <input id="approval-adjust-order-amount" type="number" step="0.01" />
+    </label>
+    <label>调整订单总数量为
+      <input id="approval-adjust-order-qty" type="number" step="1" />
+    </label>
+    <label>调整开票总金额为
+      <input id="approval-adjust-invoice-amount" type="number" step="0.01" />
+    </label>
+    <label>调整开票总数量为
+      <input id="approval-adjust-invoice-qty" type="number" step="1" />
+    </label>
+    <label class="grid-span-all">调整备注说明
+      <textarea id="approval-adjust-remark" rows="4"></textarea>
+    </label>
+  </div>
+  <div class="add-dialog-actions">
+    <button id="approval-adjust-cancel-btn" type="button">取消</button>
+    <button id="approval-adjust-save-btn" type="button">提交并退回</button>
+  </div>
+</dialog>
+<dialog id="approval-history-dialog" class="add-forecast-dialog"><h3 id="approval-history-title">审批历史</h3><div id="approval-history-body"></div><button id="approval-history-close-btn" type="button">关闭</button></dialog>
+<dialog id="base-data-dialog" class="add-forecast-dialog"><h3 id="base-data-dialog-title">新增</h3><div id="base-data-form"></div><button id="base-data-cancel-btn" type="button">取消</button><button id="base-data-save-btn" type="button">保存</button></dialog>
+
+<dialog id="user-dialog" class="add-forecast-dialog">
+  <div class="add-dialog-header">
+    <h3 id="user-dialog-title">新增用户</h3>
+    <p>维护用户账号、域、角色与启停状态。</p>
+  </div>
+  <div id="user-form" class="add-dialog-form-grid"></div>
+  <div class="add-dialog-actions">
+    <button id="user-dialog-cancel" type="button">取消</button>
+    <button id="user-dialog-save" type="button">保存</button>
+  </div>
+</dialog>

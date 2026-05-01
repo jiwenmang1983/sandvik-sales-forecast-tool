@@ -1,106 +1,111 @@
 <template>
   <div class="fcversion-page">
     <!-- Toolbar -->
-    <a-card :bordered="false" style="margin-bottom:16px">
+    <a-card :bordered="false" class="toolbar-card">
       <div class="toolbar">
-        <div class="toolbar-left">
-          <a-input v-model:value="keyword" placeholder="搜索周期名称..." allow-clear style="width:220px" @input="onSearch" />
-          <div class="filter-item">
-            <span class="filter-label">状态</span>
-            <a-select v-model:value="statusFilter" style="width:120px" allow-clear>
-              <a-select-option value="">全部</a-select-option>
-              <a-select-option value="draft">草稿</a-select-option>
-              <a-select-option value="open">开放</a-select-option>
-              <a-select-option value="locked">已锁定</a-select-option>
-              <a-select-option value="closed">已关闭</a-select-option>
-            </a-select>
-          </div>
+        <h3 class="section-title">预测周期管理</h3>
+        <a-button type="primary" @click="openAddDialog">新增预测周期</a-button>
+      </div>
+    </a-card>
+
+    <!-- Filter Bar -->
+    <a-card :bordered="false" class="filter-card">
+      <div class="filter-bar">
+        <div class="filter-item">
+          <span class="filter-label">FC Name</span>
+          <a-input v-model:value="keyword" placeholder="输入FC Name关键字" allow-clear style="width:200px" />
         </div>
-        <div class="toolbar-right">
-          <a-button type="primary" @click="openAddDialog">➕ 创建新周期</a-button>
+        <div class="filter-item">
+          <span class="filter-label">状态</span>
+          <a-select v-model:value="statusFilter" style="width:130px" allow-clear placeholder="选择状态">
+            <a-select-option value="">全部</a-select-option>
+            <a-select-option value="open">开放中</a-select-option>
+            <a-select-option value="closed">已关闭</a-select-option>
+          </a-select>
         </div>
       </div>
     </a-card>
 
     <!-- Version Table -->
-    <a-card :bordered="false">
-      <a-table :columns="columns" :data-source="filteredVersions" :pagination="{pageSize:15}" row-key="id" size="small">
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'period'">
-            <div class="period-cell">
-              <span class="period-name">{{ record.period }}</span>
-              <span class="period-year">{{ record.year }}年</span>
-            </div>
-          </template>
-          <template v-if="column.key === 'months'">
-            <span>{{ record.months.join('、') }}</span>
-          </template>
-          <template v-if="column.key === 'status'">
-            <a-tag :color="statusTagColor(record.status)">{{ statusLabel(record.status) }}</a-tag>
-          </template>
-          <template v-if="column.key === 'submitter'">
-            <div style="display:flex;align-items:center;gap:6px;">
-              <a-avatar :size="22" :style="{ background: '#0D3D92' }">{{ record.submitter?.charAt(0) }}</a-avatar>
-              <span>{{ record.submitter }}</span>
-            </div>
-          </template>
-          <template v-if="column.key === 'actions'">
-            <a-space>
-              <a-button v-if="record.status === 'draft'" size="small" type="primary" @click="openVersion(record)">📝 填报</a-button>
-              <a-button v-if="record.status === 'open'" size="small" @click="lockVersion(record)">🔒 锁定</a-button>
-              <a-button v-if="record.status === 'locked'" size="small" @click="unlockVersion(record)">🔓 解锁</a-button>
-              <a-button size="small" @click="viewHistory(record)">📋 历史</a-button>
-              <a-button size="small" danger @click="deleteVersion(record)">🗑️</a-button>
-            </a-space>
-          </template>
-        </template>
-      </a-table>
+    <a-card :bordered="false" class="table-card">
+      <div class="table-wrap">
+        <table class="forecast-table">
+          <thead>
+            <tr>
+              <th>FC Name</th>
+              <th>销售预测周期</th>
+              <th>填报时间</th>
+              <th>延期填报时间</th>
+              <th>可延期人员</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="v in filteredVersions" :key="v.id">
+              <td><span class="fc-name-cell">{{ v.fcName }}</span></td>
+              <td>{{ v.period }}</td>
+              <td>{{ v.fillTime }}</td>
+              <td>{{ v.extendTime || '-' }}</td>
+              <td>{{ v.extendUsers || '-' }}</td>
+              <td>
+                <a-space>
+                  <a-button size="small" @click="editVersion(v)">编辑</a-button>
+                  <a-button size="small" @click="viewHistory(v)">历史</a-button>
+                  <a-button size="small" danger @click="deleteVersion(v)">删除</a-button>
+                </a-space>
+              </td>
+            </tr>
+            <tr v-if="filteredVersions.length === 0">
+              <td colspan="6" class="empty-cell">暂无数据</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </a-card>
 
     <!-- Add/Edit Modal -->
     <a-modal
       v-model:open="showModal"
-      :title="editingVersion ? '编辑周期' : '创建预测周期'"
+      :title="editingVersion ? '编辑预测周期' : '新增预测周期'"
       @ok="saveVersion"
       @cancel="showModal = false"
     >
-      <div class="form-group">
-        <label class="form-label">周期名称<span style="color:#ff4d4f">*</span></label>
-        <a-input v-model:value="formData.period" placeholder="如：2026FC3" />
-      </div>
-      <div class="form-row" style="margin-top:12px;">
+      <div class="form-row">
         <div class="form-group">
-          <label class="form-label">预测年份<span style="color:#ff4d4f">*</span></label>
-          <a-input-number v-model:value="formData.year" :min="2020" :max="2030" style="width:100%" />
+          <label class="form-label">FC Name<span style="color:#ff4d4f">*</span></label>
+          <a-input v-model:value="formData.fcName" placeholder="如：2026FC3" />
         </div>
         <div class="form-group">
-          <label class="form-label">预测季度</label>
-          <a-select v-model:value="formData.quarter">
-            <a-select-option value="Q1">Q1</a-select-option>
-            <a-select-option value="Q2">Q2</a-select-option>
-            <a-select-option value="Q3">Q3</a-select-option>
-            <a-select-option value="Q4">Q4</a-select-option>
-          </a-select>
+          <label class="form-label">销售预测周期<span style="color:#ff4d4f">*</span></label>
+          <a-input v-model:value="formData.period" placeholder="如：2026FC3-Q3" />
         </div>
       </div>
-      <div class="form-row" style="margin-top:12px;">
+      <div class="form-row">
         <div class="form-group">
-          <label class="form-label">填报开始日期</label>
+          <label class="form-label">填报开始时间</label>
           <a-date-picker v-model:value="formData.startDate" style="width:100%" />
         </div>
         <div class="form-group">
-          <label class="form-label">填报截止日期</label>
+          <label class="form-label">填报截止时间</label>
           <a-date-picker v-model:value="formData.endDate" style="width:100%" />
         </div>
       </div>
-      <div class="form-group" style="margin-top:12px;">
-        <label class="form-label">状态</label>
-        <a-select v-model:value="formData.status">
-          <a-select-option value="draft">草稿</a-select-option>
-          <a-select-option value="open">开放</a-select-option>
-          <a-select-option value="locked">已锁定</a-select-option>
-          <a-select-option value="closed">已关闭</a-select-option>
-        </a-select>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">延期填报时间</label>
+          <a-date-picker v-model:value="formData.extendDate" style="width:100%" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">状态</label>
+          <a-select v-model:value="formData.status">
+            <a-select-option value="open">开放中</a-select-option>
+            <a-select-option value="closed">已关闭</a-select-option>
+          </a-select>
+        </div>
+      </div>
+      <div class="form-group-full">
+        <label class="form-label">可延期人员</label>
+        <a-input v-model:value="formData.extendUsers" placeholder="填写可延期人员名单，用逗号分隔" />
       </div>
     </a-modal>
   </div>
@@ -116,48 +121,34 @@ const showModal = ref(false)
 const editingVersion = ref(null)
 
 const formData = reactive({
+  fcName: '',
   period: '',
-  year: 2026,
-  quarter: 'Q2',
   startDate: null,
   endDate: null,
-  status: 'draft'
+  extendDate: null,
+  extendUsers: '',
+  status: 'open'
 })
 
-const columns = [
-  { title: '周期名称', key: 'period', width: 180 },
-  { title: '预测季度', key: 'quarter', dataIndex: 'quarter', width: 100 },
-  { title: '预测月份', key: 'months', width: 200 },
-  { title: '填报窗口', key: 'window', dataIndex: 'window', width: 200 },
-  { title: '状态', key: 'status', width: 100 },
-  { title: '提交人', key: 'submitter', width: 140 },
-  { title: '创建时间', key: 'createTime', dataIndex: 'createTime', width: 140 },
-  { title: '操作', key: 'actions', width: 260 }
-]
-
 const versions = ref([
-  { id: 1, period: '2026FC3', year: 2026, quarter: 'Q3', months: ['2026-07', '2026-08', '2026-09'], window: '2026-07-01 ~ 2026-07-31', status: 'draft', submitter: '陈明', createTime: '2026-04-28' },
-  { id: 2, period: '2026FC2', year: 2026, quarter: 'Q2', months: ['2026-04', '2026-05', '2026-06'], window: '2026-04-01 ~ 2026-04-30', status: 'open', submitter: '张伟', createTime: '2026-03-28' },
-  { id: 3, period: '2026FC1', year: 2026, quarter: 'Q1', months: ['2026-01', '2026-02', '2026-03'], window: '2026-01-01 ~ 2026-01-31', status: 'locked', submitter: '张伟', createTime: '2025-12-28' },
-  { id: 4, period: '2025FC2', year: 2025, quarter: 'Q2', months: ['2025-07', '2025-08', '2025-09'], window: '2025-07-01 ~ 2025-07-31', status: 'closed', submitter: '王强', createTime: '2025-06-28' },
-  { id: 5, period: '2025FC1', year: 2025, quarter: 'Q1', months: ['2025-01', '2025-02', '2025-03'], window: '2025-01-01 ~ 2025-01-31', status: 'closed', submitter: '吴昊', createTime: '2024-12-28' }
+  { id: 1, fcName: '2026FC3', period: '2026FC3-Q3', fillTime: '2026-07-01 ~ 2026-07-31', extendTime: '', extendUsers: '', status: 'open' },
+  { id: 2, fcName: '2026FC2', period: '2026FC2-Q2', fillTime: '2026-04-01 ~ 2026-04-30', extendTime: '2026-05-05', extendUsers: '张伟, 王强', status: 'closed' },
+  { id: 3, fcName: '2026FC1', period: '2026FC1-Q1', fillTime: '2026-01-01 ~ 2026-01-31', extendTime: '', extendUsers: '', status: 'closed' },
+  { id: 4, fcName: '2025FC2', period: '2025FC2-Q2', fillTime: '2025-07-01 ~ 2025-07-31', extendTime: '', extendUsers: '', status: 'closed' }
 ])
 
 const filteredVersions = computed(() => {
   let list = versions.value
-  if (keyword.value) list = list.filter(x => x.period.includes(keyword.value))
+  if (keyword.value) {
+    list = list.filter(x => x.fcName.toLowerCase().includes(keyword.value.toLowerCase()) || x.period.toLowerCase().includes(keyword.value.toLowerCase()))
+  }
   if (statusFilter.value) list = list.filter(x => x.status === statusFilter.value)
   return list
 })
 
-const statusLabel = (s) => ({ draft: '草稿', open: '开放', locked: '已锁定', closed: '已关闭' }[s] || s)
-const statusTagColor = (s) => ({ draft: 'default', open: 'green', locked: 'orange', closed: 'red' }[s] || 'default')
-
-const onSearch = () => {}
-
 const openAddDialog = () => {
   editingVersion.value = null
-  Object.assign(formData, { period: '', year: 2026, quarter: 'Q2', startDate: null, endDate: null, status: 'draft' })
+  Object.assign(formData, { fcName: '', period: '', startDate: null, endDate: null, extendDate: null, extendUsers: '', status: 'open' })
   showModal.value = true
 }
 
@@ -168,32 +159,23 @@ const editVersion = (v) => {
 }
 
 const saveVersion = () => {
-  if (!formData.period) { message.error('请填写周期名称'); return }
+  if (!formData.fcName || !formData.period) {
+    message.error('请填写必填项')
+    return
+  }
   if (editingVersion.value) {
     const idx = versions.value.findIndex(x => x.id === editingVersion.value.id)
     if (idx >= 0) Object.assign(versions.value[idx], { ...formData })
     message.success('周期已更新')
   } else {
-    versions.value.unshift({ id: Date.now(), ...formData, months: getMonths(formData.year, formData.quarter), window: '待设置', submitter: '当前用户', createTime: new Date().toISOString().split('T')[0] })
+    versions.value.push({ id: Date.now(), ...formData, fillTime: formData.startDate && formData.endDate ? `${formData.startDate.format('YYYY-MM-DD')} ~ ${formData.endDate.format('YYYY-MM-DD')}` : '' })
     message.success('周期已创建')
   }
   showModal.value = false
 }
 
-const getMonths = (year, quarter) => {
-  const q = parseInt(quarter.replace('Q', ''))
-  const startMonth = (q - 1) * 3 + 1
-  return [year + '-' + String(startMonth).padStart(2, '0'), year + '-' + String(startMonth + 1).padStart(2, '0'), year + '-' + String(startMonth + 2).padStart(2, '0')]
-}
-
-const lockVersion = (v) => {
-  v.status = 'locked'
-  message.success('周期已锁定')
-}
-
-const unlockVersion = (v) => {
-  v.status = 'open'
-  message.success('周期已解锁')
+const viewHistory = (v) => {
+  message.info('查看历史：' + v.fcName)
 }
 
 const deleteVersion = (v) => {
@@ -201,22 +183,111 @@ const deleteVersion = (v) => {
   if (idx >= 0) versions.value.splice(idx, 1)
   message.success('周期已删除')
 }
-
-const openVersion = (v) => { message.info('进入填报：' + v.period) }
-const viewHistory = (v) => { message.info('查看历史：' + v.period) }
 </script>
 
 <style scoped>
-.fcversion-page { }
-.toolbar { display: flex; justify-content: space-between; align-items: center; }
-.toolbar-left { display: flex; gap: 12px; align-items: center; }
-.toolbar-right { display: flex; gap: 8px; }
-.filter-item { display: flex; flex-direction: column; gap: 3px; }
-.filter-label { font-size: 11px; color: #6B7280; font-weight: 600; text-transform: uppercase; }
-.period-cell { display: flex; flex-direction: column; }
-.period-name { font-weight: 700; font-size: 14px; color: #0D3D92; }
-.period-year { font-size: 11px; color: #6B7280; }
-.form-group { display: flex; flex-direction: column; gap: 4px; }
-.form-label { font-size: 12px; font-weight: 600; color: #6B7280; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.fcversion-page {
+  padding: 0;
+}
+
+.toolbar-card,
+.filter-card,
+.table-card {
+  margin-bottom: 12px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(13, 61, 146, 0.06);
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1E293B;
+}
+
+.filter-bar {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-label {
+  font-size: 11px;
+  color: #6B7280;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.forecast-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.forecast-table th {
+  background: #F8FAFC;
+  color: #475569;
+  font-weight: 600;
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 2px solid #E2E8F0;
+  white-space: nowrap;
+}
+
+.forecast-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #F1F5F9;
+  color: #1E293B;
+}
+
+.fc-name-cell {
+  font-weight: 600;
+  color: #0D3D92;
+}
+
+.empty-cell {
+  text-align: center;
+  color: #94A3B8;
+  padding: 32px !important;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-group-full {
+  margin-bottom: 12px;
+}
+
+.form-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
 </style>

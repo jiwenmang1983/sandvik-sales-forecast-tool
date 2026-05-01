@@ -1,0 +1,104 @@
+      <section id="fc-version-workbench" class="forecast-workbench hidden">
+        <div class="forecast-toolbar">
+          <div class="forecast-toolbar-left">
+            <h3 class="section-title">预测周期管理</h3>
+          </div>
+          <div class="forecast-toolbar-right">
+            <button id="fc-version-add-btn" type="button" class="primary">新增预测周期</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="forecast-table fc-version-table">
+            <thead>
+              <tr>
+                <th>FC Name</th>
+                <th>销售预测周期</th>
+                <th>填报时间</th>
+                <th>延期填报时间</th>
+                <th>可延期人员</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="fc-version-body"></tbody>
+          </table>
+        </div>
+      </section>
+      <section id="base-data-workbench" class="forecast-workbench hidden"><h3 id="base-data-title" class="section-title">基础数据维护</h3><table class="forecast-table"><thead id="base-data-head"></thead><tbody id="base-data-body"></tbody></table></section>
+      <section id="dashboard-workbench" class="forecast-workbench hidden">
+        <h3 class="section-title">Dashboard</h3>
+        <div class="dashboard-meta">
+          <div class="dashboard-meta-item">
+              <span class="dashboard-meta-label">预测周期</span>
+            <strong id="dashboard-current-period" class="dashboard-meta-value">-</strong>
+          </div>
+          <div class="dashboard-meta-item">
+              <span class="dashboard-meta-label">填报时间</span>
+            <strong id="dashboard-current-window" class="dashboard-meta-value">-</strong>
+          </div>
+          <div class="dashboard-meta-item">
+              <span class="dashboard-meta-label">预测周期</span>
+            <div class="dashboard-meta-range">
+              <select id="dashboard-month-start"></select>
+              <span>至</span>
+              <select id="dashboard-month-end"></select>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-kpis">
+          <article class="kpi-card">
+            <div class="kpi-label">订单金额</div>
+            <div id="kpi-order-amt" class="kpi-value">0</div>
+            <div id="kpi-order-qty-sub" class="kpi-sub">数量：0</div>
+            <div id="kpi-order-yoy" class="kpi-sub">同比：0%</div>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-label">开票金额</div>
+            <div id="kpi-inv-amt" class="kpi-value">0</div>
+            <div id="kpi-inv-qty-sub" class="kpi-sub">数量：0</div>
+            <div id="kpi-inv-yoy" class="kpi-sub">同比：0%</div>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-label">填报完成率</div>
+            <div id="kpi-completion" class="kpi-value">0%</div>
+            <div id="kpi-completion-sub" class="kpi-sub">0/0</div>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-label">待审批总量</div>
+            <div id="kpi-pending" class="kpi-value">0</div>
+            <div id="kpi-pending-sub" class="kpi-sub">区总0 / 财务0</div>
+          </article>
+        </div>
+
+        <div class="dashboard-switch" role="tablist" aria-label="指标口径">
+          <button id="dashboard-order-tab" type="button" class="dashboard-switch-btn active" role="tab" aria-selected="true">订单口径</button>
+          <button id="dashboard-invoice-tab" type="button" class="dashboard-switch-btn" role="tab" aria-selected="false">开票口径</button>
+        </div>
+
+        <div class="dashboard-chart-grid">
+          <article class="dashboard-chart-card">
+            <h4 id="dashboard-trend-title">月度趋势（订单）</h4>
+            <div id="dashboard-trend-chart" class="dashboard-chart"></div>
+          </article>
+          <article class="dashboard-chart-card">
+            <h4 id="dashboard-region-share-title">销售大区金额占比（订单）</h4>
+            <div id="dashboard-region-share-chart" class="dashboard-chart"></div>
+          </article>
+          <article class="dashboard-chart-card">
+            <h4 id="dashboard-industry-share-title">行业分类销售额占比（订单）</h4>
+            <div id="dashboard-industry-share-chart" class="dashboard-chart"></div>
+          </article>
+          <article class="dashboard-chart-card">
+            <h4 id="dashboard-share-title">PA产品线预测金额（订单）</h4>
+            <div id="dashboard-share-chart" class="dashboard-chart"></div>
+          </article>
+          <article class="dashboard-chart-card">
+            <h4 id="dashboard-company-title">开票公司 TOP 5（订单）</h4>
+            <div id="dashboard-company-chart" class="dashboard-chart"></div>
+          </article>
+          <article class="dashboard-chart-card">
+            <h4 id="dashboard-product-title">按客户 TOP 5（订单）</h4>
+            <div id="dashboard-product-chart" class="dashboard-chart"></div>
+          </article>
+        </div>
+      </section>

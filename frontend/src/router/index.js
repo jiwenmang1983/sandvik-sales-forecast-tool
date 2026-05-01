@@ -13,6 +13,12 @@ const Permissions = () => import('../views/Permissions.vue')
 const SystemLog = () => import('../views/SystemLog.vue')
 const ApprovalFlow = () => import('../views/ApprovalFlow.vue')
 const FcVersion = () => import('../views/FcVersion.vue')
+const LoginLog = () => import('../views/LoginLog.vue')
+const Org = () => import('../views/OrgChart.vue')
+const Customers = () => import('../views/BaseData.vue')
+const Products = () => import('../views/BaseData.vue')
+const DataDict = () => import('../views/BaseData.vue')
+const Analysis = () => import('../views/Dashboard.vue')
 const Home = () => import('../views/Home.vue')
 
 const routes = [
@@ -38,7 +44,7 @@ const routes = [
         path: 'forecast',
         name: 'Forecast',
         component: Forecast,
-        meta: { title: '销售预测填报', icon: 'form' }
+        meta: { title: '销售填报预测填报', icon: 'form' }
       },
       {
         path: 'approval',
@@ -81,6 +87,42 @@ const routes = [
         name: 'FcVersion',
         component: FcVersion,
         meta: { title: '预测周期管理', icon: 'calendar' }
+      },
+      {
+        path: 'login-log',
+        name: 'LoginLog',
+        component: LoginLog,
+        meta: { title: '系统登录日志', icon: 'login' }
+      },
+      {
+        path: 'org',
+        name: 'Org',
+        component: Org,
+        meta: { title: '组织架构', icon: 'apartment' }
+      },
+      {
+        path: 'customers',
+        name: 'Customers',
+        component: Customers,
+        meta: { title: '客户信息', icon: 'team' }
+      },
+      {
+        path: 'products',
+        name: 'Products',
+        component: Products,
+        meta: { title: '产品库', icon: 'appstore' }
+      },
+      {
+        path: 'datadict',
+        name: 'DataDict',
+        component: DataDict,
+        meta: { title: '数据字典', icon: 'book' }
+      },
+      {
+        path: 'analysis',
+        name: 'Analysis',
+        component: Analysis,
+        meta: { title: '分析报表', icon: 'bar-chart' }
       }
     ]
   },

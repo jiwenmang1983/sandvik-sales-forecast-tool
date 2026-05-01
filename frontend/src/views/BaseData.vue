@@ -1,162 +1,211 @@
 <template>
   <div class="basedata-page">
-    <a-tabs v-model:activeKey="activeTab">
-      <a-tab-pane key="productLibrary" tab="🗃️ 产品库">
-        <div class="tab-toolbar">
-          <a-input v-model:value="keyword" placeholder="搜索产品（SKU/PA/名称）..." allow-clear style="width:260px" @input="onSearch" />
-          <a-space>
-            <a-button @click="exportData">📥 导出</a-button>
-            <a-button @click="importData">📤 导入</a-button>
-            <a-button type="primary" @click="openAddDialog('productLibrary')">➕ 添加产品</a-button>
-          </a-space>
-        </div>
-        <div class="filter-bar">
-          <div class="filter-item">
-            <span class="filter-label">状态</span>
-            <a-select v-model:value="filterStatus" style="width:120px" @change="onFilter">
-              <a-select-option value="">全部</a-select-option>
-              <a-select-option value="active">激活</a-select-option>
-              <a-select-option value="inactive">停用</a-select-option>
-            </a-select>
+    <a-card :bordered="false" class="main-card">
+      <a-tabs v-model:activeKey="activeTab">
+        <!-- 产品库 Tab -->
+        <a-tab-pane key="productLibrary" tab="🗃️ 产品库">
+          <div class="tab-toolbar">
+            <div class="toolbar-left">
+              <a-input v-model:value="keyword" placeholder="搜索产品（SKU/PA/名称）..." allow-clear style="width:260px" />
+            </div>
+            <div class="toolbar-right">
+              <a-button @click="handleExport('productLibrary')">📥 导出</a-button>
+              <a-button type="primary" @click="openAddDialog('productLibrary')">➕ 添加产品</a-button>
+            </div>
           </div>
-          <div class="filter-item">
-            <span class="filter-label">PA产品线</span>
-            <a-select v-model:value="filterPa" style="width:120px" allow-clear>
-              <a-select-option value="">全部</a-select-option>
-              <a-select-option v-for="pa in paList" :key="pa" :value="pa">{{ pa }}</a-select-option>
-            </a-select>
+          <div class="filter-bar">
+            <div class="filter-item">
+              <span class="filter-label">状态</span>
+              <a-select v-model:value="filterStatus" style="width:120px" placeholder="全部">
+                <a-select-option value="">全部</a-select-option>
+                <a-select-option value="active">激活</a-select-option>
+                <a-select-option value="inactive">停用</a-select-option>
+              </a-select>
+            </div>
+            <div class="filter-item">
+              <span class="filter-label">PA产品线</span>
+              <a-select v-model:value="filterPa" style="width:120px" placeholder="全部" allow-clear>
+                <a-select-option value="">全部</a-select-option>
+                <a-select-option v-for="pa in paList" :key="pa" :value="pa">{{ pa }}</a-select-option>
+              </a-select>
+            </div>
+            <a-button size="small" @click="resetFilters">🔄 重置</a-button>
           </div>
-          <a-button size="small" @click="resetFilters">🔄 重置</a-button>
-        </div>
-        <a-table :columns="productColumns" :data-source="filteredProducts" :pagination="{pageSize:15}" row-key="id" size="small">
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'sku'"><strong>{{ record.sku }}</strong></template>
-            <template v-if="column.key === 'status'">
-              <a-tag :color="record.status === 'active' ? 'green' : 'default'">{{ record.status === 'active' ? '激活' : '停用' }}</a-tag>
-            </template>
-            <template v-if="column.key === 'actions'">
-              <a-space>
-                <a-button size="small" @click="editItem('productLibrary', record)">✏️</a-button>
-                <a-button size="small" danger @click="deleteItem('productLibrary', record)">🗑️</a-button>
-              </a-space>
-            </template>
-          </template>
-        </a-table>
-      </a-tab-pane>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>SKU编码</th>
+                  <th>PA</th>
+                  <th>Sub PA-1</th>
+                  <th>Sub PA-2</th>
+                  <th>Sub PA-3（产品名称）</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="p in filteredProducts" :key="p.id">
+                  <td><span class="sku-cell">{{ p.sku }}</span></td>
+                  <td>{{ p.pa }}</td>
+                  <td>{{ p.subpa1 }}</td>
+                  <td>{{ p.subpa2 }}</td>
+                  <td>{{ p.subpa3 }}</td>
+                  <td><span class="status-badge" :class="p.status === 'active' ? 'status-active' : 'status-inactive'">{{ p.status === 'active' ? '激活' : '停用' }}</span></td>
+                  <td>
+                    <a-space>
+                      <a-button size="small" @click="editItem('productLibrary', p)">编辑</a-button>
+                      <a-button size="small" danger @click="deleteItem('productLibrary', p)">删除</a-button>
+                    </a-space>
+                  </td>
+                </tr>
+                <tr v-if="filteredProducts.length === 0">
+                  <td colspan="7" class="empty-cell">暂无数据</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </a-tab-pane>
 
-      <a-tab-pane key="customer" tab="🏢 客户信息">
-        <div class="tab-toolbar">
-          <a-input v-model:value="keyword" placeholder="搜索客户名称/编码..." allow-clear style="width:260px" @input="onSearch" />
-          <a-button type="primary" @click="openAddDialog('customer')">➕ 添加客户</a-button>
-        </div>
-        <div class="filter-bar">
-          <div class="filter-item">
-            <span class="filter-label">状态</span>
-            <a-select v-model:value="filterStatus" style="width:120px" @change="onFilter">
-              <a-select-option value="">全部</a-select-option>
-              <a-select-option value="active">激活</a-select-option>
-              <a-select-option value="inactive">停用</a-select-option>
-            </a-select>
+        <!-- 客户信息 Tab -->
+        <a-tab-pane key="customer" tab="🏢 客户信息">
+          <div class="tab-toolbar">
+            <div class="toolbar-left">
+              <a-input v-model:value="keyword" placeholder="搜索客户名称/编码..." allow-clear style="width:260px" />
+            </div>
+            <div class="toolbar-right">
+              <a-button type="primary" @click="openAddDialog('customer')">➕ 添加客户</a-button>
+            </div>
           </div>
-          <a-button size="small" @click="resetFilters">🔄 重置</a-button>
-        </div>
-        <a-table :columns="customerColumns" :data-source="filteredCustomers" :pagination="{pageSize:15}" row-key="id" size="small">
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'name'"><strong>{{ record.name }}</strong></template>
-            <template v-if="column.key === 'status'">
-              <a-tag :color="record.status === 'active' ? 'green' : 'default'">{{ record.status === 'active' ? '激活' : '停用' }}</a-tag>
-            </template>
-            <template v-if="column.key === 'actions'">
-              <a-space>
-                <a-button size="small" @click="editItem('customer', record)">✏️</a-button>
-                <a-button size="small" danger @click="deleteItem('customer', record)">🗑️</a-button>
-              </a-space>
-            </template>
-          </template>
-        </a-table>
-      </a-tab-pane>
-
-      <a-tab-pane key="salesRegion" tab="🗺️ 销售区域">
-        <div class="tab-toolbar">
-          <a-button type="primary" @click="openAddDialog('regionMapping')">➕ 添加区域</a-button>
-        </div>
-        <a-table :columns="regionColumns" :data-source="filteredMappings" :pagination="{pageSize:15}" row-key="id" size="small">
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'region'"><strong>{{ record.region }}</strong></template>
-            <template v-if="column.key === 'invoices'">{{ record.invoices.join('、') }}</template>
-            <template v-if="column.key === 'status'">
-              <a-tag :color="record.status === 'active' ? 'green' : 'default'">{{ record.status === 'active' ? '激活' : '停用' }}</a-tag>
-            </template>
-            <template v-if="column.key === 'actions'">
-              <a-space>
-                <a-button size="small" @click="editItem('regionMapping', record)">✏️</a-button>
-                <a-button size="small" danger @click="deleteItem('regionMapping', record)">🗑️</a-button>
-              </a-space>
-            </template>
-          </template>
-        </a-table>
-      </a-tab-pane>
-
-      <a-tab-pane key="salesPerson" tab="👤 销售人员">
-        <div class="tab-toolbar">
-          <a-input v-model:value="keyword" placeholder="搜索姓名/邮箱..." allow-clear style="width:260px" @input="onSearch" />
-          <a-button type="primary" @click="openAddDialog('salesPerson')">➕ 添加销售</a-button>
-        </div>
-        <a-table :columns="salesPersonColumns" :data-source="filteredSalesPersons" :pagination="{pageSize:15}" row-key="id" size="small">
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'name'"><strong>{{ record.name }}</strong></template>
-            <template v-if="column.key === 'status'">
-              <a-tag :color="record.status === 'active' ? 'green' : 'default'">{{ record.status === 'active' ? '激活' : '停用' }}</a-tag>
-            </template>
-            <template v-if="column.key === 'actions'">
-              <a-space>
-                <a-button size="small" @click="editItem('salesPerson', record)">✏️</a-button>
-                <a-button size="small" danger @click="deleteItem('salesPerson', record)">🗑️</a-button>
-              </a-space>
-            </template>
-          </template>
-        </a-table>
-      </a-tab-pane>
-
-      <a-tab-pane key="priceList" tab="💰 价格列表">
-        <div class="tab-toolbar">
-          <a-button type="primary" @click="openAddDialog('priceList')">➕ 添加价格</a-button>
-        </div>
-        <div class="filter-bar">
-          <div class="filter-item">
-            <span class="filter-label">PA产品线</span>
-            <a-select v-model:value="priceFilter.pa" style="width:120px" allow-clear>
-              <a-select-option value="">全部</a-select-option>
-              <a-select-option v-for="pa in paList" :key="pa" :value="pa">{{ pa }}</a-select-option>
-            </a-select>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>客户名称</th>
+                  <th>客户编码</th>
+                  <th>客户类型</th>
+                  <th>联系人</th>
+                  <th>电话</th>
+                  <th>邮箱</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="c in filteredCustomers" :key="c.id">
+                  <td><span class="name-cell">{{ c.name }}</span></td>
+                  <td>{{ c.code }}</td>
+                  <td>{{ c.type }}</td>
+                  <td>{{ c.contact }}</td>
+                  <td>{{ c.phone }}</td>
+                  <td>{{ c.email }}</td>
+                  <td><span class="status-badge" :class="c.status === 'active' ? 'status-active' : 'status-inactive'">{{ c.status === 'active' ? '激活' : '停用' }}</span></td>
+                  <td>
+                    <a-space>
+                      <a-button size="small" @click="editItem('customer', c)">编辑</a-button>
+                      <a-button size="small" danger @click="deleteItem('customer', c)">删除</a-button>
+                    </a-space>
+                  </td>
+                </tr>
+                <tr v-if="filteredCustomers.length === 0">
+                  <td colspan="8" class="empty-cell">暂无数据</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <div class="filter-item">
-            <span class="filter-label">生效状态</span>
-            <a-select v-model:value="priceFilter.active" style="width:120px">
-              <a-select-option value="">全部</a-select-option>
-              <a-select-option value="active">生效中</a-select-option>
-              <a-select-option value="future">待生效</a-select-option>
-              <a-select-option value="expired">已失效</a-select-option>
-            </a-select>
+        </a-tab-pane>
+
+        <!-- 销售区域 Tab -->
+        <a-tab-pane key="regionMapping" tab="🗺️ 销售区域">
+          <div class="tab-toolbar">
+            <div class="toolbar-right">
+              <a-button type="primary" @click="openAddDialog('regionMapping')">➕ 添加区域</a-button>
+            </div>
           </div>
-        </div>
-        <a-table :columns="priceColumns" :data-source="filteredPrices" :pagination="{pageSize:15}" row-key="id" size="small">
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'product'"><strong>{{ record.product }}</strong></template>
-            <template v-if="column.key === 'price'">¥{{ record.price?.toLocaleString() }}</template>
-            <template v-if="column.key === 'status'">
-              <a-tag :color="priceStatusClass(record)">{{ priceStatusLabel(record) }}</a-tag>
-            </template>
-            <template v-if="column.key === 'actions'">
-              <a-space>
-                <a-button size="small" @click="editItem('priceList', record)">✏️</a-button>
-                <a-button size="small" danger @click="deleteItem('priceList', record)">🗑️</a-button>
-              </a-space>
-            </template>
-          </template>
-        </a-table>
-      </a-tab-pane>
-    </a-tabs>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>销售大区</th>
+                  <th>业绩归属</th>
+                  <th>对应开票公司</th>
+                  <th>区域总监</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in filteredRegions" :key="r.id">
+                  <td><span class="name-cell">{{ r.region }}</span></td>
+                  <td>{{ r.performance }}</td>
+                  <td>{{ r.invoices.join('、') }}</td>
+                  <td>{{ r.director }}</td>
+                  <td><span class="status-badge" :class="r.status === 'active' ? 'status-active' : 'status-inactive'">{{ r.status === 'active' ? '激活' : '停用' }}</span></td>
+                  <td>
+                    <a-space>
+                      <a-button size="small" @click="editItem('regionMapping', r)">编辑</a-button>
+                      <a-button size="small" danger @click="deleteItem('regionMapping', r)">删除</a-button>
+                    </a-space>
+                  </td>
+                </tr>
+                <tr v-if="filteredRegions.length === 0">
+                  <td colspan="6" class="empty-cell">暂无数据</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </a-tab-pane>
+
+        <!-- 人员信息 Tab -->
+        <a-tab-pane key="salesPerson" tab="👤 人员信息">
+          <div class="tab-toolbar">
+            <div class="toolbar-left">
+              <a-input v-model:value="keyword" placeholder="搜索姓名/邮箱..." allow-clear style="width:260px" />
+            </div>
+            <div class="toolbar-right">
+              <a-button type="primary" @click="openAddDialog('salesPerson')">➕ 添加人员</a-button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>姓名</th>
+                  <th>工号</th>
+                  <th>邮箱</th>
+                  <th>所属大区</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="s in filteredSalesPersons" :key="s.id">
+                  <td>
+                    <div class="user-cell">
+                      <a-avatar :size="28" :style="{ background: avatarColor(s.name) }">{{ s.name?.charAt(0) }}</a-avatar>
+                      <span>{{ s.name }}</span>
+                    </div>
+                  </td>
+                  <td>{{ s.code }}</td>
+                  <td>{{ s.email }}</td>
+                  <td>{{ s.region }}</td>
+                  <td><span class="status-badge" :class="s.status === 'active' ? 'status-active' : 'status-inactive'">{{ s.status === 'active' ? '激活' : '停用' }}</span></td>
+                  <td>
+                    <a-space>
+                      <a-button size="small" @click="editItem('salesPerson', s)">编辑</a-button>
+                      <a-button size="small" danger @click="deleteItem('salesPerson', s)">删除</a-button>
+                    </a-space>
+                  </td>
+                </tr>
+                <tr v-if="filteredSalesPersons.length === 0">
+                  <td colspan="6" class="empty-cell">暂无数据</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </a-tab-pane>
+      </a-tabs>
+    </a-card>
 
     <!-- Add/Edit Modal -->
     <a-modal
@@ -166,7 +215,7 @@
       @ok="saveForm"
       @cancel="showModal = false"
     >
-      <div class="form-row">
+      <div class="form-row" v-if="currentModule !== 'salesPerson'">
         <div class="form-group">
           <label class="form-label">{{ modalFields[0] }}<span style="color:#ff4d4f">*</span></label>
           <a-input v-model:value="formData.name" :placeholder="modalFields[0]" />
@@ -176,65 +225,83 @@
           <a-input v-model:value="formData.code" placeholder="编码" />
         </div>
       </div>
-      <template v-if="currentModule === 'productLibrary'">
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">PA</label>
-            <a-input v-model:value="formData.pa" placeholder="PA产品线" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Sub PA-1</label>
-            <a-input v-model:value="formData.subpa1" placeholder="Sub PA-1" />
-          </div>
+      <div class="form-row" v-if="currentModule === 'productLibrary'">
+        <div class="form-group">
+          <label class="form-label">PA</label>
+          <a-select v-model:value="formData.pa" placeholder="选择PA">
+            <a-select-option v-for="pa in paList" :key="pa" :value="pa">{{ pa }}</a-select-option>
+          </a-select>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Sub PA-2</label>
-            <a-input v-model:value="formData.subpa2" placeholder="Sub PA-2" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Sub PA-3</label>
-            <a-input v-model:value="formData.subpa3" placeholder="Sub PA-3" />
-          </div>
+        <div class="form-group">
+          <label class="form-label">Sub PA-1</label>
+          <a-input v-model:value="formData.subpa1" placeholder="Sub PA-1" />
         </div>
-      </template>
-      <template v-if="currentModule === 'customer'">
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">客户类型</label>
-            <a-select v-model:value="formData.type">
-              <a-select-option value="终端">终端</a-select-option>
-              <a-select-option value="经销商">经销商</a-select-option>
-            </a-select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">联系人</label>
-            <a-input v-model:value="formData.contact" placeholder="联系人" />
-          </div>
+      </div>
+      <div class="form-row" v-if="currentModule === 'productLibrary'">
+        <div class="form-group">
+          <label class="form-label">Sub PA-2</label>
+          <a-input v-model:value="formData.subpa2" placeholder="Sub PA-2" />
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">电话</label>
-            <a-input v-model:value="formData.phone" placeholder="电话" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">邮箱</label>
-            <a-input v-model:value="formData.email" placeholder="邮箱" />
-          </div>
+        <div class="form-group">
+          <label class="form-label">Sub PA-3（产品名称）</label>
+          <a-input v-model:value="formData.subpa3" placeholder="Sub PA-3" />
         </div>
-      </template>
-      <template v-if="currentModule === 'regionMapping'">
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">业绩归属</label>
-            <a-input v-model:value="formData.performance" placeholder="业绩归属" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">区域总监</label>
-            <a-input v-model:value="formData.director" placeholder="区域总监" />
-          </div>
+      </div>
+      <div class="form-row" v-if="currentModule === 'customer'">
+        <div class="form-group">
+          <label class="form-label">客户类型</label>
+          <a-select v-model:value="formData.type" placeholder="选择类型">
+            <a-select-option value="终端">终端</a-select-option>
+            <a-select-option value="经销商">经销商</a-select-option>
+          </a-select>
         </div>
-      </template>
+        <div class="form-group">
+          <label class="form-label">联系人</label>
+          <a-input v-model:value="formData.contact" placeholder="联系人" />
+        </div>
+      </div>
+      <div class="form-row" v-if="currentModule === 'customer'">
+        <div class="form-group">
+          <label class="form-label">电话</label>
+          <a-input v-model:value="formData.phone" placeholder="电话" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">邮箱</label>
+          <a-input v-model:value="formData.email" placeholder="邮箱" />
+        </div>
+      </div>
+      <div class="form-row" v-if="currentModule === 'regionMapping'">
+        <div class="form-group">
+          <label class="form-label">业绩归属</label>
+          <a-input v-model:value="formData.performance" placeholder="业绩归属" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">区域总监</label>
+          <a-input v-model:value="formData.director" placeholder="区域总监" />
+        </div>
+      </div>
+      <div class="form-row" v-if="currentModule === 'salesPerson'">
+        <div class="form-group">
+          <label class="form-label">姓名<span style="color:#ff4d4f">*</span></label>
+          <a-input v-model:value="formData.name" placeholder="姓名" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">工号</label>
+          <a-input v-model:value="formData.code" placeholder="工号" />
+        </div>
+      </div>
+      <div class="form-row" v-if="currentModule === 'salesPerson'">
+        <div class="form-group">
+          <label class="form-label">邮箱</label>
+          <a-input v-model:value="formData.email" placeholder="邮箱" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">所属大区</label>
+          <a-select v-model:value="formData.region" placeholder="选择大区" allow-clear>
+            <a-select-option v-for="r in regionList" :key="r" :value="r">{{ r }}</a-select-option>
+          </a-select>
+        </div>
+      </div>
       <div class="form-row-full">
         <div class="form-group">
           <label class="form-label">状态</label>
@@ -261,83 +328,27 @@ const showModal = ref(false)
 const editingId = ref(null)
 const editingRecord = ref(null)
 
-const priceFilter = reactive({ pa: '', active: '' })
-
 const formData = reactive({
   name: '', code: '', status: 'active', type: '', contact: '', phone: '', email: '',
-  pa: '', subpa1: '', subpa2: '', subpa3: '', subpa4: '', performance: '', director: '',
-  product: '', price: 0, invoice: '', customer: '', startDate: '', endDate: ''
+  pa: '', subpa1: '', subpa2: '', subpa3: '', performance: '', director: '', region: '', invoices: []
 })
 
 const paList = ['刀具', '钻头', '铣刀', '量具', '夹具']
+const regionList = ['华东大区', '华南大区', '华北东北大区', '西南大区']
 
 const modalTitle = computed(() => ({
   productLibrary: '产品',
   customer: '客户',
   regionMapping: '区域',
-  salesPerson: '销售',
-  priceList: '价格'
+  salesPerson: '人员'
 }[currentModule.value] || ''))
 
 const modalFields = computed(() => ({
-  productLibrary: ['产品名称（Sub PA-3）', 'SKU编码'],
+  productLibrary: ['产品名称', 'SKU编码'],
   customer: ['客户名称', '客户编码'],
   regionMapping: ['销售大区', '区域编码'],
-  salesPerson: ['姓名', '工号'],
-  priceList: ['产品', '价格']
+  salesPerson: ['姓名', '工号']
 }[currentModule.value] || ['', '']))
-
-// Columns
-const productColumns = [
-  { title: 'SKU', key: 'sku', dataIndex: 'sku' },
-  { title: 'PA', key: 'pa', dataIndex: 'pa' },
-  { title: 'Sub PA-1', key: 'subpa1', dataIndex: 'subpa1' },
-  { title: 'Sub PA-2', key: 'subpa2', dataIndex: 'subpa2' },
-  { title: 'Sub PA-3（产品名称）', key: 'subpa3', dataIndex: 'subpa3' },
-  { title: '状态', key: 'status' },
-  { title: '操作', key: 'actions' }
-]
-
-const customerColumns = [
-  { title: '客户名称', key: 'name', dataIndex: 'name' },
-  { title: '客户编码', key: 'code', dataIndex: 'code' },
-  { title: '客户类型', key: 'type', dataIndex: 'type' },
-  { title: '联系人', key: 'contact', dataIndex: 'contact' },
-  { title: '电话', key: 'phone', dataIndex: 'phone' },
-  { title: '邮箱', key: 'email', dataIndex: 'email' },
-  { title: '状态', key: 'status' },
-  { title: '操作', key: 'actions' }
-]
-
-const regionColumns = [
-  { title: '销售大区', key: 'region', dataIndex: 'region' },
-  { title: '业绩归属', key: 'performance', dataIndex: 'performance' },
-  { title: '对应开票公司', key: 'invoices' },
-  { title: '区域总监', key: 'director', dataIndex: 'director' },
-  { title: '状态', key: 'status' },
-  { title: '操作', key: 'actions' }
-]
-
-const salesPersonColumns = [
-  { title: '姓名', key: 'name', dataIndex: 'name' },
-  { title: '工号', key: 'code', dataIndex: 'code' },
-  { title: '邮箱', key: 'email', dataIndex: 'email' },
-  { title: '所属大区', key: 'region', dataIndex: 'region' },
-  { title: '状态', key: 'status' },
-  { title: '操作', key: 'actions' }
-]
-
-const priceColumns = [
-  { title: '产品名称', key: 'product', dataIndex: 'product' },
-  { title: 'PA', key: 'pa', dataIndex: 'pa' },
-  { title: 'Sub PA', key: 'subpa', dataIndex: 'subpa' },
-  { title: '开票公司', key: 'invoice', dataIndex: 'invoice' },
-  { title: '客户', key: 'customer', dataIndex: 'customer' },
-  { title: '单价', key: 'price' },
-  { title: '生效日期', key: 'startDate', dataIndex: 'startDate' },
-  { title: '状态', key: 'status' },
-  { title: '操作', key: 'actions' }
-]
 
 // Data
 const products = ref([
@@ -367,12 +378,6 @@ const salesPersons = ref([
   { id: 'sp4', name: '吴昊', code: 'EMP004', email: 'hao.wu@sandvik.com', region: '华南大区', status: 'active' }
 ])
 
-const prices = ref([
-  { id: 'pr1', product: '整体硬质合金钻头3xD', pa: '刀具', subpa: '标准刀具', invoice: '山特维克商贸(上海)', customer: '苏州精密工具', price: 1250, startDate: '2026-01-01', endDate: '2026-12-31', active: 'active' },
-  { id: 'pr2', product: '高性能钻头', pa: '钻头', subpa: '普通钻头', invoice: '阿诺精密切削工具(成都)', customer: '昆山智造装备', price: 890, startDate: '2026-04-01', endDate: '2026-12-31', active: 'future' },
-  { id: 'pr3', product: '立铣刀', pa: '铣刀', subpa: '非标刀具', invoice: '廊坊舍弗勒', customer: '上海刃具', price: 2100, startDate: '2025-01-01', endDate: '2025-12-31', active: 'expired' }
-])
-
 const filteredProducts = computed(() => {
   let list = products.value
   if (filterStatus.value) list = list.filter(x => x.status === filterStatus.value)
@@ -388,36 +393,29 @@ const filteredCustomers = computed(() => {
   return list
 })
 
-const filteredMappings = computed(() => regionMappings.value)
+const filteredRegions = computed(() => regionMappings.value)
 const filteredSalesPersons = computed(() => salesPersons.value)
 
-const filteredPrices = computed(() => {
-  let list = prices.value
-  if (priceFilter.pa) list = list.filter(x => x.pa === priceFilter.pa)
-  return list
-})
-
-const priceStatusClass = (r) => {
-  if (r.active === 'active') return 'green'
-  if (r.active === 'future') return 'orange'
-  return 'default'
-}
-const priceStatusLabel = (r) => {
-  if (r.active === 'active') return '生效中'
-  if (r.active === 'future') return '待生效'
-  return '已失效'
+const avatarColor = (name) => {
+  const colors = ['#0D3D92', '#2E6BD8', '#F5A623', '#5A8FE8', '#8DB4E8', '#52C41A']
+  const idx = name ? name.charCodeAt(0) % colors.length : 0
+  return colors[idx]
 }
 
-const onSearch = () => {}
-const onFilter = () => {}
-const resetFilters = () => { keyword.value = ''; filterStatus.value = ''; filterPa.value = '' }
-const exportData = () => message.info('导出功能（演示）')
-const importData = () => message.info('导入功能（演示）')
+const handleExport = (module) => {
+  message.info('导出功能（演示）')
+}
+
+const resetFilters = () => {
+  keyword.value = ''
+  filterStatus.value = ''
+  filterPa.value = ''
+}
 
 const openAddDialog = (module) => {
   currentModule.value = module
   editingId.value = null
-  Object.keys(formData).forEach(k => { formData[k] = typeof formData[k] === 'string' ? '' : formData[k] })
+  Object.keys(formData).forEach(k => { formData[k] = typeof formData[k] === 'string' ? '' : (Array.isArray(formData[k]) ? [] : formData[k]) })
   formData.status = 'active'
   showModal.value = true
 }
@@ -431,7 +429,7 @@ const editItem = (module, record) => {
 }
 
 const deleteItem = (module, record) => {
-  const lists = { productLibrary: products, customer: customers, regionMapping: regionMappings, salesPerson: salesPersons, priceList: prices }
+  const lists = { productLibrary: products, customer: customers, regionMapping: regionMappings, salesPerson: salesPersons }
   const idx = lists[module].value.findIndex(x => x.id === record.id)
   if (idx >= 0) lists[module].value.splice(idx, 1)
   message.success('已删除')
@@ -439,13 +437,13 @@ const deleteItem = (module, record) => {
 
 const saveForm = () => {
   if (!formData.name) { message.error('请填写必填项'); return }
+  const lists = { productLibrary: products, customer: customers, regionMapping: regionMappings, salesPerson: salesPersons }
+  
   if (editingId.value) {
-    const lists = { productLibrary: products, customer: customers, regionMapping: regionMappings, salesPerson: salesPersons, priceList: prices }
     const idx = lists[currentModule.value].value.findIndex(x => x.id === editingId.value)
     if (idx >= 0) Object.assign(lists[currentModule.value].value[idx], { ...formData })
     message.success('更新成功')
   } else {
-    const lists = { productLibrary: products, customer: customers, regionMapping: regionMappings, salesPerson: salesPersons, priceList: prices }
     lists[currentModule.value].value.push({ id: 'id_' + Date.now(), ...formData })
     message.success('添加成功')
   }
@@ -454,13 +452,138 @@ const saveForm = () => {
 </script>
 
 <style scoped>
-.basedata-page { }
-.tab-toolbar { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 12px 0 0; }
-.filter-bar { display: flex; gap: 10px; padding: 12px 0; background: #fafafa; flex-wrap: wrap; }
-.filter-item { display: flex; flex-direction: column; gap: 3px; }
-.filter-label { font-size: 11px; color: #6B7280; font-weight: 600; text-transform: uppercase; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-.form-row-full { margin-bottom: 12px; }
-.form-group { display: flex; flex-direction: column; gap: 4px; }
-.form-label { font-size: 12px; font-weight: 600; color: #6B7280; }
+.basedata-page {
+  padding: 0;
+}
+
+.main-card {
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(13, 61, 146, 0.06);
+}
+
+.tab-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.toolbar-left {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.toolbar-right {
+  display: flex;
+  gap: 8px;
+}
+
+.filter-bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+  background: #FAFAFA;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-left: 12px;
+}
+
+.filter-label {
+  font-size: 11px;
+  color: #6B7280;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-table th {
+  background: #F8FAFC;
+  color: #475569;
+  font-weight: 600;
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 2px solid #E2E8F0;
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid #F1F5F9;
+  color: #1E293B;
+}
+
+.sku-cell {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  color: #64748B;
+}
+
+.name-cell {
+  font-weight: 500;
+  color: #0D3D92;
+}
+
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-active { background: #D1FAE5; color: #059669; }
+.status-inactive { background: #F1F5F9; color: #64748B; }
+
+.empty-cell {
+  text-align: center;
+  color: #94A3B8;
+  padding: 32px !important;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.form-row-full {
+  margin-bottom: 12px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
 </style>
