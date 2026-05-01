@@ -29,37 +29,22 @@
     <!-- Version Table -->
     <a-card :bordered="false" class="table-card">
       <div class="table-wrap">
-        <table class="forecast-table">
-          <thead>
-            <tr>
-              <th>FC Name</th>
-              <th>销售预测周期</th>
-              <th>填报时间</th>
-              <th>延期填报时间</th>
-              <th>可延期人员</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="v in filteredVersions" :key="v.id">
-              <td><span class="fc-name-cell">{{ v.fcName }}</span></td>
-              <td>{{ v.period }}</td>
-              <td>{{ v.fillTime }}</td>
-              <td>{{ v.extendTime || '-' }}</td>
-              <td>{{ v.extendUsers || '-' }}</td>
-              <td>
-                <a-space>
-                  <a-button size="small" @click="editVersion(v)">编辑</a-button>
-                  <a-button size="small" @click="viewHistory(v)">历史</a-button>
-                  <a-button size="small" danger @click="deleteVersion(v)">删除</a-button>
-                </a-space>
-              </td>
-            </tr>
-            <tr v-if="filteredVersions.length === 0">
-              <td colspan="6" class="empty-cell">暂无数据</td>
-            </tr>
-          </tbody>
-        </table>
+        <a-table :columns="columns" :data-source="filteredVersions" :loading="loading" row-key="id" :pagination="{pageSize: 20}">
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'fcName'">
+              <span class="fc-name-cell">{{ record.fcName }}</span>
+            </template>
+            <template v-if="column.key === 'action'">
+              <a-space>
+                <a-button size="small" @click="editVersion(record)">编辑</a-button>
+                <a-button size="small" @click="viewHistory(record)">历史</a-button>
+                <a-popconfirm title="确定要删除吗?" @confirm="deleteVersion(record)">
+                  <a-button size="small" danger>删除</a-button>
+                </a-popconfirm>
+              </a-space>
+            </template>
+          </template>
+        </a-table>
       </div>
     </a-card>
 
@@ -112,13 +97,15 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
+import dayjs from 'dayjs'
 
 const keyword = ref('')
 const statusFilter = ref('')
 const showModal = ref(false)
 const editingVersion = ref(null)
+const loading = ref(false)
 
 const formData = reactive({
   fcName: '',
@@ -130,12 +117,16 @@ const formData = reactive({
   status: 'open'
 })
 
-const versions = ref([
-  { id: 1, fcName: '2026FC3', period: '2026FC3-Q3', fillTime: '2026-07-01 ~ 2026-07-31', extendTime: '', extendUsers: '', status: 'open' },
-  { id: 2, fcName: '2026FC2', period: '2026FC2-Q2', fillTime: '2026-04-01 ~ 2026-04-30', extendTime: '2026-05-05', extendUsers: '张伟, 王强', status: 'closed' },
-  { id: 3, fcName: '2026FC1', period: '2026FC1-Q1', fillTime: '2026-01-01 ~ 2026-01-31', extendTime: '', extendUsers: '', status: 'closed' },
-  { id: 4, fcName: '2025FC2', period: '2025FC2-Q2', fillTime: '2025-07-01 ~ 2025-07-31', extendTime: '', extendUsers: '', status: 'closed' }
-])
+const columns = [
+  { title: 'FC Name', key: 'fcName', dataIndex: 'fcName' },
+  { title: '销售预测周期', key: 'period', dataIndex: 'period' },
+  { title: '填报时间', key: 'fillTime', dataIndex: 'fillTime' },
+  { title: '延期填报时间', key: 'extendTime', dataIndex: 'extendTime' },
+  { title: '可延期人员', key: 'extendUsers', dataIndex: 'extendUsers' },
+  { title: '操作', key: 'action' }
+]
+
+const versions = ref([])
 
 const filteredVersions = computed(() => {
   let list = versions.value
@@ -146,6 +137,32 @@ const filteredVersions = computed(() => {
   return list
 })
 
+const fetchVersions = async () => {
+  try {
+    loading.value = true
+    const res = await fetch('/api/versions')
+    const data = await res.json()
+    if (data.success) {
+      // Map backend data to frontend expected format
+      versions.value = (data.data || []).map(v => ({
+        id: v.id,
+        fcName: v.versionNumber,
+        period: v.versionName,
+        fillTime: v.createdAt ? new Date(v.createdAt).toLocaleDateString() : '',
+        extendTime: v.updatedAt ? new Date(v.updatedAt).toLocaleDateString() : '',
+        extendUsers: '',
+        status: v.status,
+        // Keep original data for editing
+        _original: v
+      }))
+    }
+  } catch (e) {
+    message.error('获取预测周期数据失败')
+  } finally {
+    loading.value = false
+  }
+}
+
 const openAddDialog = () => {
   editingVersion.value = null
   Object.assign(formData, { fcName: '', period: '', startDate: null, endDate: null, extendDate: null, extendUsers: '', status: 'open' })
@@ -154,35 +171,83 @@ const openAddDialog = () => {
 
 const editVersion = (v) => {
   editingVersion.value = v
-  Object.assign(formData, v)
+  // Use original backend data if available
+  const original = v._original || v
+  Object.assign(formData, {
+    fcName: original.versionNumber || v.fcName,
+    period: original.versionName || v.period,
+    startDate: null,
+    endDate: null,
+    extendDate: null,
+    extendUsers: v.extendUsers || '',
+    status: original.status || v.status
+  })
   showModal.value = true
 }
 
-const saveVersion = () => {
+const saveVersion = async () => {
   if (!formData.fcName || !formData.period) {
     message.error('请填写必填项')
     return
   }
-  if (editingVersion.value) {
-    const idx = versions.value.findIndex(x => x.id === editingVersion.value.id)
-    if (idx >= 0) Object.assign(versions.value[idx], { ...formData })
-    message.success('周期已更新')
-  } else {
-    versions.value.push({ id: Date.now(), ...formData, fillTime: formData.startDate && formData.endDate ? `${formData.startDate.format('YYYY-MM-DD')} ~ ${formData.endDate.format('YYYY-MM-DD')}` : '' })
-    message.success('周期已创建')
+  try {
+    const body = {
+      versionNumber: formData.fcName,
+      versionName: formData.period,
+      description: '',
+      status: formData.status
+    }
+    
+    let res, data
+    if (editingVersion.value) {
+      res = await fetch(`/api/versions/${editingVersion.value.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+    } else {
+      res = await fetch('/api/versions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+    }
+    data = await res.json()
+    
+    if (data.success) {
+      message.success(editingVersion.value ? '周期已更新' : '周期已创建')
+      showModal.value = false
+      fetchVersions()
+    } else {
+      message.error(data.message || '操作失败')
+    }
+  } catch (e) {
+    message.error('操作失败')
   }
-  showModal.value = false
 }
 
 const viewHistory = (v) => {
   message.info('查看历史：' + v.fcName)
 }
 
-const deleteVersion = (v) => {
-  const idx = versions.value.findIndex(x => x.id === v.id)
-  if (idx >= 0) versions.value.splice(idx, 1)
-  message.success('周期已删除')
+const deleteVersion = async (v) => {
+  try {
+    const res = await fetch(`/api/versions/${v.id}`, { method: 'DELETE' })
+    const data = await res.json()
+    if (data.success) {
+      message.success('周期已删除')
+      fetchVersions()
+    } else {
+      message.error(data.message || '删除失败')
+    }
+  } catch (e) {
+    message.error('删除失败')
+  }
 }
+
+onMounted(() => {
+  fetchVersions()
+})
 </script>
 
 <style scoped>
@@ -233,28 +298,6 @@ const deleteVersion = (v) => {
 
 .table-wrap {
   overflow-x: auto;
-}
-
-.forecast-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.forecast-table th {
-  background: #F8FAFC;
-  color: #475569;
-  font-weight: 600;
-  text-align: left;
-  padding: 12px 16px;
-  border-bottom: 2px solid #E2E8F0;
-  white-space: nowrap;
-}
-
-.forecast-table td {
-  padding: 12px 16px;
-  border-bottom: 1px solid #F1F5F9;
-  color: #1E293B;
 }
 
 .fc-name-cell {

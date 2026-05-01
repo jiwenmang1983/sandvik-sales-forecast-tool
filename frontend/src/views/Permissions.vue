@@ -11,7 +11,7 @@
           </a-select>
         </div>
         <div class="filter-actions">
-          <a-button type="primary" @click="savePermissions" :disabled="!selectedRoleId">保存权限</a-button>
+          <a-button type="primary" @click="savePermissions" :disabled="!selectedRoleId || saving">保存权限</a-button>
           <a-button @click="resetPermissions" :disabled="!selectedRoleId">恢复默认</a-button>
         </div>
       </div>
@@ -74,16 +74,18 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 
 const selectedRoleId = ref('')
+const saving = ref(false)
+const loading = ref(false)
 
 const roles = ref([
-  { id: 1, name: '管理员', desc: '系统全部权限' },
-  { id: 2, name: '区域总监', desc: '区域内预测管理审批' },
-  { id: 3, name: '财务', desc: '财务审核权限' },
-  { id: 4, name: '销售', desc: '填报和查看本人数据' }
+  { id: '1', name: '管理员', desc: '系统全部权限' },
+  { id: '2', name: '区域总监', desc: '区域内预测管理审批' },
+  { id: '3', name: '财务', desc: '财务审核权限' },
+  { id: '4', name: '销售', desc: '填报和查看本人数据' }
 ])
 
 const permissionModules = reactive([
@@ -140,78 +142,107 @@ const permissionModules = reactive([
   }
 ])
 
-// Role default permissions
-const roleDefaults = {
-  1: ['forecast_view', 'forecast_edit', 'forecast_submit', 'approval_view', 'approval_approve', 'approval_reject', 'basedata_view', 'basedata_product', 'basedata_customer', 'users_view', 'users_add', 'users_edit', 'users_delete', 'system_period', 'system_flow', 'system_log'],
-  2: ['forecast_view', 'forecast_edit', 'forecast_submit', 'approval_view', 'approval_approve', 'approval_reject', 'basedata_view'],
-  3: ['forecast_view', 'approval_view', 'approval_approve', 'basedata_view'],
-  4: ['forecast_view', 'forecast_edit', 'forecast_submit']
+const onRoleChange = async (roleId) => {
+  if (!roleId) return
+  await fetchRolePermissions(roleId)
 }
 
-const rolePermissions = reactive({
-  1: ['forecast_view', 'forecast_edit', 'forecast_submit', 'approval_view', 'approval_approve', 'approval_reject', 'basedata_view', 'basedata_product', 'basedata_customer', 'users_view', 'users_add', 'users_edit', 'users_delete', 'system_period', 'system_flow', 'system_log'],
-  2: ['forecast_view', 'forecast_edit', 'forecast_submit', 'approval_view', 'approval_approve', 'approval_reject', 'basedata_view'],
-  3: ['forecast_view', 'approval_view', 'approval_approve', 'basedata_view'],
-  4: ['forecast_view', 'forecast_edit', 'forecast_submit']
-})
-
-const onRoleChange = (roleId) => {
-  if (!roleId) return
-  const perms = rolePermissions[roleId] || []
-  permissionModules.forEach(mod => {
-    mod.permissions.forEach(perm => {
-      perm.view = perms.includes(perm.key)
-      perm.add = perms.includes(perm.key + '_add')
-      perm.edit = perms.includes(perm.key + '_edit')
-      perm.delete = perms.includes(perm.key + '_delete')
-      perm.export = perms.includes(perm.key + '_export')
-      perm.approve = perms.includes(perm.key + '_approve')
-    })
-  })
+const fetchRolePermissions = async (roleId) => {
+  try {
+    loading.value = true
+    const res = await fetch(`/api/permissions/${roleId}`)
+    const data = await res.json()
+    
+    if (data.success) {
+      const perms = data.data || []
+      permissionModules.forEach(mod => {
+        mod.permissions.forEach(perm => {
+          perm.view = perms.includes(perm.key)
+          perm.add = perms.includes(perm.key + '_add')
+          perm.edit = perms.includes(perm.key + '_edit')
+          perm.delete = perms.includes(perm.key + '_delete')
+          perm.export = perms.includes(perm.key + '_export')
+          perm.approve = perms.includes(perm.key + '_approve')
+        })
+      })
+    }
+  } catch (e) {
+    message.error('获取权限数据失败')
+  } finally {
+    loading.value = false
+  }
 }
 
 const updatePermission = (moduleKey, permKey, action, value) => {
   // Update logic handled by v-model
 }
 
-const savePermissions = () => {
+const savePermissions = async () => {
   if (!selectedRoleId.value) return
   
-  const enabledPerms = []
-  permissionModules.forEach(mod => {
-    mod.permissions.forEach(perm => {
-      if (perm.view) enabledPerms.push(perm.key)
-      if (perm.add) enabledPerms.push(perm.key + '_add')
-      if (perm.edit) enabledPerms.push(perm.key + '_edit')
-      if (perm.delete) enabledPerms.push(perm.key + '_delete')
-      if (perm.export) enabledPerms.push(perm.key + '_export')
-      if (perm.approve) enabledPerms.push(perm.key + '_approve')
+  try {
+    saving.value = true
+    const enabledPerms = []
+    permissionModules.forEach(mod => {
+      mod.permissions.forEach(perm => {
+        if (perm.view) enabledPerms.push(perm.key)
+        if (perm.add) enabledPerms.push(perm.key + '_add')
+        if (perm.edit) enabledPerms.push(perm.key + '_edit')
+        if (perm.delete) enabledPerms.push(perm.key + '_delete')
+        if (perm.export) enabledPerms.push(perm.key + '_export')
+        if (perm.approve) enabledPerms.push(perm.key + '_approve')
+      })
     })
-  })
-  
-  rolePermissions[selectedRoleId.value] = enabledPerms
-  message.success('权限配置已保存')
+    
+    const res = await fetch(`/api/permissions/${selectedRoleId.value}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ permissions: enabledPerms })
+    })
+    const data = await res.json()
+    
+    if (data.success) {
+      message.success('权限配置已保存')
+    } else {
+      message.error(data.message || '保存失败')
+    }
+  } catch (e) {
+    message.error('保存失败')
+  } finally {
+    saving.value = false
+  }
 }
 
-const resetPermissions = () => {
+const resetPermissions = async () => {
   if (!selectedRoleId.value) return
   
-  const defaults = roleDefaults[selectedRoleId.value] || []
-  rolePermissions[selectedRoleId.value] = [...defaults]
-  
-  permissionModules.forEach(mod => {
-    mod.permissions.forEach(perm => {
-      perm.view = defaults.includes(perm.key)
-      perm.add = defaults.includes(perm.key + '_add')
-      perm.edit = defaults.includes(perm.key + '_edit')
-      perm.delete = defaults.includes(perm.key + '_delete')
-      perm.export = defaults.includes(perm.key + '_export')
-      perm.approve = defaults.includes(perm.key + '_approve')
-    })
-  })
-  
-  message.success('已恢复默认权限')
+  try {
+    const res = await fetch(`/api/permissions/${selectedRoleId.value}/reset`, { method: 'POST' })
+    const data = await res.json()
+    
+    if (data.success) {
+      message.success('已恢复默认权限')
+      await fetchRolePermissions(selectedRoleId.value)
+    } else {
+      message.error(data.message || '重置失败')
+    }
+  } catch (e) {
+    message.error('重置失败')
+  }
 }
+
+onMounted(async () => {
+  // Fetch roles from API
+  try {
+    const res = await fetch('/api/permissions/roles')
+    const data = await res.json()
+    if (data.success) {
+      roles.value = data.data || roles.value
+    }
+  } catch (e) {
+    console.error('Failed to fetch roles:', e)
+  }
+})
 </script>
 
 <style scoped>

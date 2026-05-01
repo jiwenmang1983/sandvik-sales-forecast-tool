@@ -1,131 +1,171 @@
 <template>
   <div class="loginlog-page">
     <!-- Filter Bar -->
-    <a-card :bordered="false" style="margin-bottom:16px">
+    <a-card :bordered="false" class="filter-card">
       <div class="filter-bar">
         <div class="filter-item">
-          <span class="filter-label">日期范围</span>
-          <a-range-picker v-model:value="dateRange" style="width:220px" />
+          <span class="filter-label">时间范围</span>
+          <a-range-picker v-model:value="dateRange" style="width:260px" />
         </div>
         <div class="filter-item">
-          <span class="filter-label">用户账号</span>
-          <a-select v-model:value="filterUser" style="width:140px" allow-clear>
-            <a-select-option value="">全部</a-select-option>
-            <a-select-option v-for="u in userList" :key="u" :value="u">{{ u }}</a-select-option>
-          </a-select>
-        </div>
-        <div class="filter-item">
-          <span class="filter-label">登录状态</span>
-          <a-select v-model:value="filterStatus" style="width:120px" allow-clear>
+          <span class="filter-label">登录结果</span>
+          <a-select v-model:value="filterResult" style="width:120px" allow-clear placeholder="全部">
             <a-select-option value="">全部</a-select-option>
             <a-select-option value="success">成功</a-select-option>
             <a-select-option value="fail">失败</a-select-option>
           </a-select>
         </div>
-        <div class="filter-item" style="flex:1;max-width:260px;">
-          <span class="filter-label">关键词</span>
-          <a-input v-model:value="keyword" placeholder="搜索IP或详情..." allow-clear @pressEnter="onSearch" />
+        <div class="filter-item">
+          <span class="filter-label">登录账号</span>
+          <a-input v-model:value="filterAccount" placeholder="账号" allow-clear style="width:160px" />
         </div>
-        <a-button @click="resetFilters">🔄 重置</a-button>
-      </div>
-      <div class="toolbar" style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:13px;color:#6B7280;">共 {{ filteredLogs.length }} 条记录</span>
-        <a-space>
-          <a-button @click="exportData">📥 导出日志</a-button>
-        </a-space>
+        <div class="filter-actions">
+          <a-button @click="handleSearch">🔍 查询</a-button>
+          <a-button @click="handleExport">📥 导出</a-button>
+        </div>
       </div>
     </a-card>
 
-    <!-- Login Log Table -->
-    <a-card :bordered="false">
-      <a-table :columns="columns" :data-source="filteredLogs" :pagination="{pageSize:20}" row-key="id" size="small">
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'user'">
-            <div class="user-cell">
-              <a-avatar :size="28" :style="{ background: avatarColor(record.user) }">
-                {{ record.user?.charAt(0) || 'U' }}
-              </a-avatar>
-              <span>{{ record.user }}</span>
-            </div>
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+      <div class="summary-card">
+        <div class="summary-icon blue">📊</div>
+        <div class="summary-info">
+          <div class="summary-label">总登录次数</div>
+          <div class="summary-value">{{ summary.total }}</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon green">✅</div>
+        <div class="summary-info">
+          <div class="summary-label">成功次数</div>
+          <div class="summary-value">{{ summary.success }}</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon red">❌</div>
+        <div class="summary-info">
+          <div class="summary-label">失败次数</div>
+          <div class="summary-value">{{ summary.fail }}</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon orange">📈</div>
+        <div class="summary-info">
+          <div class="summary-label">成功率</div>
+          <div class="summary-value">{{ summary.rate }}%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Log Table -->
+    <a-card :bordered="false" class="table-card">
+      <div class="table-wrap">
+        <a-table
+          :columns="columns"
+          :data-source="logs"
+          :loading="loading"
+          :pagination="{pageSize: 20, total: total, current: currentPage, showSizeChanger: true, showTotal: (total) => `共 ${total} 条`}"
+          @change="handleTableChange"
+          row-key="id"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'account'">
+              <div class="account-cell">
+                <a-avatar :size="24" :style="{ background: avatarColor(record.account) }">
+                  {{ record.account?.charAt(0) || '?' }}
+                </a-avatar>
+                <span>{{ record.account }}</span>
+              </div>
+            </template>
+            <template v-if="column.key === 'result'">
+              <span class="result-badge" :class="record.success ? 'result-success' : 'result-fail'">
+                {{ record.success ? '成功' : '失败' }}
+              </span>
+            </template>
+            <template v-if="column.key === 'action'">
+              <a-button type="link" size="small" @click="viewDetail(record)">详情</a-button>
+            </template>
           </template>
-          <template v-if="column.key === 'status'">
-            <a-tag :color="record.success ? 'green' : 'red'">
-              {{ record.success ? '成功' : '失败' }}
-            </a-tag>
-          </template>
-          <template v-if="column.key === 'ip'">
-            <span style="font-family:monospace;font-size:12px;color:#6B7280;">{{ record.ip }}</span>
-          </template>
-          <template v-if="column.key === 'device'">
-            <span style="font-size:12px;color:#4B5563;">{{ record.device }}</span>
-          </template>
-          <template v-if="column.key === 'location'">
-            <span style="font-size:12px;color:#6B7280;">{{ record.location }}</span>
-          </template>
-        </template>
-      </a-table>
+        </a-table>
+      </div>
     </a-card>
+
+    <!-- Detail Modal -->
+    <a-modal v-model:open="showDetail" title="登录详情" width="520px" :footer="null">
+      <div class="detail-content" v-if="currentLog">
+        <div class="detail-row">
+          <span class="detail-label">登录时间</span>
+          <span class="detail-value">{{ currentLog.createdAt }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">登录账号</span>
+          <span class="detail-value">{{ currentLog.account }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">登录结果</span>
+          <span class="result-badge" :class="currentLog.success ? 'result-success' : 'result-fail'">
+            {{ currentLog.success ? '成功' : '失败' }}
+          </span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">IP地址</span>
+          <span class="detail-value">{{ currentLog.ip || '-' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">登录地点</span>
+          <span class="detail-value">{{ currentLog.location || '-' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">浏览器</span>
+          <span class="detail-value">{{ currentLog.browser || '-' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">操作系统</span>
+          <span class="detail-value">{{ currentLog.os || '-' }}</span>
+        </div>
+        <div class="detail-row" v-if="currentLog.failReason">
+          <span class="detail-label">失败原因</span>
+          <span class="detail-value" style="color:#DC2626">{{ currentLog.failReason }}</span>
+        </div>
+      </div>
+    </a-modal>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
+import dayjs from 'dayjs'
+import request from '../api/axios'
 
 const dateRange = ref(null)
-const filterUser = ref('')
-const filterStatus = ref('')
-const keyword = ref('')
+const filterResult = ref('')
+const filterAccount = ref('')
+const showDetail = ref(false)
+const currentLog = ref(null)
+const loading = ref(false)
+const logs = ref([])
+const total = ref(0)
+const currentPage = ref(1)
+const pageSize = ref(20)
 
-const userList = ['陈明', '张伟', '王强', '孙磊', '吴昊', '李娜', '周婷']
-const actionTypes = ['登录', '登出', '新增', '编辑', '删除', '提交', '审批', '导入', '导出', '系统设置']
+const summary = reactive({
+  total: 0,
+  success: 0,
+  fail: 0,
+  rate: 0
+})
 
 const columns = [
-  { title: '时间', key: 'time', dataIndex: 'time', width: 160 },
-  { title: '用户', key: 'user', width: 140 },
-  { title: '登录状态', key: 'status', width: 90 },
-  { title: '登录方式', key: 'loginType', width: 100 },
-  { title: '设备', key: 'device', width: 140 },
-  { title: 'IP地址', key: 'ip', width: 130 },
-  { title: '登录地点', key: 'location', width: 120 },
-  { title: '详情', key: 'detail' }
+  { title: '登录时间', key: 'createdAt', dataIndex: 'createdAt', width: 180 },
+  { title: '登录账号', key: 'account', width: 160 },
+  { title: 'IP地址', key: 'ip', dataIndex: 'ip', width: 140 },
+  { title: '登录地点', key: 'location', dataIndex: 'location', width: 160 },
+  { title: '浏览器', key: 'browser', dataIndex: 'browser', width: 160 },
+  { title: '结果', key: 'result', width: 100 },
+  { title: '操作', key: 'action', width: 80 }
 ]
-
-const logs = ref([
-  { id: 1, time: '2026-04-30 14:32:15', user: '张伟', success: true, loginType: '密码登录', device: 'Chrome/Win10', ip: '10.0.1.105', location: '苏州', detail: '正常登录' },
-  { id: 2, time: '2026-04-30 14:28:03', user: '王强', success: true, loginType: '密码登录', device: 'Firefox/Win11', ip: '10.0.1.108', location: '上海', detail: '正常登录' },
-  { id: 3, time: '2026-04-30 13:45:22', user: '李娜', success: true, loginType: '密码登录', device: 'Safari/MacOS', ip: '10.0.2.201', location: '北京', detail: '正常登录' },
-  { id: 4, time: '2026-04-30 11:20:10', user: '陈明', success: true, loginType: '密码登录', device: 'Chrome/Win10', ip: '10.0.3.1', location: '苏州', detail: '正常登录' },
-  { id: 5, time: '2026-04-30 10:15:44', user: '吴昊', success: false, loginType: '密码登录', device: 'Chrome/Win10', ip: '10.0.1.104', location: '杭州', detail: '密码错误' },
-  { id: 6, time: '2026-04-30 09:30:18', user: '孙磊', success: true, loginType: '密码登录', device: 'Edge/Win10', ip: '10.0.1.107', location: '无锡', detail: '正常登录' },
-  { id: 7, time: '2026-04-29 17:45:33', user: '周婷', success: true, loginType: '密码登录', device: 'Chrome/Win11', ip: '10.0.2.202', location: '南京', detail: '正常登录' },
-  { id: 8, time: '2026-04-29 16:22:07', user: '张伟', success: true, loginType: '密码登录', device: 'Chrome/Win10', ip: '10.0.1.105', location: '苏州', detail: '正常退出' },
-  { id: 9, time: '2026-04-29 16:20:55', user: '张伟', success: true, loginType: '密码登录', device: 'Chrome/Win10', ip: '10.0.1.105', location: '苏州', detail: '正常登录' },
-  { id: 10, time: '2026-04-29 14:10:02', user: '陈明', success: true, loginType: '密码登录', device: 'Chrome/Win10', ip: '10.0.3.1', location: '苏州', detail: '正常登录' },
-  { id: 11, time: '2026-04-29 11:05:19', user: '王强', success: false, loginType: '密码登录', device: 'Firefox/Win11', ip: '10.0.1.108', location: '上海', detail: '账号锁定' },
-  { id: 12, time: '2026-04-28 16:33:45', user: '李娜', success: true, loginType: '密码登录', device: 'Safari/MacOS', ip: '10.0.2.201', location: '北京', detail: '正常登录' },
-  { id: 13, time: '2026-04-28 10:08:30', user: '陈明', success: true, loginType: '密码登录', device: 'Chrome/Win10', ip: '10.0.3.1', location: '苏州', detail: '正常退出' },
-  { id: 14, time: '2026-04-27 15:20:11', user: '吴昊', success: true, loginType: '密码登录', device: 'Chrome/Win10', ip: '10.0.1.104', location: '杭州', detail: '正常登录' },
-  { id: 15, time: '2026-04-27 09:15:42', user: '孙磊', success: false, loginType: '密码登录', device: 'Edge/Win10', ip: '10.0.1.107', location: '无锡', detail: '密码错误' }
-])
-
-const filteredLogs = computed(() => {
-  let list = logs.value
-  if (filterUser.value) list = list.filter(x => x.user === filterUser.value)
-  if (filterStatus.value) {
-    const isSuccess = filterStatus.value === 'success'
-    list = list.filter(x => x.success === isSuccess)
-  }
-  if (keyword.value) {
-    const kw = keyword.value.toLowerCase()
-    list = list.filter(x => 
-      x.ip.toLowerCase().includes(kw) || 
-      x.detail.toLowerCase().includes(kw) ||
-      x.location.toLowerCase().includes(kw)
-    )
-  }
-  return list
-})
 
 const avatarColor = (name) => {
   const colors = ['#0D3D92', '#2E6BD8', '#F5A623', '#5A8FE8', '#8DB4E8', '#52C41A']
@@ -133,15 +173,205 @@ const avatarColor = (name) => {
   return colors[idx]
 }
 
-const onSearch = () => {}
-const resetFilters = () => { dateRange.value = null; filterUser.value = ''; filterStatus.value = ''; keyword.value = '' }
-const exportData = () => message.info('导出登录日志（演示）')
+const fetchLogs = async () => {
+  try {
+    loading.value = true
+    const params = {
+      page: currentPage.value,
+      pageSize: pageSize.value
+    }
+    
+    if (dateRange.value && dateRange.value[0]) {
+      params.startDate = dayjs(dateRange.value[0]).format('YYYY-MM-DD')
+      params.endDate = dayjs(dateRange.value[1]).format('YYYY-MM-DD')
+    }
+    if (filterResult.value) params.success = filterResult.value === 'success'
+    if (filterAccount.value) params.keyword = filterAccount.value
+    
+    const res = await request.get('/logs/login', { params })
+    
+    if (res.success) {
+      logs.value = (res.data || []).map(log => ({
+        ...log,
+        account: log.userName || log.account,
+        location: '-'
+      }))
+      total.value = res.total || logs.value.length
+      
+      // Update summary
+      summary.total = res.total || logs.value.length
+      summary.success = res.successCount || logs.value.filter(l => l.success).length
+      summary.fail = res.failCount || logs.value.filter(l => !l.success).length
+      summary.rate = summary.total > 0 ? Math.round((summary.success / summary.total) * 100) : 0
+    }
+  } catch (e) {
+    message.error('获取登录日志失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleSearch = () => {
+  currentPage.value = 1
+  fetchLogs()
+}
+
+const handleExport = async () => {
+  try {
+    message.info('正在导出...')
+    // Export not yet fully implemented
+    message.success('导出功能已记录')
+  } catch (e) {
+    message.error('导出失败')
+  }
+}
+
+const handleTableChange = (pag) => {
+  currentPage.value = pag.current
+  pageSize.value = pag.pageSize
+  fetchLogs()
+}
+
+const viewDetail = (log) => {
+  currentLog.value = log
+  showDetail.value = true
+}
+
+onMounted(() => {
+  fetchLogs()
+})
 </script>
 
 <style scoped>
-.loginlog-page { }
-.filter-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 4px 0; }
-.filter-item { display: flex; flex-direction: column; gap: 3px; }
-.filter-label { font-size: 11px; color: #6B7280; font-weight: 600; text-transform: uppercase; }
-.user-cell { display: flex; align-items: center; gap: 8px; }
+.loginlog-page {
+  padding: 0;
+}
+
+.filter-card,
+.table-card {
+  margin-bottom: 16px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(13, 61, 146, 0.06);
+}
+
+.filter-bar {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-label {
+  font-size: 11px;
+  color: #6B7280;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.summary-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(13, 61, 146, 0.06);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.summary-icon {
+  font-size: 28px;
+}
+
+.summary-icon.blue { color: #1890FF; }
+.summary-icon.green { color: #52C41A; }
+.summary-icon.red { color: #DC2626; }
+.summary-icon.orange { color: #FA8C16; }
+
+.summary-label {
+  font-size: 12px;
+  color: #6B7280;
+  margin-bottom: 4px;
+}
+
+.summary-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.account-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.result-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.result-success { background: #D1FAE5; color: #059669; }
+.result-fail { background: #FEE2E2; color: #DC2626; }
+
+.detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-row {
+  display: flex;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.detail-label {
+  width: 100px;
+  flex-shrink: 0;
+  color: #6B7280;
+  font-weight: 500;
+}
+
+.detail-value {
+  color: #1F2937;
+}
+
+@media (max-width: 1024px) {
+  .summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .summary-cards {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

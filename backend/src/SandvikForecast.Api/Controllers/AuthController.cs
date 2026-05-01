@@ -28,7 +28,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Login failed for user {UserName}", request.UserName);
+            _logger.LogError(ex, "Login failed for user {Email}", request.Email);
             return StatusCode(500, new { success = false, message = ex.Message, inner = ex.InnerException?.Message });
         }
     }

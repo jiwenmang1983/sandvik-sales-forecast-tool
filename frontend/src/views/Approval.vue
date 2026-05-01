@@ -41,7 +41,14 @@
         <!-- User Switcher for Demo -->
         <div class="demo-user-switcher">
           <span class="filter-label">👤 当前用户</span>
-          <a-select v-model:value="currentUserEmail" style="width:220px" @change="onUserChange">
+          <a-select
+            ref="userSelectRef"
+            v-model:value="currentUserEmail"
+            style="width:220px"
+            :dropdownMatchSelectWidth="true"
+            @change="onUserChange"
+            @keydown="handleUserSelectKeydown"
+          >
             <a-select-option value="zhou.ting@sandvik.com">
               <span>👤 周婷（销售）- 待提交审批</span>
             </a-select-option>
@@ -274,6 +281,7 @@ import {
   getApprovalRecord,
   getPendingApprovals
 } from '../utils/workflow.js'
+import { fetchOrgChart } from '../utils/orgApi.js'
 
 // 邮件发送：前端演示用 mock，统一发到 Mark 的邮箱，标题区分角色
 // 后端实现时改为 API 调用真实发送
@@ -282,8 +290,24 @@ const TEST_EMAIL = '93891594@qq.com'
 async function mockSendEmail({ to, subject, text }) {
   // subject 格式：[角色] 原标题 -> 方便 Mark 在同一邮箱里区分不同通知
   const labeledSubject = `[${getRoleLabel(to)}] ${subject}`
-  console.log(`[MockEmail] To: ${TEST_EMAIL} | Subject: ${labeledSubject}`)
-  return { success: true, message: `mock-${Date.now()}` }
+  try {
+    const res = await fetch('/api/email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: TEST_EMAIL, subject: labeledSubject, body: text })
+    })
+    const data = await res.json()
+    if (data.success) {
+      console.log(`[Email] ✓ Sent to ${TEST_EMAIL}: ${labeledSubject}`)
+      return { success: true, message: 'sent' }
+    } else {
+      console.warn(`[Email] ✗ Failed: ${data.message}`)
+      return { success: false, message: data.message }
+    }
+  } catch (err) {
+    console.warn(`[Email] ✗ API unavailable — mock to ${TEST_EMAIL}: ${labeledSubject}`)
+    return { success: false, message: err.message }
+  }
 }
 
 // 根据目标邮箱返回角色标签（辅助测试区分）
@@ -307,6 +331,7 @@ const currentRecord = ref(null)
 const rejectReason = ref('')
 const activeSummaryTab = ref('customer')
 const emailLogs = ref([])
+const userSelectRef = ref(null)
 
 const filter = reactive({
   fcName: '',
@@ -315,36 +340,61 @@ const filter = reactive({
   status: ''
 })
 
-// ==================== Org Chart (Full Demo Chain) ====================
-// 组织架构：周婷(sales) -> 张伟(manager) -> 李娜(director) -> Frank Tao(finalApprover)
-const mockOrgData = [
+// ==================== Org Chart (from API) ====================
+/**
+ * 将后端返回的扁平数据转成树形结构，供 workflow.js 使用
+ */
+function buildOrgTree(flatNodes) {
+  const map = {}
+  const roots = []
+  flatNodes.forEach(n => {
+    map[n.Id] = { ...n, id: String(n.Id), parentId: n.ParentId != null ? String(n.ParentId) : null, children: [] }
+  })
+  Object.values(map).forEach(node => {
+    if (node.parentId && map[node.parentId]) {
+      map[node.parentId].children.push(node)
+    } else {
+      roots.push(node)
+    }
+  })
+  return roots
+}
+
+// 内嵌 fallback org chart（与后端数据一致，确保审批链能正确构建）
+// 结构：Frank Tao → Li Na → Zhang Wei → Zhou Ting/王强  |  Frank Tao → Chen Zhiyuan
+const fallbackOrgData = [
   {
-    id: 'o1', type: 'director', name: '李娜', email: 'li.na@sandvik.com',
-    region: '华东大区', company: '山特维克商贸(上海)', status: 'active', parentId: null, children: [
+    id: '1', type: 'finalApprover', name: 'Frank Tao', email: 'frank.tao@sandvik.com',
+    region: '', company: '山特维克集团', status: 'active', parentId: null, children: [
       {
-        id: 'o2', type: 'manager', name: '张伟', email: 'zhang.wei@sandvik.com',
-        region: '华东大区', company: '山特维克商贸(上海)', status: 'active', parentId: 'o1', children: [
+        id: '2', type: 'director', name: '李娜', email: 'li.na@sandvik.com',
+        region: '华东大区', company: '山特维克商贸(上海)', status: 'active', parentId: '1', children: [
           {
-            id: 'o3', type: 'sales', name: '周婷', email: 'zhou.ting@sandvik.com',
-            region: '华东大区', company: '山特维克商贸(上海)', status: 'active', parentId: 'o2', children: []
-          },
-          {
-            id: 'o4', type: 'sales', name: '王强', email: 'qiang.wang@sandvik.com',
-            region: '华东大区', company: '山特维克商贸(上海)', status: 'active', parentId: 'o2', children: []
+            id: '3', type: 'manager', name: '张伟', email: 'zhang.wei@sandvik.com',
+            region: '华东大区', company: '山特维克商贸(上海)', status: 'active', parentId: '2', children: [
+              { id: '4', type: 'sales', name: '周婷', email: 'zhou.ting@sandvik.com', region: '华东大区', company: '山特维克商贸(上海)', status: 'active', parentId: '3', children: [] },
+              { id: '5', type: 'sales', name: '王强', email: 'qiang.wang@sandvik.com', region: '华东大区', company: '山特维克商贸(上海)', status: 'active', parentId: '3', children: [] }
+            ]
           }
         ]
-      }
+      },
+      { id: '6', type: 'director', name: '陈志远', email: 'zhiyuan.chen@sandvik.com', region: '华南大区', company: '山特维克商贸(上海)', status: 'active', parentId: '1', children: [] }
     ]
-  },
-  {
-    id: 'o5', type: 'director', name: '陈志远', email: 'zhiyuan.chen@sandvik.com',
-    region: '华南大区', company: '山特维克商贸(上海)', status: 'active', parentId: null, children: []
-  },
-  {
-    id: 'o6', type: 'finalApprover', name: 'Frank Tao', email: 'frank.tao@sandvik.com',
-    region: '', company: '山特维克集团', status: 'active', parentId: null, children: []
   }
 ]
+
+// 同步初始化（确保 demo 记录创建时 org chart 已就绪）
+initOrgChart(fallbackOrgData)
+
+// 异步从 API 更新（不阻塞初始化）
+;(async () => {
+  const flat = await fetchOrgChart()
+  if (flat && flat.length > 0) {
+    const tree = buildOrgTree(flat)
+    initOrgChart(tree)
+    console.log(`[Org] Loaded ${flat.length} nodes from API`)
+  }
+})()
 
 // 默认审批链配置
 const defaultChainConfig = [
@@ -355,9 +405,6 @@ const defaultChainConfig = [
   { id: 'c3', level: 3, statusName: '最终审批', roleName: '最终审批人', approverEmail: 'frank.tao@sandvik.com', skippable: false,
     emailTemplate: '销售预测已完成全部审批流程。\n提交人：{submitter}\n预测周期：{period}\n金额：{amount}\n状态：已通过！' }
 ]
-
-// Init
-initOrgChart(mockOrgData)
 
 // 确保 demo 记录只创建一次（防止 HMR 重载模块时覆盖已审批的数据）
 let demoRecordCreated = false
@@ -521,6 +568,18 @@ const handleReset = () => {
   filter.director = ''
   filter.sales = ''
   filter.status = ''
+}
+
+// 修复：键盘 ArrowDown 打开 dropdown 时直接定位到第一个选项，无需额外按键
+const handleUserSelectKeydown = (e) => {
+  if (e.key === 'ArrowDown' || e.key === 'Enter') {
+    // 手动触发 Ant Design Select 打开 dropdown
+    const selectEl = userSelectRef.value?.$el || userSelectRef.value
+    if (selectEl) {
+      selectEl.focus()
+      // 让浏览器默认处理 — Ant Design Select 会在 focus 后自动打开 dropdown
+    }
+  }
 }
 
 const onUserChange = () => {

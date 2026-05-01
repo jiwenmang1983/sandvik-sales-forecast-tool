@@ -289,13 +289,29 @@ const navigate = (path) => {
 }
 
 const handleLogout = async () => {
-  try {
-    await logout()
-  } catch {
-    // Ignore errors
-  }
+  console.log('Logout: Starting...')
+  
+  // Fire and forget the logout API call - we don't want to block navigation
+  const logoutPromise = logout()
+  
+  // Clear auth state immediately
+  console.log('Logout: Clearing auth state...')
   authStore.clearAuth()
   message.success('已退出登录')
+  
+  // Wait for logout API with timeout, but don't block navigation
+  try {
+    await Promise.race([
+      logoutPromise,
+      new Promise(resolve => setTimeout(resolve, 3000)) // 3s timeout
+    ])
+    console.log('Logout: API call completed')
+  } catch (error) {
+    console.log('Logout: API call failed (ignoring):', error.message)
+  }
+  
+  // Always redirect to login, regardless of API result
+  console.log('Logout: Redirecting to /login...')
   router.push('/login')
 }
 

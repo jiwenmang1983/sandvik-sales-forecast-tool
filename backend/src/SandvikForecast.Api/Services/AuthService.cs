@@ -23,8 +23,8 @@ public class AuthService : IAuthService
     public async Task<LoginResponse?> LoginAsync(LoginRequest request, string ipAddress, string userAgent)
     {
         var passwordHash = HashPassword(request.Password);
-        var user = await _userRepo.ValidateCredentialsAsync(request.UserName, passwordHash);
-        var loginLog = new LoginLog { UserName = request.UserName, IpAddress = ipAddress, UserAgent = userAgent };
+        var user = await _userRepo.ValidateCredentialsAsync(request.Email, passwordHash);
+        var loginLog = new LoginLog { UserName = request.Email, IpAddress = ipAddress, UserAgent = userAgent };
         if (user == null)
         {
             loginLog.Success = false;

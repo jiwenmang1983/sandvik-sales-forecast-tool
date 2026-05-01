@@ -36,7 +36,9 @@
           :tree-data="treeData"
           :expand-action="false"
           block-node
+          :expanded-keys="expandedKeys"
           @select="onNodeSelect"
+          @expand="onExpand"
         >
           <template #title="node">
             <div class="tree-node-content" :class="{ 'is-leaf': !node.children || node.children.length === 0 }">
@@ -63,10 +65,11 @@
             </div>
           </template>
         </a-tree>
-        <div v-else class="empty-tree">
+        <div v-else-if="!loading" class="empty-tree">
           <p>暂无组织架构数据</p>
           <a-button type="primary" @click="openAddDialog">新增第一个节点</a-button>
         </div>
+        <a-spin v-if="loading" style="display:block;text-align:center;padding:40px" />
       </div>
     </a-card>
 
@@ -212,7 +215,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 
 const keyword = ref('')
@@ -221,115 +224,52 @@ const showNodeModal = ref(false)
 const showChainModal = ref(false)
 const editingNode = ref(null)
 const editingChainItem = ref(null)
+const loading = ref(false)
+const expandedKeys = ref([])
 
 const regionOptions = ['华东大区', '华南大区', '华北东北大区', '西南大区', '北部销售大区']
 
-// ==================== Org Data ====================
-const orgData = ref([
+const chainConfig = ref([
   {
-    id: 'o1',
-    type: 'director',
-    name: '李华东',
-    email: 'huadong.li@sandvik.com',
-    region: '华东大区',
-    company: '山特维克商贸(上海)',
-    status: 'active',
-    parentId: null,
-    children: [
-      {
-        id: 'o2',
-        type: 'manager',
-        name: '张伟',
-        email: 'wei.zhang@sandvik.com',
-        region: '华东大区',
-        company: '山特维克商贸(上海)',
-        status: 'active',
-        parentId: 'o1',
-        children: []
-      },
-      {
-        id: 'o3',
-        type: 'manager',
-        name: '李娜',
-        email: 'na.li@sandvik.com',
-        region: '华东大区',
-        company: '山特维克商贸(上海)',
-        status: 'active',
-        parentId: 'o1',
-        children: []
-      }
-    ]
+    id: 'c1',
+    level: 1,
+    statusName: '直线经理审批',
+    roleName: '直线经理',
+    approverEmail: '',
+    skippable: true,
+    emailTemplate: '您有一笔销售预测待审批，请及时处理。\n提交人：{submitter}\n预测周期：{period}\n金额：{amount}'
   },
   {
-    id: 'o4',
-    type: 'director',
-    name: '陈志远',
-    email: 'zhiyuan.chen@sandvik.com',
-    region: '华南大区',
-    company: '山特维克商贸(上海)',
-    status: 'active',
-    parentId: null,
-    children: [
-      {
-        id: 'o5',
-        type: 'sales',
-        name: '周婷',
-        email: 'ting.zhou@sandvik.com',
-        region: '华南大区',
-        company: '山特维克商贸(上海)',
-        status: 'active',
-        parentId: 'o4',
-        children: []
-      }
-    ]
+    id: 'c2',
+    level: 2,
+    statusName: '区域总监审批',
+    roleName: '区域总监',
+    approverEmail: '',
+    skippable: false,
+    emailTemplate: '您有一笔销售预测待最终审批，请及时处理。\n提交人：{submitter}\n预测周期：{period}\n金额：{amount}'
   },
   {
-    id: 'o6',
-    type: 'regionOwner',
-    name: '杨依柱',
-    email: 'yizhu.yang@sandvik.com',
-    region: '北部销售大区',
-    company: '阿诺（北京）精密工具有限公司',
-    status: 'active',
-    parentId: null,
-    children: [
-      {
-        id: 'o7',
-        type: 'manager',
-        name: '李长春',
-        email: 'changchun.li@ahno-tool.com',
-        region: '北部销售大区',
-        company: '阿诺（北京）精密工具有限公司',
-        status: 'active',
-        parentId: 'o6',
-        children: [
-          {
-            id: 'o8',
-            type: 'sales',
-            name: '韩学健',
-            email: 'xuejian.han@ahno-tool.com',
-            region: '北部销售大区',
-            company: '阿诺（北京）精密工具有限公司',
-            status: 'active',
-            parentId: 'o7',
-            children: []
-          }
-        ]
-      }
-    ]
+    id: 'c3',
+    level: 3,
+    statusName: '大区负责人审批',
+    roleName: '大区负责人',
+    approverEmail: '',
+    skippable: true,
+    emailTemplate: '您有一笔销售预测待最终审批，请及时处理。\n提交人：{submitter}\n预测周期：{period}\n金额：{amount}'
   },
   {
-    id: 'o9',
-    type: 'finalApprover',
-    name: 'Frank Tao',
-    email: 'frank.tao@sandvik.com',
-    region: '',
-    company: '山特维克集团',
-    status: 'active',
-    parentId: null,
-    children: []
+    id: 'c4',
+    level: 4,
+    statusName: '最终审批',
+    roleName: '最终审批人',
+    approverEmail: 'frank.tao@sandvik.com',
+    skippable: false,
+    emailTemplate: '销售预测已完成全部审批流程。\n提交人：{submitter}\n预测周期：{period}\n金额：{amount}\n状态：已通过'
   }
 ])
+
+// ==================== Org Data ====================
+const orgData = ref([])
 
 const flatOrgData = computed(() => {
   const result = []
@@ -371,46 +311,6 @@ const treeData = computed(() => {
   return filter(orgData.value)
 })
 
-// ==================== Approval Chain Config ====================
-const chainConfig = ref([
-  {
-    id: 'c1',
-    level: 1,
-    statusName: '直线经理审批',
-    roleName: '直线经理',
-    approverEmail: '',
-    skippable: true,
-    emailTemplate: '您有一笔销售预测待审批，请及时处理。\n提交人：{submitter}\n预测周期：{period}\n金额：{amount}'
-  },
-  {
-    id: 'c2',
-    level: 2,
-    statusName: '区域总监审批',
-    roleName: '区域总监',
-    approverEmail: '',
-    skippable: false,
-    emailTemplate: '您有一笔销售预测待最终审批，请及时处理。\n提交人：{submitter}\n预测周期：{period}\n金额：{amount}'
-  },
-  {
-    id: 'c3',
-    level: 3,
-    statusName: '大区负责人审批',
-    roleName: '大区负责人',
-    approverEmail: '',
-    skippable: true,
-    emailTemplate: '您有一笔销售预测待最终审批，请及时处理。\n提交人：{submitter}\n预测周期：{period}\n金额：{amount}'
-  },
-  {
-    id: 'c4',
-    level: 4,
-    statusName: '最终审批',
-    roleName: '最终审批人',
-    approverEmail: 'frank.tao@sandvik.com',
-    skippable: false,
-    emailTemplate: '销售预测已完成全部审批流程。\n提交人：{submitter}\n预测周期：{period}\n金额：{amount}\n状态：已通过'
-  }
-])
-
 // ==================== Node Form ====================
 const nodeForm = reactive({
   type: 'sales',
@@ -438,13 +338,38 @@ const avatarColor = (name) => {
   return colors[idx]
 }
 
+const fetchOrgData = async () => {
+  try {
+    loading.value = true
+    const params = new URLSearchParams()
+    if (filterRegion.value) params.append('region', filterRegion.value)
+    if (keyword.value) params.append('keyword', keyword.value)
+    
+    const res = await fetch(`/api/org/chart?${params.toString()}`)
+    const data = await res.json()
+    if (data.success) {
+      orgData.value = data.data || []
+    }
+  } catch (e) {
+    message.error('获取组织架构数据失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+const onExpand = (keys) => {
+  expandedKeys.value = keys
+}
+
 const expandAll = () => {
-  // Tree expand handled by :default-expand-all on a-tree
-  message.info('已展开全部节点')
+  const keys = flatOrgData.value.map(n => n.id)
+  expandedKeys.value = keys
+  message.success('已展开全部节点')
 }
 
 const collapseAll = () => {
-  message.info('已收起全部节点')
+  expandedKeys.value = []
+  message.success('已收起全部节点')
 }
 
 const onNodeSelect = (selectedKeys) => {
@@ -481,48 +406,63 @@ const editNode = (node) => {
   showNodeModal.value = true
 }
 
-const deleteNode = (node) => {
-  const remove = (nodes, id) => {
-    const idx = nodes.findIndex(n => n.id === id)
-    if (idx >= 0) {
-      nodes.splice(idx, 1)
-      return true
+const deleteNode = async (node) => {
+  try {
+    const res = await fetch(`/api/org/nodes/${node.key}`, { method: 'DELETE' })
+    const data = await res.json()
+    if (data.success) {
+      message.success('节点已删除')
+      fetchOrgData()
+    } else {
+      message.error(data.message || '删除失败')
     }
-    for (const n of nodes) {
-      if (n.children && remove(n.children, id)) return true
-    }
-    return false
+  } catch (e) {
+    message.error('删除失败')
   }
-  remove(orgData.value, node.key)
-  message.success('节点已删除')
 }
 
-const saveNode = () => {
+const saveNode = async () => {
   if (!nodeForm.name || !nodeForm.email) {
     message.error('请填写必填项')
     return
   }
-  if (editingNode.value) {
-    Object.assign(editingNode.value, { ...nodeForm })
-    message.success('节点已更新')
-  } else {
-    const newNode = { id: 'o_' + Date.now(), ...nodeForm, children: [] }
-    if (nodeForm.parentId) {
-      const parent = findNode(nodeForm.parentId, orgData.value)
-      if (parent) {
-        if (!parent.children) parent.children = []
-        parent.children.push(newNode)
-      }
-    } else {
-      orgData.value.push(newNode)
+  try {
+    const body = {
+      type: nodeForm.type,
+      name: nodeForm.name,
+      email: nodeForm.email,
+      region: nodeForm.region,
+      company: nodeForm.company,
+      parentId: nodeForm.parentId,
+      status: nodeForm.status
     }
-    message.success('节点已添加')
+    
+    let res, data
+    if (editingNode.value) {
+      res = await fetch(`/api/org/nodes/${editingNode.value.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+    } else {
+      res = await fetch('/api/org/nodes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+    }
+    data = await res.json()
+    
+    if (data.success) {
+      message.success(editingNode.value ? '节点已更新' : '节点已创建')
+      showNodeModal.value = false
+      fetchOrgData()
+    } else {
+      message.error(data.message || '操作失败')
+    }
+  } catch (e) {
+    message.error('操作失败')
   }
-  showNodeModal.value = false
-}
-
-const handleExport = () => {
-  message.info('导出组织架构（演示）')
 }
 
 const addChainItem = () => {
@@ -533,7 +473,7 @@ const addChainItem = () => {
 
 const editChainItem = (item) => {
   editingChainItem.value = item
-  Object.assign(chainForm, { ...item })
+  Object.assign(chainForm, { statusName: item.statusName, roleName: item.roleName, approverEmail: item.approverEmail, skippable: item.skippable, emailTemplate: item.emailTemplate || '' })
   showChainModal.value = true
 }
 
@@ -549,30 +489,42 @@ const saveChainItem = () => {
     return
   }
   if (editingChainItem.value) {
-    Object.assign(editingChainItem.value, { ...chainForm })
+    const idx = chainConfig.value.findIndex(c => c.id === editingChainItem.value.id)
+    if (idx >= 0) {
+      chainConfig.value[idx] = { ...chainConfig.value[idx], ...chainForm }
+    }
     message.success('审批节点已更新')
   } else {
     chainConfig.value.push({
-      id: 'c_' + Date.now(),
+      id: 'c' + Date.now(),
       level: chainConfig.value.length + 1,
       ...chainForm
     })
-    message.success('审批节点已添加')
+    message.success('审批节点已创建')
   }
   showChainModal.value = false
 }
+
+const handleExport = () => {
+  message.info('导出功能开发中')
+}
+
+onMounted(() => {
+  fetchOrgData()
+})
 </script>
 
 <style scoped>
 .orgchart-page {
-  display: grid;
-  grid-template-columns: 1fr 360px;
-  gap: 16px;
   padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 16px;
 }
 
-.filter-card {
-  grid-column: 1 / -1;
+.filter-card,
+.tree-card,
+.chain-card {
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(13, 61, 146, 0.06);
 }
@@ -581,7 +533,6 @@ const saveChainItem = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
 }
 
 .toolbar-left {
@@ -595,27 +546,17 @@ const saveChainItem = () => {
   gap: 8px;
 }
 
-.tree-card {
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(13, 61, 146, 0.06);
-}
-
 .tree-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #E2E8F0;
 }
 
 .tree-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1F2937;
 }
 
 .tree-icon {
@@ -624,27 +565,25 @@ const saveChainItem = () => {
 
 .tree-actions {
   display: flex;
-  gap: 8px;
+  gap: 4px;
 }
 
 .org-tree-wrap {
   min-height: 400px;
-  max-height: 600px;
-  overflow-y: auto;
+}
+
+.empty-tree {
+  text-align: center;
+  padding: 64px 32px;
+  color: #94A3B8;
 }
 
 .tree-node-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
-  border-radius: 8px;
-  transition: background 0.15s;
   width: 100%;
-}
-
-.tree-node-content:hover {
-  background: #F1F5F9;
+  padding: 4px 0;
 }
 
 .node-main {
@@ -663,7 +602,6 @@ const saveChainItem = () => {
   color: #fff;
   font-weight: 600;
   font-size: 14px;
-  flex-shrink: 0;
 }
 
 .node-info {
@@ -673,8 +611,7 @@ const saveChainItem = () => {
 }
 
 .node-name {
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: 500;
   color: #1F2937;
 }
 
@@ -682,10 +619,10 @@ const saveChainItem = () => {
   display: flex;
   align-items: center;
   gap: 6px;
+  font-size: 12px;
 }
 
 .node-email {
-  font-size: 12px;
   color: #6B7280;
 }
 
@@ -693,58 +630,36 @@ const saveChainItem = () => {
   display: flex;
   gap: 2px;
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity 0.2s;
 }
 
 .tree-node-content:hover .node-actions {
   opacity: 1;
 }
 
-.empty-tree {
-  text-align: center;
-  padding: 48px;
-  color: #94A3B8;
-}
-
-.empty-tree p {
-  margin-bottom: 16px;
-}
-
-/* Chain Card */
-.chain-card {
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(13, 61, 146, 0.06);
-}
-
 .chain-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1F2937;
   margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #E2E8F0;
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .chain-icon {
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .chain-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 480px;
-  overflow-y: auto;
 }
 
 .chain-item {
-  background: #F8FAFC;
-  border-radius: 12px;
-  padding: 12px 14px;
-  border: 1px solid #E2E8F0;
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 12px;
 }
 
 .chain-item-header {
@@ -761,22 +676,20 @@ const saveChainItem = () => {
 }
 
 .level-badge {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: #0D3D92;
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
 }
 
 .level-name {
-  font-weight: 600;
-  font-size: 14px;
-  color: #1F2937;
+  font-weight: 500;
 }
 
 .chain-item-actions {
@@ -784,31 +697,32 @@ const saveChainItem = () => {
   gap: 2px;
 }
 
-.chain-item-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding-left: 32px;
-}
-
 .chain-info-row {
   display: flex;
-  align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 12px;
+  margin-bottom: 4px;
 }
 
 .chain-label {
   color: #6B7280;
-  font-weight: 500;
 }
 
 .chain-value {
   color: #1F2937;
-  font-weight: 500;
 }
 
-/* Form */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.form-row-full {
+  margin-bottom: 12px;
+}
+
 .form-group {
   display: flex;
   flex-direction: column;
@@ -818,22 +732,6 @@ const saveChainItem = () => {
 .form-label {
   font-size: 12px;
   font-weight: 600;
-  color: #6B7280;
-  text-transform: uppercase;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 12px;
-}
-
-.form-row-full {
-  margin-top: 12px;
-}
-
-.form-row-full .form-group {
-  width: 100%;
+  color: #374151;
 }
 </style>

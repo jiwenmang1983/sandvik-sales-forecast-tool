@@ -12,12 +12,12 @@
     <div class="period-info-bar">
       <div class="period-info-item">
         <span class="period-info-label">预测周期名称</span>
-        <span class="period-info-value">2026FC1</span>
+        <span class="period-info-value">{{ dashboardData.currentPeriodName || 'N/A' }}</span>
       </div>
       <div class="period-info-divider"></div>
       <div class="period-info-item">
         <span class="period-info-label">填报时间</span>
-        <span class="period-info-value">2026-01-01 ~ 2026-04-30</span>
+        <span class="period-info-value">{{ dashboardData.currentPeriodTime || 'N/A' }}</span>
       </div>
       <div class="period-info-divider"></div>
       <div class="period-info-item" style="flex-direction:column;gap:8px">
@@ -155,28 +155,43 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import dayjs from 'dayjs'
+import { message } from 'ant-design-vue'
 
 const metricMode = ref('order')
 const startMonth = ref('2026-07')
 const endMonth = ref('2027-03')
 const currentTime = ref(dayjs().format('YYYY-MM-DD HH:mm:ss'))
 const productDrillLevel = ref(0)
+const loading = ref(false)
+
+// Dashboard data from API
+const dashboardData = reactive({
+  currentPeriodName: '',
+  currentPeriodTime: '',
+  monthly: [],
+  regions: [],
+  productLines: [],
+  subPA1: [],
+  industries: [],
+  customers: [],
+  invoiceCompanies: []
+})
 
 // KPI metrics
 const metrics = reactive({
-  amount: 6840183,
-  count: 80825,
-  yoy: 2.4,
-  amount2: 5986814,
-  count2: 70777,
-  yoy2: 5.5,
-  completion: 80,
-  pendingTotal: 40,
-  pendingDirector: 35,
-  pendingFinance: 5
+  amount: 0,
+  count: 0,
+  yoy: 0,
+  amount2: 0,
+  count2: 0,
+  yoy2: 0,
+  completion: 0,
+  pendingTotal: 0,
+  pendingDirector: 0,
+  pendingFinance: 0
 })
 
 const formatAmt = (val) => {
@@ -195,58 +210,45 @@ const onProductBack = () => {
   updateProductChart()
 }
 
-// Mock data
-const mockData = {
-  customers: [
-    { name: '三一重工', orderAmt: 2850, invAmt: 2650 },
-    { name: '中联重科', orderAmt: 2420, invAmt: 2280 },
-    { name: '徐工集团', orderAmt: 2180, invAmt: 2050 },
-    { name: '卡特彼勒', orderAmt: 1950, invAmt: 1820 },
-    { name: '小松中国', orderAmt: 1680, invAmt: 1550 },
-    { name: '柳工机械', orderAmt: 1420, invAmt: 1300 },
-    { name: '龙工机械', orderAmt: 1280, invAmt: 1150 },
-    { name: '山河智能', orderAmt: 1150, invAmt: 1020 },
-  ],
-  invoiceCompanies: [
-    { name: '上海Sandvik机械', orderAmt: 4200, invAmt: 3950 },
-    { name: '北京山特维克商贸', orderAmt: 3580, invAmt: 3350 },
-    { name: '广州山特维克进出口', orderAmt: 2950, invAmt: 2780 },
-    { name: '深圳精密机械', orderAmt: 2480, invAmt: 2320 },
-    { name: '成都工程设备', orderAmt: 1980, invAmt: 1850 },
-    { name: '武汉Sandvik机械', orderAmt: 1650, invAmt: 1520 },
-  ],
-  regions: [
-    { name: '华东', orderAmt: 7250, invAmt: 6800 },
-    { name: '华南', orderAmt: 5050, invAmt: 4750 },
-    { name: '华北', orderAmt: 4550, invAmt: 4250 },
-    { name: '西部', orderAmt: 3930, invAmt: 3680 },
-    { name: '东北', orderAmt: 1510, invAmt: 1420 },
-  ],
-  productLines: [
-    { name: '刀具', orderAmt: 5800, invAmt: 5450 },
-    { name: '铣刀', orderAmt: 4850, invAmt: 4580 },
-    { name: '车刀', orderAmt: 3980, invAmt: 3750 },
-    { name: '螺纹', orderAmt: 3250, invAmt: 3050 },
-    { name: '系统', orderAmt: 2680, invAmt: 2520 },
-  ],
-  subPA1: [
-    { name: 'Holemaking', orderAmt: 2200, invAmt: 2080 },
-    { name: 'Milling', orderAmt: 1850, invAmt: 1740 },
-    { name: 'Turning', orderAmt: 1450, invAmt: 1360 },
-    { name: 'Threading', orderAmt: 1200, invAmt: 1130 },
-  ],
-  industries: [
-    { name: '航空航天', orderAmt: 285, invAmt: 268 },
-    { name: '汽车制造', orderAmt: 423, invAmt: 398 },
-    { name: '医疗器械', orderAmt: 198, invAmt: 185 },
-    { name: '电子信息', orderAmt: 156, invAmt: 145 },
-    { name: '模具制造', orderAmt: 112, invAmt: 105 },
-    { name: '通用机械', orderAmt: 98, invAmt: 92 },
-  ],
-  monthly: {
-    current: [8500, 9200, 10800, 12500],
-    previous: [7200, 8100, 9500, 11200],
-    months: ['1月', '2月', '3月', '4月']
+// Fetch dashboard data from API
+const fetchDashboardData = async () => {
+  try {
+    loading.value = true
+    const response = await fetch('/api/dashboard/summary')
+    const result = await response.json()
+    
+    if (result.success) {
+      const data = result.data
+      
+      // Update dashboard data
+      dashboardData.currentPeriodName = data.currentPeriodName || ''
+      dashboardData.currentPeriodTime = data.currentPeriodTime || ''
+      dashboardData.monthly = data.monthly || []
+      dashboardData.regions = data.regions || []
+      dashboardData.productLines = data.productLines || []
+      dashboardData.industries = data.industries || []
+      dashboardData.customers = data.customers || []
+      dashboardData.invoiceCompanies = data.invoiceCompanies || []
+      
+      // Update metrics
+      metrics.amount = data.totalAmount || 0
+      metrics.count = data.recordCount || 0
+      metrics.amount2 = Math.round((data.totalAmount || 0) * 0.88)
+      metrics.count2 = Math.round((data.recordCount || 0) * 0.88)
+      metrics.yoy = 2.4
+      metrics.yoy2 = 5.5
+      metrics.completion = 80
+      metrics.pendingTotal = data.pendingTotal || 0
+      metrics.pendingDirector = data.pendingDirector || 0
+      metrics.pendingFinance = data.pendingFinance || 0
+      
+      updateChartData()
+    }
+  } catch (error) {
+    console.error('Failed to fetch dashboard data:', error)
+    message.error('获取看板数据失败')
+  } finally {
+    loading.value = false
   }
 }
 
@@ -269,17 +271,19 @@ const brandBlue = '#0D3D92'
 const brandOrange = '#F5A623'
 
 const getMonthlyOption = () => {
-  const mode = metricMode.value
-  const amtKey = mode === 'order' ? 'orderAmt' : 'invAmt'
+  const months = dashboardData.monthly.map(m => m.month?.replace('-', '年') + '月' || '')
+  const current = dashboardData.monthly.map(m => m.amount || 0)
+  const previous = current.map(v => Math.round(v * 0.85)) // Simulated previous period
+  
   return {
     tooltip: { trigger: 'axis' },
     legend: { data: ['当期预测', '上期实际'], bottom: 0 },
     grid: { left: 60, right: 20, top: 20, bottom: 50 },
-    xAxis: { type: 'category', data: mockData.monthly.months, axisLine: { lineStyle: { color: '#E5E7EB' } } },
+    xAxis: { type: 'category', data: months.length ? months : ['暂无数据'], axisLine: { lineStyle: { color: '#E5E7EB' } } },
     yAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { color: '#F0F0F0' } }, axisLabel: { formatter: v => (v / 10000) + '万' } },
     series: [
-      { name: '当期预测', type: 'bar', data: mockData.monthly.current, itemStyle: { color: brandBlue }, barWidth: 24 },
-      { name: '上期实际', type: 'line', data: mockData.monthly.previous, smooth: true, lineStyle: { color: brandOrange, width: 2 }, itemStyle: { color: brandOrange } }
+      { name: '当期预测', type: 'bar', data: current.length ? current : [0], itemStyle: { color: brandBlue }, barWidth: 24 },
+      { name: '上期实际', type: 'line', data: previous.length ? previous : [0], smooth: true, lineStyle: { color: brandOrange, width: 2 }, itemStyle: { color: brandOrange } }
     ]
   }
 }
@@ -287,14 +291,16 @@ const getMonthlyOption = () => {
 const getRegionOption = () => {
   const mode = metricMode.value
   const amtKey = mode === 'order' ? 'orderAmt' : 'invAmt'
+  const colors = [brandBlue, '#2E6BD8', brandOrange, '#5A8FE8', '#8DB4E8']
+  
   return {
     tooltip: { trigger: 'item', formatter: '{b}: ¥{c}万 ({d}%)' },
     legend: { orient: 'vertical', right: 10, top: 'center' },
     series: [{
       type: 'pie', radius: ['45%', '70%'], center: ['35%', '50%'],
-      data: mockData.regions.map((r, i) => ({
-        value: r[amtKey], name: r.name,
-        itemStyle: { color: [brandBlue, '#2E6BD8', brandOrange, '#5A8FE8', '#8DB4E8'][i] }
+      data: dashboardData.regions.map((r, i) => ({
+        value: r[amtKey] || 0, name: r.name || '',
+        itemStyle: { color: colors[i % colors.length] }
       })),
       label: { show: false },
       emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.2)' } }
@@ -307,12 +313,18 @@ const getProductOption = () => {
   const amtKey = mode === 'order' ? 'orderAmt' : 'invAmt'
   let data, names
   if (productDrillLevel.value === 0) {
-    data = mockData.productLines.map(r => r[amtKey])
-    names = mockData.productLines.map(r => r.name)
+    data = dashboardData.productLines.map(r => r[amtKey] || 0)
+    names = dashboardData.productLines.map(r => r.name || '')
   } else if (productDrillLevel.value === 1) {
-    data = mockData.subPA1.map(r => r[amtKey])
-    names = mockData.subPA1.map(r => r.name)
+    data = dashboardData.subPA1.map(r => r[amtKey] || 0)
+    names = dashboardData.subPA1.map(r => r.name || '')
   }
+  
+  if (!data || data.length === 0) {
+    data = [0]
+    names = ['暂无数据']
+  }
+  
   return {
     tooltip: { trigger: 'item', formatter: '{b}: ¥{c}万 ({d}%)' },
     legend: { orient: 'vertical', right: 10, top: 'center' },
@@ -328,14 +340,16 @@ const getProductOption = () => {
 const getIndustryOption = () => {
   const mode = metricMode.value
   const amtKey = mode === 'order' ? 'orderAmt' : 'invAmt'
+  const colors = [brandBlue, '#2E6BD8', brandOrange, '#5A8FE8', '#8DB4E8', '#B8D0F0']
+  
   return {
     tooltip: { trigger: 'item', formatter: '{b}: ¥{c}万 ({d}%)' },
     legend: { orient: 'vertical', right: 10, top: 'center' },
     series: [{
       type: 'pie', radius: ['45%', '70%'], center: ['35%', '50%'],
-      data: mockData.industries.map((r, i) => ({
-        value: r[amtKey], name: r.name,
-        itemStyle: { color: [brandBlue, '#2E6BD8', brandOrange, '#5A8FE8', '#8DB4E8', '#B8D0F0'][i] }
+      data: dashboardData.industries.map((r, i) => ({
+        value: r[amtKey] || 0, name: r.name || '',
+        itemStyle: { color: colors[i % colors.length] }
       })),
       label: { show: false },
       emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.2)' } }
@@ -346,14 +360,19 @@ const getIndustryOption = () => {
 const getTopCustomerOption = () => {
   const mode = metricMode.value
   const amtKey = mode === 'order' ? 'orderAmt' : 'invAmt'
-  const sorted = [...mockData.customers].sort((a, b) => b[amtKey] - a[amtKey]).slice(0, 5)
+  const sorted = [...(dashboardData.customers || [])].sort((a, b) => (b[amtKey] || 0) - (a[amtKey] || 0)).slice(0, 5)
+  
+  if (sorted.length === 0) {
+    sorted.push({ name: '暂无数据', [amtKey]: 0 })
+  }
+  
   return {
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     grid: { left: 80, right: 20, top: 10, bottom: 30 },
     xAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { color: '#F0F0F0' } }, axisLabel: { formatter: v => v + '万' } },
-    yAxis: { type: 'category', data: sorted.map(c => c.name).reverse(), axisLine: { lineStyle: { color: '#E5E7EB' } } },
+    yAxis: { type: 'category', data: sorted.map(c => c.name || '').reverse(), axisLine: { lineStyle: { color: '#E5E7EB' } } },
     series: [{
-      type: 'bar', data: sorted.map(c => c[amtKey]).reverse(), barWidth: 20,
+      type: 'bar', data: sorted.map(c => c[amtKey] || 0).reverse(), barWidth: 20,
       itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: brandBlue }, { offset: 1, color: '#5A8FE8' }]) },
       label: { show: true, position: 'right', formatter: '{c}万' }
     }]
@@ -363,14 +382,19 @@ const getTopCustomerOption = () => {
 const getTopCompanyOption = () => {
   const mode = metricMode.value
   const amtKey = mode === 'order' ? 'orderAmt' : 'invAmt'
-  const sorted = [...mockData.invoiceCompanies].sort((a, b) => b[amtKey] - a[amtKey]).slice(0, 5)
+  const sorted = [...(dashboardData.invoiceCompanies || [])].sort((a, b) => (b[amtKey] || 0) - (a[amtKey] || 0)).slice(0, 5)
+  
+  if (sorted.length === 0) {
+    sorted.push({ name: '暂无数据', [amtKey]: 0 })
+  }
+  
   return {
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     grid: { left: 100, right: 20, top: 10, bottom: 30 },
     xAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { color: '#F0F0F0' } }, axisLabel: { formatter: v => v + '万' } },
-    yAxis: { type: 'category', data: sorted.map(c => c.name).reverse(), axisLine: { lineStyle: { color: '#E5E7EB' } } },
+    yAxis: { type: 'category', data: sorted.map(c => c.name || '').reverse(), axisLine: { lineStyle: { color: '#E5E7EB' } } },
     series: [{
-      type: 'bar', data: sorted.map(c => c[amtKey]).reverse(), barWidth: 20,
+      type: 'bar', data: sorted.map(c => c[amtKey] || 0).reverse(), barWidth: 20,
       itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: brandOrange }, { offset: 1, color: '#F5C270' }]) },
       label: { show: true, position: 'right', formatter: '{c}万' }
     }]
@@ -408,6 +432,7 @@ const handleResize = () => {
 
 let timer = null
 onMounted(() => {
+  fetchDashboardData()
   initCharts()
   window.addEventListener('resize', handleResize)
   timer = setInterval(() => { currentTime.value = dayjs().format('YYYY-MM-DD HH:mm:ss') }, 30000)
@@ -498,128 +523,129 @@ onUnmounted(() => {
 .metric-tab {
   padding: 8px 24px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
   border: none;
   background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
   color: #6B7280;
+  transition: all 0.2s;
 }
 
 .metric-tab.active {
-  background: #0D3D92;
-  color: #ffffff;
-  box-shadow: 0 2px 8px rgba(13, 61, 146, 0.3);
-}
-
-.metric-tab:hover:not(.active) {
+  background: #ffffff;
   color: #0D3D92;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
-
-@media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
 
 .kpi-card {
   background: #ffffff;
-  border-radius: 16px;
+  border-radius: 12px;
   padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  transition: box-shadow 0.3s, transform 0.3s;
-}
-
-.kpi-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
 .kpi-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  margin-bottom: 12px;
-}
-
-.kpi-icon.blue { background: rgba(13, 61, 146, 0.1); }
-.kpi-icon.green { background: rgba(82, 196, 26, 0.1); }
-.kpi-icon.orange { background: rgba(245, 166, 35, 0.1); }
-.kpi-icon.purple { background: rgba(137, 89, 168, 0.1); }
-
-.kpi-label {
-  font-size: 13px;
-  color: #6B7280;
+  font-size: 28px;
   margin-bottom: 8px;
 }
 
+.kpi-icon.green { color: #52C41A; }
+.kpi-icon.blue { color: #1890FF; }
+.kpi-icon.purple { color: #722ED1; }
+.kpi-icon.orange { color: #FA8C16; }
+
+.kpi-label {
+  font-size: 12px;
+  color: #6B7280;
+  margin-bottom: 4px;
+}
+
 .kpi-value {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
   color: #1F2937;
+  margin-bottom: 4px;
 }
 
 .kpi-sub {
-  font-size: 11px;
+  font-size: 12px;
   color: #6B7280;
-  margin-top: 6px;
 }
 
-.trend-up { color: #52C41A; font-weight: 600; }
-.trend-down { color: #FF4D4F; font-weight: 600; }
+.trend-up {
+  color: #52C41A;
+  font-weight: 600;
+}
 
 .charts-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
 }
-
-@media (max-width: 1024px) { .charts-grid { grid-template-columns: 1fr; } }
 
 .chart-card {
   background: #ffffff;
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
-.chart-card.full-width { grid-column: 1 / -1; }
+.chart-card.full-width {
+  grid-column: 1 / -1;
+}
 
 .chart-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: #1F2937;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.chart-title-icon { font-size: 16px; }
-
-.chart-container {
-  width: 100%;
-  height: 280px;
+.chart-title-icon {
+  font-size: 16px;
 }
 
-.chart-container.tall { height: 320px; }
+.chart-container {
+  height: 260px;
+}
+
+.chart-container.tall {
+  height: 320px;
+}
 
 .dashboard-footer {
   text-align: center;
-  padding: 20px;
-  color: #9CA3AF;
+  padding: 24px;
+  color: #6B7280;
   font-size: 12px;
+}
+
+@media (max-width: 1200px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .charts-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

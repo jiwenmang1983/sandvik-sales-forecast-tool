@@ -91,7 +91,71 @@ public class ForecastController : ControllerBase
         await _recordRepo.DeleteAsync(id);
         return Ok(new { success = true, message = "Deleted" });
     }
+
+    [HttpGet("template")]
+    public async Task<ActionResult> GetTemplate()
+    {
+        var csv = "Customer,InvoiceCompany,Product,Amount,Notes\n";
+        return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", "forecast_template.csv");
+    }
+
+    [HttpGet("export")]
+    public async Task<ActionResult> ExportData([FromQuery] string? periodId)
+    {
+        var records = await _recordRepo.GetAllAsync();
+        if (!string.IsNullOrEmpty(periodId))
+            records = records.Where(r => r.ForecastPeriodId == periodId).ToList();
+
+        var lines = new List<string> { "Customer,InvoiceCompany,Product,Year,Month,Amount,Notes" };
+        foreach (var r in records)
+        {
+            lines.Add($"{r.CustomerId},{r.InvoiceCompanyId},{r.ProductId},{r.Year},{r.Month},{r.Amount},{r.Notes ?? ""}");
+        }
+        var csv = string.Join("\n", lines);
+        return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", $"forecast_export_{periodId ?? "all"}.csv");
+    }
+
+    [HttpPost("import")]
+    public async Task<ActionResult> ImportData([FromBody] List<ImportRecordRequest> records)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var imported = 0;
+        foreach (var req in records)
+        {
+            var record = new ForecastRecord
+            {
+                ForecastPeriodId = req.ForecastPeriodId,
+                CustomerId = req.CustomerId,
+                InvoiceCompanyId = req.InvoiceCompanyId,
+                ProductId = req.ProductId,
+                Year = req.Year,
+                Month = req.Month,
+                Amount = req.Amount,
+                Notes = req.Notes,
+                CreatedByUserId = userId,
+                Status = "Draft"
+            };
+            await _recordRepo.AddAsync(record);
+            imported++;
+        }
+        return Ok(new { success = true, importedCount = imported });
+    }
+
+    [HttpPost("submit")]
+    public async Task<ActionResult> SubmitForecast([FromBody] SubmitRequest req)
+    {
+        var records = await _recordRepo.GetAllAsync();
+        var periodRecords = records.Where(r => r.ForecastPeriodId == req.PeriodId).ToList();
+        foreach (var record in periodRecords)
+        {
+            record.Status = "Submitted";
+        }
+        // Note: In a real app, you'd create an approval workflow record here
+        return Ok(new { success = true, submittedCount = periodRecords.Count });
+    }
 }
 
 public record CreateRecordRequest(string ForecastPeriodId, string CustomerId, string InvoiceCompanyId, string ProductId, int Year, int Month, decimal Amount);
 public record UpdateRecordRequest(decimal Amount, string? Notes, string Status);
+public record ImportRecordRequest(string ForecastPeriodId, string CustomerId, string InvoiceCompanyId, string ProductId, int Year, int Month, decimal Amount, string? Notes);
+public record SubmitRequest(string PeriodId);

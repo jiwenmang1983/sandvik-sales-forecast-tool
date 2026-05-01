@@ -32,43 +32,33 @@
     <!-- User Table -->
     <a-card :bordered="false" class="table-card">
       <div class="table-wrap">
-        <table class="forecast-table">
-          <thead>
-            <tr>
-              <th>用户账号</th>
-              <th>姓名</th>
-              <th>角色</th>
-              <th>邮箱</th>
-              <th>状态</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="user in filteredUsers" :key="user.id">
-              <td><span class="user-account">{{ user.account }}</span></td>
-              <td>
-                <div class="user-cell">
-                  <a-avatar :size="32" :style="{ background: avatarColor(user.name) }">
-                    {{ user.name?.charAt(0) || 'U' }}
-                  </a-avatar>
-                  <span class="user-name">{{ user.name }}</span>
-                </div>
-              </td>
-              <td><span class="role-badge" :class="'role-' + user.role.toLowerCase()">{{ user.role }}</span></td>
-              <td>{{ user.email }}</td>
-              <td><span class="status-badge" :class="user.status === 'enabled' ? 'status-enabled' : 'status-disabled'">{{ user.status === 'enabled' ? '启用' : '停用' }}</span></td>
-              <td>
-                <a-space>
-                  <a-button size="small" @click="editUser(user)">编辑</a-button>
-                  <a-button size="small" @click="toggleStatus(user)">{{ user.status === 'enabled' ? '停用' : '启用' }}</a-button>
-                </a-space>
-              </td>
-            </tr>
-            <tr v-if="filteredUsers.length === 0">
-              <td colspan="6" class="empty-cell">暂无数据</td>
-            </tr>
-          </tbody>
-        </table>
+        <a-table :columns="columns" :data-source="filteredUsers" :loading="loading" row-key="id" :pagination="{pageSize: 20}">
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'account'">
+              <span class="user-account">{{ record.account }}</span>
+            </template>
+            <template v-if="column.key === 'name'">
+              <div class="user-cell">
+                <a-avatar :size="32" :style="{ background: avatarColor(record.name) }">
+                  {{ record.name?.charAt(0) || 'U' }}
+                </a-avatar>
+                <span class="user-name">{{ record.name }}</span>
+              </div>
+            </template>
+            <template v-if="column.key === 'role'">
+              <span class="role-badge" :class="'role-' + record.role">{{ record.role }}</span>
+            </template>
+            <template v-if="column.key === 'status'">
+              <span class="status-badge" :class="record.status === 'enabled' ? 'status-enabled' : 'status-disabled'">{{ record.status === 'enabled' ? '启用' : '停用' }}</span>
+            </template>
+            <template v-if="column.key === 'action'">
+              <a-space>
+                <a-button size="small" @click="editUser(record)">编辑</a-button>
+                <a-button size="small" @click="toggleStatus(record)">{{ record.status === 'enabled' ? '停用' : '启用' }}</a-button>
+              </a-space>
+            </template>
+          </template>
+        </a-table>
       </div>
     </a-card>
 
@@ -129,7 +119,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 
 const keyword = ref('')
@@ -137,6 +127,7 @@ const roleFilter = ref('')
 const statusFilter = ref('')
 const showModal = ref(false)
 const editingUser = ref(null)
+const loading = ref(false)
 
 const formData = reactive({
   name: '',
@@ -151,16 +142,16 @@ const formData = reactive({
 const roleList = ['管理员', '区域总监', '财务', '销售']
 const regionList = ['华东大区', '华南大区', '华北东北大区', '西南大区']
 
-const users = ref([
-  { id: 1, account: 'zhangwei', name: '张伟', email: 'wei.zhang@sandvik.com', role: '销售', region: '华东大区', status: 'enabled' },
-  { id: 2, account: 'wangqiang', name: '王强', email: 'qiang.wang@sandvik.com', role: '销售', region: '西南大区', status: 'enabled' },
-  { id: 3, account: 'sunlei', name: '孙磊', email: 'lei.sun@sandvik.com', role: '区域总监', region: '华北东北大区', status: 'enabled' },
-  { id: 4, account: 'wuhao', name: '吴昊', email: 'hao.wu@sandvik.com', role: '区域总监', region: '华南大区', status: 'enabled' },
-  { id: 5, account: 'lina', name: '李娜', email: 'na.li@sandvik.com', role: '财务', region: '', status: 'enabled' },
-  { id: 6, account: 'zhouting', name: '周婷', email: 'ting.zhou@sandvik.com', role: '财务', region: '', status: 'enabled' },
-  { id: 7, account: 'chenming', name: '陈明', email: 'ming.chen@sandvik.com', role: '管理员', region: '', status: 'enabled' },
-  { id: 8, account: 'zhaoli', name: '赵丽', email: 'li.zhao@sandvik.com', role: '销售', region: '华东大区', status: 'disabled' }
-])
+const columns = [
+  { title: '用户账号', key: 'account', dataIndex: 'account' },
+  { title: '姓名', key: 'name' },
+  { title: '角色', key: 'role', dataIndex: 'role' },
+  { title: '邮箱', key: 'email', dataIndex: 'email' },
+  { title: '状态', key: 'status' },
+  { title: '操作', key: 'action' }
+]
+
+const users = ref([])
 
 const filteredUsers = computed(() => {
   let list = users.value
@@ -179,7 +170,34 @@ const avatarColor = (name) => {
   return colors[idx]
 }
 
+// Auth header helper
+const getAuthHeader = () => {
+  const token = localStorage.getItem('token')
+  return token ? { 'Authorization': `Bearer ${token}` } : {}
+}
+
+const fetchUsers = async () => {
+  try {
+    loading.value = true
+    const params = new URLSearchParams()
+    if (roleFilter.value) params.append('role', roleFilter.value)
+    if (statusFilter.value) params.append('status', statusFilter.value)
+    if (keyword.value) params.append('keyword', keyword.value)
+    
+    const res = await fetch(`/api/users?${params.toString()}`, {
+      headers: { ...getAuthHeader() }
+    })
+    const data = await res.json()
+    if (data.success) users.value = data.data || []
+  } catch (e) {
+    message.error('获取用户数据失败')
+  } finally {
+    loading.value = false
+  }
+}
+
 const handleRefresh = () => {
+  fetchUsers()
   message.success('已刷新')
 }
 
@@ -195,26 +213,77 @@ const editUser = (user) => {
   showModal.value = true
 }
 
-const toggleStatus = (user) => {
-  user.status = user.status === 'enabled' ? 'disabled' : 'enabled'
-  message.success('状态已更新')
+const toggleStatus = async (user) => {
+  try {
+    const res = await fetch(`/api/users/${user.id}/toggle-status`, { 
+      method: 'POST',
+      headers: { ...getAuthHeader() }
+    })
+    const data = await res.json()
+    if (data.success) {
+      message.success('状态已更新')
+      fetchUsers()
+    } else {
+      message.error(data.message || '更新失败')
+    }
+  } catch (e) {
+    message.error('更新失败')
+  }
 }
 
-const saveUser = () => {
+const saveUser = async () => {
   if (!formData.name || !formData.account || !formData.email || !formData.role) {
     message.error('请填写必填项')
     return
   }
-  if (editingUser.value) {
-    const idx = users.value.findIndex(x => x.id === editingUser.value.id)
-    if (idx >= 0) Object.assign(users.value[idx], { name: formData.name, account: formData.account, email: formData.email, role: formData.role, region: formData.region, status: formData.status })
-    message.success('用户已更新')
-  } else {
-    users.value.push({ id: Date.now(), ...formData })
-    message.success('用户已添加')
+  try {
+    const body = {
+      account: formData.account,
+      name: formData.name,
+      email: formData.email,
+      role: formData.role,
+      region: formData.region,
+      status: formData.status,
+      password: formData.password || undefined
+    }
+    
+    let res, data
+    if (editingUser.value) {
+      res = await fetch(`/api/users/${editingUser.value.id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...getAuthHeader()
+        },
+        body: JSON.stringify(body)
+      })
+    } else {
+      res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...getAuthHeader()
+        },
+        body: JSON.stringify(body)
+      })
+    }
+    data = await res.json()
+    
+    if (data.success) {
+      message.success(editingUser.value ? '用户已更新' : '用户已添加')
+      showModal.value = false
+      fetchUsers()
+    } else {
+      message.error(data.message || '操作失败')
+    }
+  } catch (e) {
+    message.error('操作失败')
   }
-  showModal.value = false
 }
+
+onMounted(() => {
+  fetchUsers()
+})
 </script>
 
 <style scoped>
@@ -257,28 +326,6 @@ const saveUser = () => {
 
 .table-wrap {
   overflow-x: auto;
-}
-
-.forecast-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.forecast-table th {
-  background: #F8FAFC;
-  color: #475569;
-  font-weight: 600;
-  text-align: left;
-  padding: 12px 16px;
-  border-bottom: 2px solid #E2E8F0;
-  white-space: nowrap;
-}
-
-.forecast-table td {
-  padding: 12px 16px;
-  border-bottom: 1px solid #F1F5F9;
-  color: #1E293B;
 }
 
 .user-account {

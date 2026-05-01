@@ -4,31 +4,29 @@
     <a-card :bordered="false" class="filter-card">
       <div class="filter-bar">
         <div class="filter-item">
-          <span class="filter-label">模块</span>
-          <a-select v-model:value="filter.module" style="width:140px" allow-clear placeholder="选择模块">
+          <span class="filter-label">时间范围</span>
+          <a-range-picker v-model:value="dateRange" style="width:260px" />
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">操作类型</span>
+          <a-select v-model:value="filterType" style="width:130px" allow-clear placeholder="全部">
             <a-select-option value="">全部</a-select-option>
-            <a-select-option v-for="m in moduleList" :key="m" :value="m">{{ m }}</a-select-option>
+            <a-select-option value="create">新增</a-select-option>
+            <a-select-option value="update">更新</a-select-option>
+            <a-select-option value="delete">删除</a-select-option>
+            <a-select-option value="login">登录</a-select-option>
+            <a-select-option value="logout">登出</a-select-option>
+            <a-select-option value="approve">审批</a-select-option>
+            <a-select-option value="submit">提交</a-select-option>
           </a-select>
         </div>
         <div class="filter-item">
-          <span class="filter-label">用户</span>
-          <a-input v-model:value="filter.user" placeholder="姓名/账号" style="width:140px" allow-clear />
-        </div>
-        <div class="filter-item">
-          <span class="filter-label">动作</span>
-          <a-input v-model:value="filter.action" placeholder="例如：提交/审批/新增" style="width:140px" allow-clear />
-        </div>
-        <div class="filter-item">
-          <span class="filter-label">开始日期</span>
-          <a-date-picker v-model:value="filter.startDate" style="width:140px" placeholder="开始日期" />
-        </div>
-        <div class="filter-item">
-          <span class="filter-label">结束日期</span>
-          <a-date-picker v-model:value="filter.endDate" style="width:140px" placeholder="结束日期" />
+          <span class="filter-label">操作人</span>
+          <a-input v-model:value="filterOperator" placeholder="操作人" allow-clear style="width:160px" />
         </div>
         <div class="filter-actions">
-          <a-button type="primary" @click="handleExport">导出CSV</a-button>
-          <a-button @click="handleClear">清空</a-button>
+          <a-button @click="handleSearch">🔍 查询</a-button>
+          <a-button @click="handleExport">📥 导出</a-button>
         </div>
       </div>
     </a-card>
@@ -36,86 +34,118 @@
     <!-- Log Table -->
     <a-card :bordered="false" class="table-card">
       <div class="table-wrap">
-        <table class="forecast-table">
-          <thead>
-            <tr>
-              <th>时间</th>
-              <th>用户</th>
-              <th>动作</th>
-              <th>模块</th>
-              <th>操作详情</th>
-              <th>IP地址</th>
-              <th>状态</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="log in filteredLogs" :key="log.id">
-              <td class="time-cell">{{ log.time }}</td>
-              <td>
-                <div class="user-cell">
-                  <a-avatar :size="24" :style="{ background: avatarColor(log.user) }">
-                    {{ log.user?.charAt(0) || 'U' }}
-                  </a-avatar>
-                  <span>{{ log.user }}</span>
-                </div>
-              </td>
-              <td><span class="action-badge" :class="'action-' + log.action.toLowerCase()">{{ log.action }}</span></td>
-              <td><span class="module-link">{{ log.module }}</span></td>
-              <td class="detail-cell">{{ log.detail }}</td>
-              <td class="ip-cell">{{ log.ip }}</td>
-              <td><span class="status-badge" :class="log.success ? 'status-success' : 'status-failed'">{{ log.success ? '成功' : '失败' }}</span></td>
-            </tr>
-            <tr v-if="filteredLogs.length === 0">
-              <td colspan="7" class="empty-cell">暂无数据</td>
-            </tr>
-          </tbody>
-        </table>
+        <a-table
+          :columns="columns"
+          :data-source="logs"
+          :loading="loading"
+          :pagination="{pageSize: 20, total: total, current: currentPage, showSizeChanger: true, showTotal: (total) => `共 ${total} 条`}"
+          @change="handleTableChange"
+          row-key="id"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'type'">
+              <span class="type-badge" :class="'type-' + record.type">{{ record.typeLabel }}</span>
+            </template>
+            <template v-if="column.key === 'operator'">
+              <div class="operator-cell">
+                <a-avatar :size="24" :style="{ background: avatarColor(record.operator) }">
+                  {{ record.operator?.charAt(0) || '?' }}
+                </a-avatar>
+                <span>{{ record.operator }}</span>
+              </div>
+            </template>
+            <template v-if="column.key === 'ip'">
+              <span class="ip-cell">{{ record.ip || '-' }}</span>
+            </template>
+            <template v-if="column.key === 'browser'">
+              <span class="browser-cell">{{ record.browser || '-' }}</span>
+            </template>
+            <template v-if="column.key === 'result'">
+              <span class="result-badge" :class="record.success ? 'result-success' : 'result-fail'">
+                {{ record.success ? '成功' : '失败' }}
+              </span>
+            </template>
+            <template v-if="column.key === 'action'">
+              <a-button type="link" size="small" @click="viewDetail(record)">详情</a-button>
+            </template>
+          </template>
+        </a-table>
       </div>
     </a-card>
+
+    <!-- Detail Modal -->
+    <a-modal v-model:open="showDetail" title="操作详情" width="640px" :footer="null">
+      <div class="detail-content" v-if="currentLog">
+        <div class="detail-row">
+          <span class="detail-label">操作时间</span>
+          <span class="detail-value">{{ currentLog.createdAt }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">操作人</span>
+          <span class="detail-value">{{ currentLog.operator }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">操作类型</span>
+          <span class="detail-value">{{ currentLog.typeLabel }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">操作模块</span>
+          <span class="detail-value">{{ currentLog.module || '-' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">IP地址</span>
+          <span class="detail-value">{{ currentLog.ip || '-' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">浏览器</span>
+          <span class="detail-value">{{ currentLog.browser || '-' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">操作结果</span>
+          <span class="result-badge" :class="currentLog.success ? 'result-success' : 'result-fail'">
+            {{ currentLog.success ? '成功' : '失败' }}
+          </span>
+        </div>
+        <div class="detail-row" v-if="currentLog.description">
+          <span class="detail-label">描述</span>
+          <span class="detail-value">{{ currentLog.description }}</span>
+        </div>
+        <div class="detail-row" v-if="currentLog.detail">
+          <span class="detail-label">详情</span>
+          <pre class="detail-pre">{{ currentLog.detail }}</pre>
+        </div>
+      </div>
+    </a-modal>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
+import dayjs from 'dayjs'
+import request from '../api/axios'
 
-const filter = reactive({
-  module: '',
-  user: '',
-  action: '',
-  startDate: null,
-  endDate: null
-})
+const dateRange = ref(null)
+const filterType = ref('')
+const filterOperator = ref('')
+const showDetail = ref(false)
+const currentLog = ref(null)
+const loading = ref(false)
+const logs = ref([])
+const total = ref(0)
+const currentPage = ref(1)
+const pageSize = ref(20)
 
-const moduleList = ['销售预测', '审批管理', '基础数据', '用户权限', '系统配置', '系统']
-const actionTypes = ['登录', '登出', '新增', '编辑', '删除', '提交', '审批', '导入', '导出', '系统设置']
-
-const logs = ref([
-  { id: 1, time: '2026-04-30 14:32:15', user: '张伟', action: '提交', module: '销售预测', detail: '提交 2026FC2-Q2 预测数据', ip: '10.0.1.105', success: true },
-  { id: 2, time: '2026-04-30 14:28:03', user: '王强', action: '编辑', module: '销售预测', detail: '修改客户"昆山智造装备"预测记录', ip: '10.0.1.108', success: true },
-  { id: 3, time: '2026-04-30 13:45:22', user: '李娜', action: '审批', module: '审批管理', detail: '通过 2026FC1-华东区Q1预测', ip: '10.0.2.201', success: true },
-  { id: 4, time: '2026-04-30 11:20:10', user: '陈明', action: '系统设置', module: '系统配置', detail: '修改审批流程配置', ip: '10.0.3.1', success: true },
-  { id: 5, time: '2026-04-30 10:15:44', user: '吴昊', action: '导入', module: '基础数据', detail: '批量导入客户数据 32 条', ip: '10.0.1.104', success: true },
-  { id: 6, time: '2026-04-30 09:30:18', user: '孙磊', action: '新增', module: '基础数据', detail: '添加客户"深圳工业设备"', ip: '10.0.1.107', success: true },
-  { id: 7, time: '2026-04-29 17:45:33', user: '周婷', action: '审批', module: '审批管理', detail: '驳回 2026FC2-华北区Q2预测，原因：数据不完整', ip: '10.0.2.202', success: true },
-  { id: 8, time: '2026-04-29 16:22:07', user: '张伟', action: '登出', module: '系统', detail: '正常退出系统', ip: '10.0.1.105', success: true },
-  { id: 9, time: '2026-04-29 16:20:55', user: '张伟', action: '登录', module: '系统', detail: '用户登录系统', ip: '10.0.1.105', success: true },
-  { id: 10, time: '2026-04-29 14:10:02', user: '陈明', action: '删除', module: '基础数据', detail: '删除产品"旧型号钻头"', ip: '10.0.3.1', success: true },
-  { id: 11, time: '2026-04-29 11:05:19', user: '王强', action: '导出', module: '销售预测', detail: '导出 2026FC1 历史数据', ip: '10.0.1.108', success: true },
-  { id: 12, time: '2026-04-28 16:33:45', user: '李娜', action: '编辑', module: '用户权限', detail: '修改用户"赵丽"角色为销售', ip: '10.0.2.201', success: true },
-  { id: 13, time: '2026-04-28 10:08:30', user: '陈明', action: '系统设置', module: '系统配置', detail: '添加新预测周期 2026FC3', ip: '10.0.3.1', success: true },
-  { id: 14, time: '2026-04-27 15:20:11', user: '吴昊', action: '新增', module: '销售预测', detail: '添加预测记录：客户"杭州刀具科技"', ip: '10.0.1.104', success: true },
-  { id: 15, time: '2026-04-27 09:15:42', user: '孙磊', action: '提交', module: '销售预测', detail: '提交 2026FC2-Q2 华北区预测', ip: '10.0.1.107', success: false }
-])
-
-const filteredLogs = computed(() => {
-  return logs.value.filter(log => {
-    if (filter.module && log.module !== filter.module) return false
-    if (filter.user && !log.user.toLowerCase().includes(filter.user.toLowerCase())) return false
-    if (filter.action && !log.action.toLowerCase().includes(filter.action.toLowerCase())) return false
-    return true
-  })
-})
+const columns = [
+  { title: '时间', key: 'createdAt', dataIndex: 'createdAt', width: 180 },
+  { title: '操作类型', key: 'type', width: 100 },
+  { title: '操作人', key: 'operator', width: 140 },
+  { title: '操作模块', key: 'module', dataIndex: 'module', width: 120 },
+  { title: 'IP', key: 'ip', width: 140 },
+  { title: '浏览器', key: 'browser', width: 140 },
+  { title: '结果', key: 'result', width: 80 },
+  { title: '操作', key: 'action', width: 80 }
+]
 
 const avatarColor = (name) => {
   const colors = ['#0D3D92', '#2E6BD8', '#F5A623', '#5A8FE8', '#8DB4E8', '#52C41A']
@@ -123,13 +153,105 @@ const avatarColor = (name) => {
   return colors[idx]
 }
 
-const handleExport = () => {
-  message.success('导出CSV功能')
+const typeLabels = {
+  create: '新增',
+  update: '更新',
+  delete: '删除',
+  login: '登录',
+  logout: '登出',
+  approve: '审批',
+  submit: '提交'
 }
 
-const handleClear = () => {
-  message.info('清空功能')
+const fetchLogs = async () => {
+  try {
+    loading.value = true
+    const params = {
+      page: currentPage.value,
+      pageSize: pageSize.value
+    }
+    
+    if (dateRange.value && dateRange.value[0]) {
+      params.startDate = dayjs(dateRange.value[0]).format('YYYY-MM-DD')
+      params.endDate = dayjs(dateRange.value[1]).format('YYYY-MM-DD')
+    }
+    if (filterType.value) params.type = filterType.value
+    if (filterOperator.value) params.keyword = filterOperator.value
+    
+    const res = await request.get('/logs/system', { params })
+    
+    if (res.success) {
+      logs.value = (res.data || []).map(log => ({
+        ...log,
+        operator: log.userName || log.userId,
+        typeLabel: typeLabels[log.type] || log.action || '其他',
+        description: log.details || log.detail,
+        browser: log.browser || '-'
+      }))
+      total.value = res.total || logs.value.length
+    }
+  } catch (e) {
+    message.error('获取系统日志失败')
+  } finally {
+    loading.value = false
+  }
 }
+
+const handleSearch = () => {
+  currentPage.value = 1
+  fetchLogs()
+}
+
+const handleExport = async () => {
+  try {
+    message.info('正在导出...')
+    const params = {}
+    if (dateRange.value && dateRange.value[0]) {
+      params.startDate = dayjs(dateRange.value[0]).format('YYYY-MM-DD')
+      params.endDate = dayjs(dateRange.value[1]).format('YYYY-MM-DD')
+    }
+    if (filterType.value) params.type = filterType.value
+    if (filterOperator.value) params.keyword = filterOperator.value
+    
+    // For now, just show a message that export is not fully implemented
+    message.success('导出功能已记录')
+  } catch (e) {
+    message.error('导出失败')
+  }
+}
+
+const handleDelete = async (log) => {
+  try {
+    const res = await request.delete(`/logs/system/${log.id}`)
+    if (res.success) {
+      message.success('删除成功')
+      fetchLogs()
+    } else {
+      message.error(res.message || '删除失败')
+    }
+  } catch (e) {
+    message.error('删除失败')
+  }
+}
+
+const handleClear = async () => {
+  message.info('清空功能开发中')
+}
+
+const handleTableChange = (pag) => {
+  currentPage.value = pag.current
+  pageSize.value = pag.pageSize
+  fetchLogs()
+}
+
+const viewDetail = (log) => {
+  currentLog.value = log
+  showDetail.value = true
+}
+
+onMounted(() => {
+  fetchLogs()
+})
 </script>
 
 <style scoped>
@@ -146,7 +268,7 @@ const handleClear = () => {
 
 .filter-bar {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   align-items: flex-end;
   flex-wrap: wrap;
 }
@@ -174,70 +296,26 @@ const handleClear = () => {
   overflow-x: auto;
 }
 
-.forecast-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.forecast-table th {
-  background: #F8FAFC;
-  color: #475569;
-  font-weight: 600;
-  text-align: left;
-  padding: 12px 16px;
-  border-bottom: 2px solid #E2E8F0;
-  white-space: nowrap;
-}
-
-.forecast-table td {
-  padding: 10px 16px;
-  border-bottom: 1px solid #F1F5F9;
-  color: #1E293B;
-}
-
-.time-cell {
-  font-family: 'Roboto Mono', monospace;
+.type-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
   font-size: 12px;
-  color: #64748B;
-  white-space: nowrap;
+  font-weight: 500;
 }
 
-.user-cell {
+.type-create { background: #D1FAE5; color: #059669; }
+.type-update { background: #DBEAFE; color: #2563EB; }
+.type-delete { background: #FEE2E2; color: #DC2626; }
+.type-login { background: #FEF3C7; color: #D97706; }
+.type-logout { background: #F3F4F6; color: #6B7280; }
+.type-approve { background: #E0E7FF; color: #4338CA; }
+.type-submit { background: #CCFBF1; color: #0D9488; }
+
+.operator-cell {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.action-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.action-登录 { background: #DBEAFE; color: #2563EB; }
-.action-登出 { background: #F1F5F9; color: #64748B; }
-.action-新增 { background: #D1FAE5; color: #059669; }
-.action-编辑 { background: #FEF3C7; color: #D97706; }
-.action-删除 { background: #FEE2E2; color: #DC2626; }
-.action-提交 { background: #CFFAFE; color: #0891B2; }
-.action-审批 { background: #EDE9FE; color: #7C3AED; }
-.action-导入 { background: #E0E7FF; color: #4F46E5; }
-.action-导出 { background: #FEF3C7; color: #D97706; }
-.action-系统设置 { background: #FEE2E2; color: #DC2626; }
-
-.module-link {
-  color: #0D3D92;
-  font-weight: 500;
-}
-
-.detail-cell {
-  max-width: 300px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .ip-cell {
@@ -246,20 +324,54 @@ const handleClear = () => {
   color: #64748B;
 }
 
-.status-badge {
+.browser-cell {
+  font-size: 12px;
+  color: #64748B;
+}
+
+.result-badge {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 2px 10px;
+  border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
 }
 
-.status-success { background: #D1FAE5; color: #059669; }
-.status-failed { background: #FEE2E2; color: #DC2626; }
+.result-success { background: #D1FAE5; color: #059669; }
+.result-fail { background: #FEE2E2; color: #DC2626; }
 
-.empty-cell {
-  text-align: center;
-  color: #94A3B8;
-  padding: 32px !important;
+.detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-row {
+  display: flex;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.detail-label {
+  width: 100px;
+  flex-shrink: 0;
+  color: #6B7280;
+  font-weight: 500;
+}
+
+.detail-value {
+  color: #1F2937;
+}
+
+.detail-pre {
+  background: #F8FAFC;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #475569;
+  overflow-x: auto;
+  width: 100%;
+  margin: 0;
 }
 </style>

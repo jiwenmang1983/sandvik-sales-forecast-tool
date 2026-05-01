@@ -19,6 +19,7 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<EmailService>();
 // JWT Auth
 var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "SandvikForecastSecretKey2026VeryLongSecretKey!";
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "SandvikForecast";

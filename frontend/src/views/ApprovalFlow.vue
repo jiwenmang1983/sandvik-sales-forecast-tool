@@ -113,11 +113,13 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
+import request from '../api/axios'
 
 const showModal = ref(false)
 const editingFlow = ref(null)
+const loading = ref(false)
 
 const formData = reactive({
   name: '',
@@ -125,44 +127,86 @@ const formData = reactive({
   condition: '手动提交',
   active: true,
   steps: [
-    { name: '区域总监审批', approver: '区域总监' },
-    { name: '财务审核', approver: '财务' }
+    { name: '区域总监审批', approver: '张伟' },
+    { name: '财务审核', approver: '李娜' }
   ]
 })
 
-const flows = ref([
-  {
-    id: 1, name: '标准预测审批流程', active: true, scope: '全区域', condition: '手动提交',
-    creator: '陈明', createTime: '2026-01-15',
-    steps: [
-      { name: '区域总监审批', approver: '区域总监' },
-      { name: '财务审核', approver: '财务' }
-    ]
-  },
-  {
-    id: 2, name: '大金额自动审批', active: true, scope: '全区域', condition: '金额≥100万',
-    creator: '陈明', createTime: '2026-02-20',
-    steps: [
-      { name: '区域总监审批', approver: '区域总监' },
-      { name: '财务初审', approver: '财务' },
-      { name: '财务总监终审', approver: '财务总监' }
-    ]
-  },
-  {
-    id: 3, name: '华东区快速流程', active: false, scope: '华东大区', condition: '手动提交',
-    creator: '张伟', createTime: '2026-03-10',
-    steps: [
-      { name: '华东区总监', approver: '张伟' }
-    ]
+const flows = ref([])
+const approvers = ref([])
+
+const fetchSteps = async () => {
+  try {
+    loading.value = true
+    const res = await request.get('/approval-flow/steps')
+    if (res.success) {
+      // Steps are managed by backend, not displayed directly
+    }
+  } catch (e) {
+    console.error('Failed to fetch steps', e)
+  } finally {
+    loading.value = false
   }
-])
+}
+
+const fetchFlows = async () => {
+  try {
+    loading.value = true
+    const res = await request.get('/approval-flow/flows')
+    if (res.success) {
+      flows.value = res.data || []
+    }
+  } catch (e) {
+    console.error('Failed to fetch flows', e)
+    // Use default mock data if API fails
+    flows.value = [
+      {
+        id: 1, name: '标准预测审批流程', active: true, scope: '全区域', condition: '手动提交',
+        creator: '陈明', createTime: '2026-01-15',
+        steps: [
+          { name: '区域总监审批', approver: '张伟' },
+          { name: '财务审核', approver: '李娜' }
+        ]
+      },
+      {
+        id: 2, name: '大金额自动审批', active: true, scope: '全区域', condition: '金额≥100万',
+        creator: '陈明', createTime: '2026-02-20',
+        steps: [
+          { name: '区域总监审批', approver: '张伟' },
+          { name: '财务初审', approver: '李娜' },
+          { name: '财务总监终审', approver: '王强' }
+        ]
+      },
+      {
+        id: 3, name: '华东区快速流程', active: false, scope: '华东大区', condition: '手动提交',
+        creator: '张伟', createTime: '2026-03-10',
+        steps: [
+          { name: '华东区总监', approver: '张伟' }
+        ]
+      }
+    ]
+  } finally {
+    loading.value = false
+  }
+}
+
+const fetchApprovers = async () => {
+  try {
+    const res = await request.get('/approval-flow/approvers')
+    if (res.success) {
+      approvers.value = res.data || []
+    }
+  } catch (e) {
+    console.error('Failed to fetch approvers', e)
+  }
+}
 
 const addStep = () => { formData.steps.push({ name: '', approver: '' }) }
 const removeStep = (idx) => { formData.steps.splice(idx, 1) }
 
 const openAddDialog = () => {
   editingFlow.value = null
-  Object.assign(formData, { name: '', scope: '全区域', condition: '手动提交', active: true, steps: [{ name: '区域总监审批', approver: '区域总监' }, { name: '财务审核', approver: '财务' }] })
+  Object.assign(formData, { name: '', scope: '全区域', condition: '手动提交', active: true, steps: [{ name: '区域总监审批', approver: '张伟' }, { name: '财务审核', approver: '李娜' }] })
   showModal.value = true
 }
 
@@ -172,25 +216,83 @@ const editFlow = (flow) => {
   showModal.value = true
 }
 
-const deleteFlow = (flow) => {
-  const idx = flows.value.findIndex(f => f.id === flow.id)
-  if (idx >= 0) flows.value.splice(idx, 1)
-  message.success('流程已删除')
+const deleteFlow = async (flow) => {
+  try {
+    const res = await request.delete(`/approval-flow/flows/${flow.id}`)
+    if (res.success) {
+      message.success('流程已删除')
+      fetchFlows()
+    } else {
+      message.error(res.message || '删除失败')
+    }
+  } catch (e) {
+    message.error('删除失败')
+  }
 }
 
-const saveFlow = () => {
+const handleSave = async () => {
   if (!formData.name) { message.error('请填写流程名称'); return }
   if (formData.steps.length === 0) { message.error('请至少添加一个步骤'); return }
-  if (editingFlow.value) {
-    const idx = flows.value.findIndex(f => f.id === editingFlow.value.id)
-    if (idx >= 0) Object.assign(flows.value[idx], { ...formData, steps: formData.steps.map(s => ({ ...s })) })
-    message.success('流程已更新')
-  } else {
-    flows.value.push({ id: Date.now(), ...formData, steps: formData.steps.map(s => ({ ...s })), creator: '当前用户', createTime: new Date().toISOString().split('T')[0] })
-    message.success('流程已创建')
+  
+  try {
+    if (editingFlow.value) {
+      // Update existing flow
+      const res = await request.put(`/approval-flow/flows/${editingFlow.value.id}`, {
+        name: formData.name,
+        scope: formData.scope,
+        condition: formData.condition,
+        active: formData.active,
+        steps: formData.steps.map((s, idx) => ({
+          stepName: s.name,
+          approverId: `user_${idx + 1}`,
+          approverName: s.approver,
+          approverEmail: `${s.approver}@sandvik.com`,
+          stepOrder: idx + 1,
+          isActive: true
+        }))
+      })
+      if (res.success) {
+        message.success('流程已更新')
+        showModal.value = false
+        fetchFlows()
+      } else {
+        message.error(res.message || '更新失败')
+      }
+    } else {
+      // Create new flow
+      const res = await request.post('/approval-flow/flows', {
+        name: formData.name,
+        scope: formData.scope,
+        condition: formData.condition,
+        active: formData.active,
+        creator: '当前用户',
+        createTime: new Date().toISOString().split('T')[0],
+        steps: formData.steps.map((s, idx) => ({
+          stepName: s.name,
+          approverId: `user_${idx + 1}`,
+          approverName: s.approver,
+          approverEmail: `${s.approver}@sandvik.com`,
+          stepOrder: idx + 1,
+          isActive: true
+        }))
+      })
+      if (res.success) {
+        message.success('流程已创建')
+        showModal.value = false
+        fetchFlows()
+      } else {
+        message.error(res.message || '创建失败')
+      }
+    }
+  } catch (e) {
+    message.error('保存失败')
   }
-  showModal.value = false
 }
+
+onMounted(() => {
+  fetchFlows()
+  fetchApprovers()
+})
 </script>
 
 <style scoped>

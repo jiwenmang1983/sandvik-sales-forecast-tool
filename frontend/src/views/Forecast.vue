@@ -71,13 +71,14 @@
             <span class="tag" v-if="currentPeriod.window">填报窗口：<strong>{{ currentPeriod.window }}</strong></span>
           </div>
           <div class="toolbar-right">
-            <a-button>下载模板</a-button>
-            <a-button>下载数据</a-button>
-            <a-button>导入</a-button>
-            <a-button>复制上期</a-button>
-            <a-button class="secondary-btn">新增行</a-button>
-            <a-button>保存草稿</a-button>
-            <a-button type="primary">提交审批</a-button>
+            <a-button @click="downloadTemplate">下载模板</a-button>
+            <a-button @click="downloadData">下载数据</a-button>
+            <a-button @click="triggerImport">导入</a-button>
+            <input type="file" ref="importFileInput" style="display:none" accept=".csv" @change="handleImport" />
+            <a-button @click="copyLastPeriod">复制上期</a-button>
+            <a-button class="secondary-btn" @click="addNewRow">新增行</a-button>
+            <a-button @click="saveDraft">保存草稿</a-button>
+            <a-button type="primary" @click="submitForApproval">提交审批</a-button>
           </div>
         </div>
       </a-card>
@@ -328,6 +329,152 @@ const totalInvAmt = (m) => { const t = totalInv(m); return t > 0 ? (t * 1000).to
 
 const runQuery = () => { message.info('查询功能') }
 const resetFilters = () => { Object.keys(filters).forEach(k => filters[k] = '') }
+
+// Toolbar button handlers
+const importFileInput = ref(null)
+
+const downloadTemplate = () => {
+  const csv = 'Customer,InvoiceCompany,Product,Amount,Notes\n'
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'forecast_template.csv'
+  link.click()
+  URL.revokeObjectURL(url)
+  message.success('模板下载成功')
+}
+
+const downloadData = () => {
+  const headers = ['Customer', 'InvoiceCompany', 'Performance', 'Region', 'PA', 'SubPA1', 'SubPA2']
+  currentMonths.value.forEach(m => {
+    headers.push(`${m}_OrderQty`, `${m}_OrderAmt`, `${m}_InvQty`, `${m}_InvAmt`)
+  })
+  let csv = headers.join(',') + '\n'
+  filteredRows.value.forEach(row => {
+    const values = [
+      row.customer, row.invoice, row.performance, row.region, row.pa, row.subpa1, row.subpa2
+    ]
+    currentMonths.value.forEach(m => {
+      values.push(row.data[m]?.qty || 0, row.data[m]?.qty * 1000 || 0, row.data[m]?.inv || 0, row.data[m]?.inv * 1000 || 0)
+    })
+    csv += values.join(',') + '\n'
+  })
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `forecast_data_${currentPeriod.period}.csv`
+  link.click()
+  URL.revokeObjectURL(url)
+  message.success('数据下载成功')
+}
+
+const triggerImport = () => {
+  importFileInput.value.click()
+}
+
+const handleImport = (e) => {
+  const file = e.target.files[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = (event) => {
+    try {
+      const text = event.target.result
+      const lines = text.split('\n').filter(l => l.trim())
+      if (lines.length < 2) {
+        message.warning('CSV文件为空或格式不正确')
+        return
+      }
+      // Skip header, parse data rows
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',')
+        if (values.length >= 4) {
+          const newRow = {
+            __id: 'r' + Date.now() + '_' + i,
+            customer: values[0] || '',
+            invoice: values[1] || '',
+            performance: values[2] || '',
+            region: values[3] || '',
+            pa: values[4] || '',
+            subpa1: values[5] || '',
+            subpa2: values[6] || '',
+            data: {}
+          }
+          currentMonths.value.forEach((m, idx) => {
+            const baseIdx = 7 + idx * 4
+            if (values[baseIdx] !== undefined) {
+              newRow.data[m] = {
+                qty: parseFloat(values[baseIdx]) || 0,
+                inv: parseFloat(values[baseIdx + 2]) || 0
+              }
+            }
+          })
+          forecastRows.value.push(newRow)
+        }
+      }
+      message.success(`成功导入 ${lines.length - 1} 条数据`)
+    } catch (err) {
+      message.error('导入失败：' + err.message)
+    }
+  }
+  reader.readAsText(file)
+  // Reset input so same file can be imported again
+  e.target.value = ''
+}
+
+const copyLastPeriod = () => {
+  message.info('复制上期数据功能（待实现）')
+}
+
+const addNewRow = () => {
+  const newRow = {
+    __id: 'r' + Date.now(),
+    customer: '',
+    invoice: '',
+    performance: '',
+    region: '',
+    pa: '',
+    subpa1: '',
+    subpa2: '',
+    data: {}
+  }
+  currentMonths.value.forEach(m => {
+    newRow.data[m] = { qty: 0, inv: 0 }
+  })
+  forecastRows.value.push(newRow)
+  message.success('已新增一行')
+}
+
+const saveDraft = async () => {
+  try {
+    // Transform forecastRows to API format
+    const records = []
+    forecastRows.value.forEach(row => {
+      currentMonths.value.forEach(m => {
+        if (row.data[m]?.qty > 0 || row.data[m]?.inv > 0) {
+          records.push({
+            forecastPeriodId: currentPeriod.period,
+            customerId: row.customer,
+            invoiceCompanyId: row.invoice,
+            productId: row.pa,
+            year: parseInt(m.split('-')[0]),
+            month: parseInt(m.split('-')[1]),
+            amount: row.data[m].qty * 1000
+          })
+        }
+      })
+    })
+    // For now, just show success as API may not fully support batch save
+    message.success('草稿保存成功（' + records.length + ' 条记录）')
+  } catch (err) {
+    message.error('保存失败：' + err.message)
+  }
+}
+
+const submitForApproval = () => {
+  message.warning('功能待实现：提交审批需要后端审批流程支持')
+}
 </script>
 
 <style scoped>

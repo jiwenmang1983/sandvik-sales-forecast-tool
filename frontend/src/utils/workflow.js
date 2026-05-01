@@ -475,16 +475,31 @@ export function renderEmailTemplate(template, vars) {
 }
 
 /**
- * 发送邮件（仅 Node.js 环境 — 后端实现）
- * 浏览器端调用此函数不会有任何效果（邮件由后端 API 发送）
+ * 发送邮件 — 调用后端真实邮件 API
  * @param {string} toEmail
  * @param {string} subject
  * @param {string} body
  */
 export async function sendEmail(toEmail, subject, body) {
-  // 前端不直接发邮件 — 仅记录日志，由后端 API 负责发送
-  console.log(`[Email*] To: ${toEmail} | Subject: ${subject} (前端演示，不实际发送)`)
-  return { success: true, message: 'frontend-mock' }
+  // 调用后端真实邮件 API
+  try {
+    const res = await fetch('/api/email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: toEmail, subject, body })
+    })
+    const data = await res.json()
+    if (data.success) {
+      console.log(`[Email] ✓ Sent to ${toEmail}: ${subject}`)
+    } else {
+      console.warn(`[Email] ✗ Failed to send to ${toEmail}: ${data.message}`)
+    }
+    return data
+  } catch (err) {
+    // 后端 API 不可用时降级到日志
+    console.warn(`[Email] ✗ API unavailable — mock email to ${toEmail}: ${subject}`)
+    return { success: false, message: err.message }
+  }
 }
 
 /**

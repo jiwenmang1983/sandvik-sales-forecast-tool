@@ -32,38 +32,24 @@
             <a-button size="small" @click="resetFilters">🔄 重置</a-button>
           </div>
           <div class="table-wrap">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>SKU编码</th>
-                  <th>PA</th>
-                  <th>Sub PA-1</th>
-                  <th>Sub PA-2</th>
-                  <th>Sub PA-3（产品名称）</th>
-                  <th>状态</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="p in filteredProducts" :key="p.id">
-                  <td><span class="sku-cell">{{ p.sku }}</span></td>
-                  <td>{{ p.pa }}</td>
-                  <td>{{ p.subpa1 }}</td>
-                  <td>{{ p.subpa2 }}</td>
-                  <td>{{ p.subpa3 }}</td>
-                  <td><span class="status-badge" :class="p.status === 'active' ? 'status-active' : 'status-inactive'">{{ p.status === 'active' ? '激活' : '停用' }}</span></td>
-                  <td>
-                    <a-space>
-                      <a-button size="small" @click="editItem('productLibrary', p)">编辑</a-button>
-                      <a-button size="small" danger @click="deleteItem('productLibrary', p)">删除</a-button>
-                    </a-space>
-                  </td>
-                </tr>
-                <tr v-if="filteredProducts.length === 0">
-                  <td colspan="7" class="empty-cell">暂无数据</td>
-                </tr>
-              </tbody>
-            </table>
+            <a-table :columns="productColumns" :data-source="filteredProducts" :loading="loading" row-key="id" :pagination="{pageSize: 20}">
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.key === 'sku'">
+                  <span class="sku-cell">{{ record.sku }}</span>
+                </template>
+                <template v-if="column.key === 'status'">
+                  <span class="status-badge" :class="record.status === 'active' ? 'status-active' : 'status-inactive'">{{ record.status === 'active' ? '激活' : '停用' }}</span>
+                </template>
+                <template v-if="column.key === 'action'">
+                  <a-space>
+                    <a-button size="small" @click="editItem('productLibrary', record)">编辑</a-button>
+                    <a-popconfirm title="确定要删除吗?" @confirm="deleteItem('productLibrary', record)">
+                      <a-button size="small" danger>删除</a-button>
+                    </a-popconfirm>
+                  </a-space>
+                </template>
+              </template>
+            </a-table>
           </div>
         </a-tab-pane>
 
@@ -78,40 +64,24 @@
             </div>
           </div>
           <div class="table-wrap">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>客户名称</th>
-                  <th>客户编码</th>
-                  <th>客户类型</th>
-                  <th>联系人</th>
-                  <th>电话</th>
-                  <th>邮箱</th>
-                  <th>状态</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="c in filteredCustomers" :key="c.id">
-                  <td><span class="name-cell">{{ c.name }}</span></td>
-                  <td>{{ c.code }}</td>
-                  <td>{{ c.type }}</td>
-                  <td>{{ c.contact }}</td>
-                  <td>{{ c.phone }}</td>
-                  <td>{{ c.email }}</td>
-                  <td><span class="status-badge" :class="c.status === 'active' ? 'status-active' : 'status-inactive'">{{ c.status === 'active' ? '激活' : '停用' }}</span></td>
-                  <td>
-                    <a-space>
-                      <a-button size="small" @click="editItem('customer', c)">编辑</a-button>
-                      <a-button size="small" danger @click="deleteItem('customer', c)">删除</a-button>
-                    </a-space>
-                  </td>
-                </tr>
-                <tr v-if="filteredCustomers.length === 0">
-                  <td colspan="8" class="empty-cell">暂无数据</td>
-                </tr>
-              </tbody>
-            </table>
+            <a-table :columns="customerColumns" :data-source="filteredCustomers" :loading="loading" row-key="id" :pagination="{pageSize: 20}">
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.key === 'name'">
+                  <span class="name-cell">{{ record.name }}</span>
+                </template>
+                <template v-if="column.key === 'status'">
+                  <span class="status-badge" :class="record.status === 'active' ? 'status-active' : 'status-inactive'">{{ record.status === 'active' ? '激活' : '停用' }}</span>
+                </template>
+                <template v-if="column.key === 'action'">
+                  <a-space>
+                    <a-button size="small" @click="editItem('customer', record)">编辑</a-button>
+                    <a-popconfirm title="确定要删除吗?" @confirm="deleteItem('customer', record)">
+                      <a-button size="small" danger>删除</a-button>
+                    </a-popconfirm>
+                  </a-space>
+                </template>
+              </template>
+            </a-table>
           </div>
         </a-tab-pane>
 
@@ -123,36 +93,27 @@
             </div>
           </div>
           <div class="table-wrap">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>销售大区</th>
-                  <th>业绩归属</th>
-                  <th>对应开票公司</th>
-                  <th>区域总监</th>
-                  <th>状态</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="r in filteredRegions" :key="r.id">
-                  <td><span class="name-cell">{{ r.region }}</span></td>
-                  <td>{{ r.performance }}</td>
-                  <td>{{ r.invoices.join('、') }}</td>
-                  <td>{{ r.director }}</td>
-                  <td><span class="status-badge" :class="r.status === 'active' ? 'status-active' : 'status-inactive'">{{ r.status === 'active' ? '激活' : '停用' }}</span></td>
-                  <td>
-                    <a-space>
-                      <a-button size="small" @click="editItem('regionMapping', r)">编辑</a-button>
-                      <a-button size="small" danger @click="deleteItem('regionMapping', r)">删除</a-button>
-                    </a-space>
-                  </td>
-                </tr>
-                <tr v-if="filteredRegions.length === 0">
-                  <td colspan="6" class="empty-cell">暂无数据</td>
-                </tr>
-              </tbody>
-            </table>
+            <a-table :columns="regionColumns" :data-source="filteredRegions" :loading="loading" row-key="id" :pagination="{pageSize: 20}">
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.key === 'region'">
+                  <span class="name-cell">{{ record.region }}</span>
+                </template>
+                <template v-if="column.key === 'invoices'">
+                  {{ (record.invoices || []).join('、') }}
+                </template>
+                <template v-if="column.key === 'status'">
+                  <span class="status-badge" :class="record.status === 'active' ? 'status-active' : 'status-inactive'">{{ record.status === 'active' ? '激活' : '停用' }}</span>
+                </template>
+                <template v-if="column.key === 'action'">
+                  <a-space>
+                    <a-button size="small" @click="editItem('regionMapping', record)">编辑</a-button>
+                    <a-popconfirm title="确定要删除吗?" @confirm="deleteItem('regionMapping', record)">
+                      <a-button size="small" danger>删除</a-button>
+                    </a-popconfirm>
+                  </a-space>
+                </template>
+              </template>
+            </a-table>
           </div>
         </a-tab-pane>
 
@@ -167,41 +128,27 @@
             </div>
           </div>
           <div class="table-wrap">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>姓名</th>
-                  <th>工号</th>
-                  <th>邮箱</th>
-                  <th>所属大区</th>
-                  <th>状态</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="s in filteredSalesPersons" :key="s.id">
-                  <td>
-                    <div class="user-cell">
-                      <a-avatar :size="28" :style="{ background: avatarColor(s.name) }">{{ s.name?.charAt(0) }}</a-avatar>
-                      <span>{{ s.name }}</span>
-                    </div>
-                  </td>
-                  <td>{{ s.code }}</td>
-                  <td>{{ s.email }}</td>
-                  <td>{{ s.region }}</td>
-                  <td><span class="status-badge" :class="s.status === 'active' ? 'status-active' : 'status-inactive'">{{ s.status === 'active' ? '激活' : '停用' }}</span></td>
-                  <td>
-                    <a-space>
-                      <a-button size="small" @click="editItem('salesPerson', s)">编辑</a-button>
-                      <a-button size="small" danger @click="deleteItem('salesPerson', s)">删除</a-button>
-                    </a-space>
-                  </td>
-                </tr>
-                <tr v-if="filteredSalesPersons.length === 0">
-                  <td colspan="6" class="empty-cell">暂无数据</td>
-                </tr>
-              </tbody>
-            </table>
+            <a-table :columns="salesPersonColumns" :data-source="filteredSalesPersons" :loading="loading" row-key="id" :pagination="{pageSize: 20}">
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.key === 'name'">
+                  <div class="user-cell">
+                    <a-avatar :size="28" :style="{ background: avatarColor(record.name) }">{{ record.name?.charAt(0) }}</a-avatar>
+                    <span>{{ record.name }}</span>
+                  </div>
+                </template>
+                <template v-if="column.key === 'status'">
+                  <span class="status-badge" :class="record.status === 'active' ? 'status-active' : 'status-inactive'">{{ record.status === 'active' ? '激活' : '停用' }}</span>
+                </template>
+                <template v-if="column.key === 'action'">
+                  <a-space>
+                    <a-button size="small" @click="editItem('salesPerson', record)">编辑</a-button>
+                    <a-popconfirm title="确定要删除吗?" @confirm="deleteItem('salesPerson', record)">
+                      <a-button size="small" danger>删除</a-button>
+                    </a-popconfirm>
+                  </a-space>
+                </template>
+              </template>
+            </a-table>
           </div>
         </a-tab-pane>
       </a-tabs>
@@ -316,7 +263,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 
 const activeTab = ref('productLibrary')
@@ -327,6 +274,7 @@ const filterPa = ref('')
 const showModal = ref(false)
 const editingId = ref(null)
 const editingRecord = ref(null)
+const loading = ref(false)
 
 const formData = reactive({
   name: '', code: '', status: 'active', type: '', contact: '', phone: '', email: '',
@@ -350,46 +298,64 @@ const modalFields = computed(() => ({
   salesPerson: ['姓名', '工号']
 }[currentModule.value] || ['', '']))
 
+// Table columns
+const productColumns = [
+  { title: 'SKU编码', key: 'sku', dataIndex: 'sku' },
+  { title: 'PA', key: 'pa', dataIndex: 'pa' },
+  { title: 'Sub PA-1', key: 'subpa1', dataIndex: 'subpa1' },
+  { title: 'Sub PA-2', key: 'subpa2', dataIndex: 'subpa2' },
+  { title: 'Sub PA-3（产品名称）', key: 'subpa3', dataIndex: 'subpa3' },
+  { title: '状态', key: 'status' },
+  { title: '操作', key: 'action' }
+]
+
+const customerColumns = [
+  { title: '客户名称', key: 'name', dataIndex: 'name' },
+  { title: '客户编码', key: 'code', dataIndex: 'code' },
+  { title: '客户类型', key: 'type', dataIndex: 'type' },
+  { title: '联系人', key: 'contact', dataIndex: 'contact' },
+  { title: '电话', key: 'phone', dataIndex: 'phone' },
+  { title: '邮箱', key: 'email', dataIndex: 'email' },
+  { title: '状态', key: 'status' },
+  { title: '操作', key: 'action' }
+]
+
+const regionColumns = [
+  { title: '销售大区', key: 'region', dataIndex: 'region' },
+  { title: '业绩归属', key: 'performance', dataIndex: 'performance' },
+  { title: '对应开票公司', key: 'invoices' },
+  { title: '区域总监', key: 'director', dataIndex: 'director' },
+  { title: '状态', key: 'status' },
+  { title: '操作', key: 'action' }
+]
+
+const salesPersonColumns = [
+  { title: '姓名', key: 'name' },
+  { title: '工号', key: 'code', dataIndex: 'code' },
+  { title: '邮箱', key: 'email', dataIndex: 'email' },
+  { title: '所属大区', key: 'region', dataIndex: 'region' },
+  { title: '状态', key: 'status' },
+  { title: '操作', key: 'action' }
+]
+
 // Data
-const products = ref([
-  { id: 'p1', sku: 'SKU-001', pa: '刀具', subpa1: '标准刀具', subpa2: '2刃', subpa3: '整体硬质合金钻头3xD', status: 'active' },
-  { id: 'p2', sku: 'SKU-002', pa: '钻头', subpa1: '普通钻头', subpa2: '3刃', subpa3: '高性能钻头', status: 'active' },
-  { id: 'p3', sku: 'SKU-003', pa: '铣刀', subpa1: '非标刀具', subpa2: '4刃', subpa3: '立铣刀', status: 'active' },
-  { id: 'p4', sku: 'SKU-004', pa: '量具', subpa1: '标准刀具', subpa2: '2刃', subpa3: '卡尺', status: 'inactive' }
-])
-
-const customers = ref([
-  { id: 'c1', name: '苏州精密工具', code: 'C001', type: '终端', contact: '李明', phone: '0512-12345678', email: 'liming@suzhou-tools.com', status: 'active' },
-  { id: 'c2', name: '昆山智造装备', code: 'C002', type: '终端', contact: '王强', phone: '0512-87654321', email: 'wangqiang@kunshan.com', status: 'active' },
-  { id: 'c3', name: '上海刃具有限公司', code: 'C003', type: '经销商', contact: '张伟', phone: '021-12345678', email: 'zhangwei@shanghai-cut.com', status: 'active' }
-])
-
-const regionMappings = ref([
-  { id: 'rm1', region: '华东大区', performance: '精密工具事业部', invoices: ['山特维克商贸(上海)', '阿诺精密切削工具(成都)'], director: '张伟', status: 'active' },
-  { id: 'rm2', region: '华南大区', performance: '刀具事业部', invoices: ['廊坊舍弗勒'], director: '吴昊', status: 'active' },
-  { id: 'rm3', region: '华北东北大区', performance: '工业仪器事业部', invoices: ['武汉阿诺精密'], director: '孙磊', status: 'active' },
-  { id: 'rm4', region: '西南大区', performance: '精密工具事业部', invoices: ['山特维克商贸(上海)'], director: '王强', status: 'active' }
-])
-
-const salesPersons = ref([
-  { id: 'sp1', name: '张伟', code: 'EMP001', email: 'wei.zhang@sandvik.com', region: '华东大区', status: 'active' },
-  { id: 'sp2', name: '王强', code: 'EMP002', email: 'qiang.wang@sandvik.com', region: '西南大区', status: 'active' },
-  { id: 'sp3', name: '孙磊', code: 'EMP003', email: 'lei.sun@sandvik.com', region: '华北东北大区', status: 'active' },
-  { id: 'sp4', name: '吴昊', code: 'EMP004', email: 'hao.wu@sandvik.com', region: '华南大区', status: 'active' }
-])
+const products = ref([])
+const customers = ref([])
+const regionMappings = ref([])
+const salesPersons = ref([])
 
 const filteredProducts = computed(() => {
   let list = products.value
   if (filterStatus.value) list = list.filter(x => x.status === filterStatus.value)
   if (filterPa.value) list = list.filter(x => x.pa === filterPa.value)
-  if (keyword.value) list = list.filter(x => x.sku.includes(keyword.value) || x.subpa3.includes(keyword.value))
+  if (keyword.value) list = list.filter(x => (x.sku && x.sku.includes(keyword.value)) || (x.subpa3 && x.subpa3.includes(keyword.value)))
   return list
 })
 
 const filteredCustomers = computed(() => {
   let list = customers.value
   if (filterStatus.value) list = list.filter(x => x.status === filterStatus.value)
-  if (keyword.value) list = list.filter(x => x.name.includes(keyword.value) || x.code.includes(keyword.value))
+  if (keyword.value) list = list.filter(x => (x.name && x.name.includes(keyword.value)) || (x.code && x.code.includes(keyword.value)))
   return list
 })
 
@@ -402,14 +368,85 @@ const avatarColor = (name) => {
   return colors[idx]
 }
 
+// API endpoints
+const API_BASE = '/api/basedata'
+
+// Auth header helper
+const getAuthHeader = () => {
+  const token = localStorage.getItem('token')
+  return token ? { 'Authorization': `Bearer ${token}` } : {}
+}
+
+// Fetch functions
+const fetchProducts = async () => {
+  try {
+    loading.value = true
+    const res = await fetch(`${API_BASE}/products?status=${filterStatus.value}&pa=${filterPa.value}&keyword=${keyword.value}`, {
+      headers: { ...getAuthHeader() }
+    })
+    const data = await res.json()
+    if (data.success) products.value = data.data || []
+  } catch (e) {
+    message.error('获取产品数据失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+const fetchCustomers = async () => {
+  try {
+    loading.value = true
+    const res = await fetch(`${API_BASE}/customers?status=${filterStatus.value}&keyword=${keyword.value}`, {
+      headers: { ...getAuthHeader() }
+    })
+    const data = await res.json()
+    if (data.success) customers.value = data.data || []
+  } catch (e) {
+    message.error('获取客户数据失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+const fetchRegions = async () => {
+  try {
+    loading.value = true
+    const res = await fetch(`${API_BASE}/invoicecompanies`, {
+      headers: { ...getAuthHeader() }
+    })
+    const data = await res.json()
+    if (data.success) regionMappings.value = data.data || []
+  } catch (e) {
+    message.error('获取区域数据失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+const fetchSalesPersons = async () => {
+  try {
+    loading.value = true
+    const res = await fetch(`/api/users?status=${filterStatus.value}&keyword=${keyword.value}`, {
+      headers: { ...getAuthHeader() }
+    })
+    const data = await res.json()
+    if (data.success) salesPersons.value = data.data || []
+  } catch (e) {
+    message.error('获取人员数据失败')
+  } finally {
+    loading.value = false
+  }
+}
+
 const handleExport = (module) => {
-  message.info('导出功能（演示）')
+  message.info('导出功能开发中')
 }
 
 const resetFilters = () => {
   keyword.value = ''
   filterStatus.value = ''
   filterPa.value = ''
+  fetchData()
 }
 
 const openAddDialog = (module) => {
@@ -428,27 +465,100 @@ const editItem = (module, record) => {
   showModal.value = true
 }
 
-const deleteItem = (module, record) => {
-  const lists = { productLibrary: products, customer: customers, regionMapping: regionMappings, salesPerson: salesPersons }
-  const idx = lists[module].value.findIndex(x => x.id === record.id)
-  if (idx >= 0) lists[module].value.splice(idx, 1)
-  message.success('已删除')
+const deleteItem = async (module, record) => {
+  try {
+    let endpoint = ''
+    if (module === 'productLibrary') endpoint = `${API_BASE}/products/${record.id}`
+    else if (module === 'customer') endpoint = `${API_BASE}/customers/${record.id}`
+    
+    if (endpoint) {
+      const res = await fetch(endpoint, { 
+        method: 'DELETE',
+        headers: { ...getAuthHeader() }
+      })
+      const data = await res.json()
+      if (data.success) {
+        message.success('删除成功')
+        fetchData()
+      } else {
+        message.error(data.message || '删除失败')
+      }
+    }
+  } catch (e) {
+    message.error('删除失败')
+  }
 }
 
-const saveForm = () => {
+const saveForm = async () => {
   if (!formData.name) { message.error('请填写必填项'); return }
-  const lists = { productLibrary: products, customer: customers, regionMapping: regionMappings, salesPerson: salesPersons }
   
-  if (editingId.value) {
-    const idx = lists[currentModule.value].value.findIndex(x => x.id === editingId.value)
-    if (idx >= 0) Object.assign(lists[currentModule.value].value[idx], { ...formData })
-    message.success('更新成功')
-  } else {
-    lists[currentModule.value].value.push({ id: 'id_' + Date.now(), ...formData })
-    message.success('添加成功')
+  try {
+    let endpoint = ''
+    let method = 'POST'
+    let body = {}
+    
+    if (currentModule.value === 'productLibrary') {
+      endpoint = `${API_BASE}/products`
+      if (editingId.value) {
+        endpoint = `${API_BASE}/products/${editingId.value}`
+        method = 'PUT'
+      }
+      body = { 
+        code: formData.code || formData.sku, 
+        name: formData.subpa3 || formData.name, 
+        productLevel: 4,
+        isActive: formData.status === 'active'
+      }
+    } else if (currentModule.value === 'customer') {
+      endpoint = `${API_BASE}/customers`
+      if (editingId.value) {
+        endpoint = `${API_BASE}/customers/${editingId.value}`
+        method = 'PUT'
+      }
+      body = { 
+        name: formData.name, 
+        code: formData.code, 
+        isActive: formData.status === 'active'
+      }
+    }
+    
+    if (!endpoint) {
+      message.error('不支持的模块')
+      return
+    }
+    
+    const res = await fetch(endpoint, {
+      method,
+      headers: { 
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify(body)
+    })
+    const data = await res.json()
+    
+    if (data.success) {
+      message.success(editingId.value ? '更新成功' : '添加成功')
+      showModal.value = false
+      fetchData()
+    } else {
+      message.error(data.message || '操作失败')
+    }
+  } catch (e) {
+    message.error('操作失败')
   }
-  showModal.value = false
 }
+
+const fetchData = () => {
+  if (activeTab.value === 'productLibrary') fetchProducts()
+  else if (activeTab.value === 'customer') fetchCustomers()
+  else if (activeTab.value === 'regionMapping') fetchRegions()
+  else if (activeTab.value === 'salesPerson') fetchSalesPersons()
+}
+
+onMounted(() => {
+  fetchData()
+})
 </script>
 
 <style scoped>
@@ -508,37 +618,15 @@ const saveForm = () => {
   overflow-x: auto;
 }
 
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.data-table th {
-  background: #F8FAFC;
-  color: #475569;
-  font-weight: 600;
-  text-align: left;
-  padding: 12px 16px;
-  border-bottom: 2px solid #E2E8F0;
-  white-space: nowrap;
-}
-
-.data-table td {
-  padding: 10px 16px;
-  border-bottom: 1px solid #F1F5F9;
-  color: #1E293B;
-}
-
 .sku-cell {
   font-family: 'Roboto Mono', monospace;
-  font-size: 12px;
-  color: #64748B;
+  color: #0D3D92;
+  font-weight: 500;
 }
 
 .name-cell {
   font-weight: 500;
-  color: #0D3D92;
+  color: #1E293B;
 }
 
 .user-cell {
