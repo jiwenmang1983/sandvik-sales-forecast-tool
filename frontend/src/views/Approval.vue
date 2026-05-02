@@ -384,15 +384,23 @@ const fallbackOrgData = [
 ]
 
 // 同步初始化（确保 demo 记录创建时 org chart 已就绪）
-initOrgChart(fallbackOrgData)
+try {
+  initOrgChart(fallbackOrgData)
+} catch (err) {
+  console.warn('[Approval] initOrgChart failed:', err)
+}
 
 // 异步从 API 更新（不阻塞初始化）
 ;(async () => {
-  const flat = await fetchOrgChart()
-  if (flat && flat.length > 0) {
-    const tree = buildOrgTree(flat)
-    initOrgChart(tree)
-    console.log(`[Org] Loaded ${flat.length} nodes from API`)
+  try {
+    const flat = await fetchOrgChart()
+    if (flat && flat.length > 0) {
+      const tree = buildOrgTree(flat)
+      initOrgChart(tree)
+      console.log(`[Org] Loaded ${flat.length} nodes from API`)
+    }
+  } catch (err) {
+    console.warn('[Approval] fetchOrgChart failed:', err)
   }
 })()
 
@@ -430,16 +438,19 @@ window.__approval = {
 
 // ==================== Demo Data: Full Flow Record ====================
 // 周婷提交 -> 张伟(manager) -> 李娜(director) -> Frank Tao(finalApprover)
-if (!getApprovalRecord('demo_zhou')) {
-  createApprovalRecord({
-    id: 'demo_zhou',
-    period: '2026FC2-华东区Q2预测',
-    submitterEmail: 'zhou.ting@sandvik.com',
-    submitterName: '周婷',
-    chainConfig: defaultChainConfig,
-    forecastData: { orderAmount: 1500000, orderCount: 150, invoiceAmount: 1200000, invoiceCount: 120 }
-  })
-  demoRecordCreated = true
+try {
+  if (!getApprovalRecord('demo_zhou')) {
+    createApprovalRecord({
+      id: 'demo_zhou',
+      period: '2026FC2-华东区Q2预测',
+      submitterEmail: 'zhou.ting@sandvik.com',
+      submitterName: '周婷',
+      chainConfig: defaultChainConfig,
+      forecastData: { orderAmount: 1500000, orderCount: 150, invoiceAmount: 1200000, invoiceCount: 120 }
+    })
+  }
+} catch (err) {
+  console.warn('[Approval] createApprovalRecord failed:', err)
 }
 
 const approvalData = ref([
@@ -497,7 +508,11 @@ const syncRecordStatus = () => {
 
 // 页面加载时同步状态（从持久化的 approvalRecords 读取最新状态）
 onMounted(() => {
-  syncRecordStatus()
+  try {
+    syncRecordStatus()
+  } catch (err) {
+    console.warn('[Approval] onMounted syncRecordStatus failed:', err)
+  }
 })
 
 // 用户切换时：如果正在看详情，重新加载当前记录（刷新审批人权限）

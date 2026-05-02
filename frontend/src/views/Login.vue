@@ -72,33 +72,33 @@
               <span>⚠️ 测试环境 - 使用本地登录</span>
             </div>
             <div class="dev-form">
-              <a-form layout="vertical" @finish="handleDevLogin">
-                <a-form-item label="测试用户">
-                  <a-select
-                    v-model:value="devEmail"
-                    placeholder="选择测试用户"
-                    show-search
-                    :options="testUserOptions"
-                    option-filter-prop="label"
-                  ></a-select>
-                </a-form-item>
-                <a-form-item label="密码">
-                  <a-input-password
-                    v-model:value="devPassword"
-                    placeholder="输入密码（可随意）"
-                  ></a-input-password>
-                </a-form-item>
-                <a-form-item>
-                  <a-button
-                    type="primary"
-                    html-type="submit"
-                    block
-                    :loading="devLoading"
-                  >
-                    本地登录
-                  </a-button>
-                </a-form-item>
-              </a-form>
+                <a-form layout="vertical">
+                  <a-form-item label="测试用户">
+                    <a-select
+                      v-model:value="devEmail"
+                      placeholder="选择测试用户"
+                      show-search
+                      :options="testUserOptions"
+                      option-filter-prop="label"
+                    ></a-select>
+                  </a-form-item>
+                  <a-form-item label="密码">
+                    <a-input-password
+                      v-model:value="devPassword"
+                      placeholder="输入密码（可随意）"
+                    ></a-input-password>
+                  </a-form-item>
+                  <a-form-item>
+                    <a-button
+                      type="primary"
+                      block
+                      :loading="devLoading"
+                      @click="handleDevLogin"
+                    >
+                      本地登录
+                    </a-button>
+                  </a-form-item>
+                </a-form>
             </div>
           </a-collapse-panel>
         </a-collapse>
