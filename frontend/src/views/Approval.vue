@@ -621,10 +621,17 @@ const logEmail = (to, subject, success, msg) => {
 
 // ==================== Actions ====================
 const viewDetail = (item) => {
-  currentItem.value = item
-  currentRecord.value = item._record || getApprovalRecord(item.id)
-  emailLogs.value = []
-  showDetail.value = true
+  try {
+    if (!item) return
+    currentItem.value = item
+    currentRecord.value = item._record || (item.id ? getApprovalRecord(item.id) : null)
+    emailLogs.value = []
+    showDetail.value = true
+  } catch (err) {
+    console.warn('[Approval] viewDetail failed:', err)
+    message.error('加载详情失败')
+    showDetail.value = false
+  }
 }
 
 const backToList = () => {

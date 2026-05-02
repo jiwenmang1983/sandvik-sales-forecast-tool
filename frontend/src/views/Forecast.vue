@@ -44,8 +44,8 @@
                 <td><span class="status-badge" :class="approvalStatusClass(p.approval)">{{ approvalStatusLabel(p.approval) }}</span></td>
                 <td @click.stop>
                   <a-space>
-                    <a-button size="small" type="primary" @click="selectPeriod(p)">填报</a-button>
-                    <a-button size="small">历史</a-button>
+                    <button type="button" class="ant-btn ant-btn-primary ant-btn-sm" @click="selectPeriod(p)">填报</button>
+                    <button type="button" class="ant-btn ant-btn-sm" @click="">历史</button>
                   </a-space>
                 </td>
               </tr>
@@ -222,7 +222,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 
 const view = ref('periods')
@@ -259,11 +259,29 @@ const subpa1Options = ['标准刀具', '非标刀具', '普通钻头', '超硬�
 const subpa2Options = ['2刃', '3刃', '4刃', '5刃以上']
 
 // Period list
-const periods = ref([
-  { id: 1, fcName: '2026FC2', fillTime: '2026-04-01 ~ 2026-04-30', period: '2026FC2-Q2', status: 'open', approval: 'pending' },
-  { id: 2, fcName: '2026FC1', fillTime: '2026-01-01 ~ 2026-01-31', period: '2026FC1-Q1', status: 'closed', approval: 'approved' },
-  { id: 3, fcName: '2025FC2', fillTime: '2025-07-01 ~ 2025-07-31', period: '2025FC2-Q2', status: 'closed', approval: 'approved' }
-])
+const periods = ref([])
+
+const fetchPeriods = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    const res = await fetch('/api/forecast/periods', {
+      headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+    })
+    const json = await res.json()
+    if (json.success && json.data) {
+      periods.value = json.data.map(p => ({
+        id: p.id || p.Id,
+        fcName: p.periodName || p.name || `预测周期${p.year}-${p.month}`,
+        fillTime: p.startDate ? `${p.startDate.split('T')[0]} ~ ${p.endDate?.split('T')[0] || ''}` : '',
+        period: p.periodName || `FC${p.year}-${p.month}`,
+        status: (p.status || 'open').toLowerCase().includes('close') ? 'closed' : 'open',
+        approval: p.approvalStatus || 'pending'
+      }))
+    }
+  } catch (err) {
+    console.error('Failed to fetch periods:', err)
+  }
+}
 
 const filteredPeriods = computed(() => {
   return periods.value.filter(p => {
@@ -526,6 +544,10 @@ const submitForApproval = async () => {
     submitting.value = false
   }
 }
+
+onMounted(() => {
+  fetchPeriods()
+})
 </script>
 
 <style scoped>

@@ -353,7 +353,7 @@ public class ForecastController : ControllerBase
 
             if (existing != null)
             {
-                existing.Amount = r.OrderAmount;
+                existing.Amount = r.orderAmount;
                 existing.Status = "Draft";
             }
             else
@@ -366,7 +366,7 @@ public class ForecastController : ControllerBase
                     ProductId = r.ProductId,
                     Year = r.Year,
                     Month = r.Month,
-                    Amount = r.OrderAmount,
+                    Amount = r.orderAmount,
                     Status = "Draft",
                     CreatedByUserId = userId
                 };
@@ -396,5 +396,5 @@ public record CreateRecordRequest(string ForecastPeriodId, string CustomerId, st
 public record UpdateRecordRequest(decimal Amount, string? Notes, string Status);
 public record ImportRecordRequest(string ForecastPeriodId, string CustomerId, string InvoiceCompanyId, string ProductId, int Year, int Month, decimal Amount, string? Notes);
 public record SaveDraftRequest(string PeriodId, List<SaveDraftRecord> Records);
-public record SaveDraftRecord(string CustomerId, string InvoiceCompanyId, string ProductId, int Year, int Month, decimal OrderAmount);
+public record SaveDraftRecord(string CustomerId, string InvoiceCompanyId, string ProductId, int Year, int Month, decimal orderAmount);
 public record SubmitRequest(string PeriodId);
