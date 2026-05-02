@@ -159,6 +159,7 @@ import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import dayjs from 'dayjs'
 import { message } from 'ant-design-vue'
+import { useAuthStore } from '../store/auth'
 
 const metricMode = ref('order')
 const startMonth = ref('2026-07')
@@ -166,6 +167,15 @@ const endMonth = ref('2027-03')
 const currentTime = ref(dayjs().format('YYYY-MM-DD HH:mm:ss'))
 const productDrillLevel = ref(0)
 const loading = ref(false)
+
+// Auth store for API requests
+const authStore = useAuthStore()
+
+// Auth header helper
+const getAuthHeader = () => {
+  const token = localStorage.getItem('token')
+  return token ? { 'Authorization': `Bearer ${token}` } : {}
+}
 
 // Dashboard data from API
 const dashboardData = reactive({
@@ -214,7 +224,11 @@ const onProductBack = () => {
 const fetchDashboardData = async () => {
   try {
     loading.value = true
-    const response = await fetch('/api/dashboard/summary')
+    const response = await fetch('/api/dashboard/summary', {
+      headers: {
+        ...getAuthHeader()
+      }
+    })
     const result = await response.json()
     
     if (result.success) {

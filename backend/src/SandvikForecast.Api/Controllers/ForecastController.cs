@@ -1,8 +1,10 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SandvikForecast.Core.Entities;
 using SandvikForecast.Core.Interfaces;
+using SandvikForecast.Infrastructure.Data;
 
 namespace SandvikForecast.Api.Controllers;
 
@@ -13,11 +15,13 @@ public class ForecastController : ControllerBase
 {
     private readonly IRepository<ForecastPeriod> _periodRepo;
     private readonly IRepository<ForecastRecord> _recordRepo;
+    private readonly SandvikDbContext _db;
 
-    public ForecastController(IRepository<ForecastPeriod> periodRepo, IRepository<ForecastRecord> recordRepo)
+    public ForecastController(IRepository<ForecastPeriod> periodRepo, IRepository<ForecastRecord> recordRepo, SandvikDbContext db)
     {
         _periodRepo = periodRepo;
         _recordRepo = recordRepo;
+        _db = db;
     }
 
     [HttpGet("periods")]
@@ -42,35 +46,222 @@ public class ForecastController : ControllerBase
         return Ok(new { success = true, data = created });
     }
 
-    [HttpGet("records")]
-    public async Task<ActionResult> GetRecords([FromQuery] string? periodId, [FromQuery] int? year, [FromQuery] int? month)
+    /// <summary>
+    /// Route alias for /api/forecast/records - same endpoint
+    /// </summary>
+    [HttpGet("list")]
+    public async Task<ActionResult> GetRecordsList([FromQuery] string? periodId, [FromQuery] int? year, [FromQuery] int? month)
     {
+        return await GetRecords(periodId, year, month);
+    }
+
+    /// <summary>
+    /// Route alias - returns only records created by the current user
+    /// </summary>
+    [HttpGet("my")]
+    public async Task<ActionResult> GetMyRecords([FromQuery] string? periodId, [FromQuery] int? year, [FromQuery] int? month)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+            return Ok(new { success = true, data = new List<ForecastRecord>() });
+
         var records = await _recordRepo.GetAllAsync();
-        var filtered = records.AsEnumerable();
+        var filtered = records.Where(r => r.CreatedByUserId == userId);
         if (!string.IsNullOrEmpty(periodId)) filtered = filtered.Where(r => r.ForecastPeriodId == periodId);
         if (year.HasValue) filtered = filtered.Where(r => r.Year == year.Value);
         if (month.HasValue) filtered = filtered.Where(r => r.Month == month.Value);
         return Ok(new { success = true, data = filtered.ToList() });
     }
 
+    /// <summary>
+    /// Route alias for /api/forecast/records/{id}
+    /// </summary>
+    [HttpGet("detail/{id}")]
+    public async Task<ActionResult> GetRecordDetail(string id)
+    {
+        var record = await _recordRepo.GetByIdAsync(id);
+        if (record == null) return NotFound(new { success = false, message = "Record not found" });
+        return Ok(new { success = true, data = record });
+    }
+
+    [HttpGet("records")]
+    public async Task<ActionResult> GetRecords([FromQuery] string? periodId, [FromQuery] int? year, [FromQuery] int? month)
+    {
+        // Get current user ID and role for filtering
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim))
+            return Ok(new { success = true, data = new List<ForecastRecord>() });
+
+        // Look up user in database to get role
+        var dbUser = await _db.Users.FirstOrDefaultAsync(u => u.Id == userIdClaim && u.IsActive);
+        if (dbUser == null)
+            return Ok(new { success = true, data = new List<ForecastRecord>() });
+
+        var role = dbUser.Role?.ToUpperInvariant() ?? "";
+        var userRegion = "";
+        
+        // Get user's region from OrgNode if available
+        var orgNode = await _db.OrgNodes
+            .Where(o => o.Email == dbUser.Email && o.Status == "Active")
+            .Select(o => new { o.Region })
+            .FirstOrDefaultAsync();
+        if (orgNode != null)
+            userRegion = orgNode.Region ?? "";
+
+        // Load all records for filtering
+        var allRecords = await _db.ForecastRecords.Where(r => !r.IsDeleted).ToListAsync();
+        List<ForecastRecord> filtered;
+
+        switch (role)
+        {
+            case "SYS_ADMIN":
+            case "CEO":
+            case "FINANCE_MANAGER":
+                // No filter - see all records
+                filtered = allRecords;
+                break;
+
+            case "VP_SALES":
+            case "REGION_DIRECTOR":
+                // See only records where Customer.Region matches their region
+                if (!string.IsNullOrEmpty(userRegion))
+                {
+                    var customerIds = _db.Customers
+                        .Where(c => c.Region == userRegion)
+                        .Select(c => c.Id)
+                        .ToList();
+                    filtered = allRecords.Where(r => customerIds.Contains(r.CustomerId)).ToList();
+                }
+                else
+                {
+                    filtered = new List<ForecastRecord>();
+                }
+                break;
+
+            case "DIRECTOR":
+                // See records from users in their org subtree
+                var subtreeUserIds = await GetOrgSubtreeUserIdsAsync(dbUser.Id);
+                if (subtreeUserIds.Any())
+                {
+                    filtered = allRecords.Where(r => subtreeUserIds.Contains(r.CreatedByUserId)).ToList();
+                }
+                else
+                {
+                    filtered = allRecords.Where(r => r.CreatedByUserId == userIdClaim).ToList();
+                }
+                break;
+
+            case "MANAGER":
+            case "SALES":
+                // See only their own records
+                filtered = allRecords.Where(r => r.CreatedByUserId == userIdClaim).ToList();
+                break;
+
+            default:
+                // Unknown role - show only their own records as safety
+                filtered = allRecords.Where(r => r.CreatedByUserId == userIdClaim).ToList();
+                break;
+        }
+
+        // Apply additional filters
+        if (!string.IsNullOrEmpty(periodId)) filtered = filtered.Where(r => r.ForecastPeriodId == periodId).ToList();
+        if (year.HasValue) filtered = filtered.Where(r => r.Year == year.Value).ToList();
+        if (month.HasValue) filtered = filtered.Where(r => r.Month == month.Value).ToList();
+        
+        return Ok(new { success = true, data = filtered });
+    }
+
+    /// <summary>
+    /// Recursively gets all user IDs (from Users table) in the org subtree under the given orgNodeId.
+    /// </summary>
+    private async Task<List<string>> GetOrgSubtreeUserIdsAsync(string userId)
+    {
+        // Find the OrgNode for this user by email
+        var dbUser = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (dbUser == null) return new List<string>();
+
+        var orgNode = await _db.OrgNodes
+            .Where(o => o.Email == dbUser.Email && o.Status == "Active")
+            .FirstOrDefaultAsync();
+        if (orgNode == null) return new List<string>();
+
+        if (!int.TryParse(orgNode.Id.ToString(), out var orgId))
+            return new List<string>();
+
+        var result = new List<string>();
+        var visited = new HashSet<int>();
+        var queue = new Queue<int>();
+        queue.Enqueue(orgId);
+
+        while (queue.Count > 0)
+        {
+            var currentId = queue.Dequeue();
+            if (visited.Contains(currentId)) continue;
+            visited.Add(currentId);
+
+            var childOrgNodes = await _db.OrgNodes
+                .Where(o => o.ParentId.HasValue && o.ParentId.Value == currentId && o.Status == "Active")
+                .Select(o => new { o.Id, o.Email })
+                .ToListAsync();
+
+            foreach (var child in childOrgNodes)
+            {
+                if (!result.Contains(child.Email))
+                {
+                    var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == child.Email);
+                    if (user != null && !result.Contains(user.Id))
+                    {
+                        result.Add(user.Id);
+                    }
+                    queue.Enqueue(child.Id);
+                }
+            }
+        }
+
+        return result;
+    }
+
     [HttpPost("records")]
     public async Task<ActionResult> CreateRecord([FromBody] CreateRecordRequest req)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var record = new ForecastRecord
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(new { success = false, message = "User not authenticated" });
+
+        // Check for duplicate record (same ForecastPeriodId, CustomerId, ProductId)
+        var existingRecord = await _db.ForecastRecords
+            .FirstOrDefaultAsync(r => 
+                r.ForecastPeriodId == req.ForecastPeriodId && 
+                r.CustomerId == req.CustomerId && 
+                r.ProductId == req.ProductId &&
+                !r.IsDeleted);
+        
+        if (existingRecord != null)
+            return BadRequest(new { success = false, message = "A record with the same ForecastPeriodId, CustomerId, and ProductId already exists" });
+
+        try
         {
-            ForecastPeriodId = req.ForecastPeriodId,
-            CustomerId = req.CustomerId,
-            InvoiceCompanyId = req.InvoiceCompanyId,
-            ProductId = req.ProductId,
-            Year = req.Year,
-            Month = req.Month,
-            Amount = req.Amount,
-            CreatedByUserId = userId,
-            Status = "Draft"
-        };
-        var created = await _recordRepo.AddAsync(record);
-        return Ok(new { success = true, data = created });
+            var record = new ForecastRecord
+            {
+                ForecastPeriodId = req.ForecastPeriodId,
+                CustomerId = req.CustomerId,
+                InvoiceCompanyId = req.InvoiceCompanyId,
+                ProductId = req.ProductId,
+                Year = req.Year,
+                Month = req.Month,
+                Amount = req.Amount,
+                CreatedByUserId = userId,
+                Status = "Draft"
+            };
+            var created = await _recordRepo.AddAsync(record);
+            return Ok(new { success = true, data = created });
+        }
+        catch (DbUpdateException ex)
+        {
+            // Handle unique constraint violations or other DB errors
+            Console.WriteLine($"CreateRecord error: {ex.Message} {ex.StackTrace}");
+            return StatusCode(500, new { success = false, message = "Failed to create record: " + ex.InnerException?.Message });
+        }
     }
 
     [HttpPut("records/{id}")]
