@@ -77,8 +77,8 @@
             <input type="file" ref="importFileInput" style="display:none" accept=".csv" @change="handleImport" />
             <a-button @click="copyLastPeriod">复制上期</a-button>
             <a-button class="secondary-btn" @click="addNewRow">新增行</a-button>
-            <a-button @click="saveDraft">保存草稿</a-button>
-            <a-button type="primary" @click="submitForApproval">提交审批</a-button>
+            <a-button @click="saveDraft" :loading="saving">保存草稿</a-button>
+            <a-button type="primary" @click="submitForApproval" :loading="submitting">提交审批</a-button>
           </div>
         </div>
       </a-card>
@@ -229,6 +229,8 @@ const view = ref('periods')
 const currentRole = ref('销售')
 const currentFlow = ref('标准流程')
 const currentMonths = ref(['2026-04', '2026-05', '2026-06'])
+const submitting = ref(false)
+const saving = ref(false)
 
 const currentPeriod = reactive({
   period: '2026FC2',
@@ -447,6 +449,7 @@ const addNewRow = () => {
 }
 
 const saveDraft = async () => {
+  saving.value = true
   try {
     // Transform forecastRows to API format
     const records = []
@@ -454,26 +457,74 @@ const saveDraft = async () => {
       currentMonths.value.forEach(m => {
         if (row.data[m]?.qty > 0 || row.data[m]?.inv > 0) {
           records.push({
-            forecastPeriodId: currentPeriod.period,
             customerId: row.customer,
             invoiceCompanyId: row.invoice,
             productId: row.pa,
             year: parseInt(m.split('-')[0]),
             month: parseInt(m.split('-')[1]),
-            amount: row.data[m].qty * 1000
+            orderAmount: row.data[m].qty * 1000
           })
         }
       })
     })
-    // For now, just show success as API may not fully support batch save
-    message.success('草稿保存成功（' + records.length + ' 条记录）')
+    const token = localStorage.getItem('token')
+    const response = await fetch('/api/forecast/save-draft', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token ? `Bearer ${token}` : ''
+      },
+      body: JSON.stringify({ PeriodId: currentPeriod.id || currentPeriod.period, records })
+    })
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}))
+      throw new Error(errData.message || '保存失败')
+    }
+    message.success('草稿保存成功 (' + records.length + ' 条记录)')
   } catch (err) {
-    message.error('保存失败：' + err.message)
+    message.error('保存失败: ' + err.message)
+  } finally {
+    saving.value = false
   }
 }
 
-const submitForApproval = () => {
-  message.warning('功能待实现：提交审批需要后端审批流程支持')
+const submitForApproval = async () => {
+  submitting.value = true
+  try {
+    const token = localStorage.getItem('token')
+    // Step 1: Submit forecast
+    const submitRes = await fetch('/api/forecast/submit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token ? `Bearer ${token}` : ''
+      },
+      body: JSON.stringify({ PeriodId: currentPeriod.id || currentPeriod.period })
+    })
+    if (!submitRes.ok) {
+      const errData = await submitRes.json().catch(() => ({}))
+      throw new Error(errData.message || '提交失败')
+    }
+    // Step 2: Start approval flow
+    const flowRes = await fetch('/api/approval-flow/start', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token ? `Bearer ${token}` : ''
+      },
+      body: JSON.stringify({ ForecastPeriodId: currentPeriod.id || currentPeriod.period })
+    })
+    if (!flowRes.ok) {
+      const errData = await flowRes.json().catch(() => ({}))
+      throw new Error(errData.message || '启动审批流程失败')
+    }
+    message.success('提交审批成功')
+    backToPeriods()
+  } catch (err) {
+    message.error('提交失败: ' + err.message)
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 

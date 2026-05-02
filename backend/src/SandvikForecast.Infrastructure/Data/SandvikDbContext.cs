@@ -15,6 +15,7 @@ public class SandvikDbContext : DbContext
     public DbSet<ForecastRecord> ForecastRecords => Set<ForecastRecord>();
     public DbSet<Approval> Approvals => Set<Approval>();
     public DbSet<OrgNode> OrgNodes => Set<OrgNode>();
+    public DbSet<ApprovalRequest> ApprovalRequests => Set<ApprovalRequest>();
     public DbSet<LoginLog> LoginLogs => Set<LoginLog>();
     public DbSet<OpLog> OpLogs => Set<OpLog>();
 
@@ -73,5 +74,16 @@ public class SandvikDbContext : DbContext
         });
         modelBuilder.Entity<LoginLog>(e => e.ToTable("LoginLogs"));
         modelBuilder.Entity<OpLog>(e => e.ToTable("OpLogs"));
+        modelBuilder.Entity<ApprovalRequest>(e =>
+        {
+            e.ToTable("approval_requests");
+            e.Property(a => a.Id).HasColumnType("int");
+            e.Property(a => a.ForecastPeriodId).HasColumnName("forecast_period_id");
+            e.Property(a => a.UserId).HasColumnName("user_id");
+            e.Property(a => a.RegionId).HasColumnName("region_id");
+            e.Ignore(a => a.CreatedAt);
+            e.Ignore(a => a.UpdatedAt);
+            e.Ignore(a => a.IsDeleted);
+        });
     }
 }

@@ -332,6 +332,52 @@ public class ForecastController : ControllerBase
         return Ok(new { success = true, importedCount = imported });
     }
 
+    [HttpPost("save-draft")]
+    public async Task<ActionResult> SaveDraft([FromBody] SaveDraftRequest req)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(new { success = false, message = "User not authenticated" });
+
+        int saved = 0;
+        foreach (var r in req.Records)
+        {
+            var existing = await _db.ForecastRecords
+                .FirstOrDefaultAsync(x =>
+                    x.ForecastPeriodId == req.PeriodId &&
+                    x.CustomerId == r.CustomerId &&
+                    x.ProductId == r.ProductId &&
+                    x.Year == r.Year &&
+                    x.Month == r.Month &&
+                    !x.IsDeleted);
+
+            if (existing != null)
+            {
+                existing.Amount = r.OrderAmount;
+                existing.Status = "Draft";
+            }
+            else
+            {
+                var record = new ForecastRecord
+                {
+                    ForecastPeriodId = req.PeriodId,
+                    CustomerId = r.CustomerId,
+                    InvoiceCompanyId = r.InvoiceCompanyId,
+                    ProductId = r.ProductId,
+                    Year = r.Year,
+                    Month = r.Month,
+                    Amount = r.OrderAmount,
+                    Status = "Draft",
+                    CreatedByUserId = userId
+                };
+                _db.ForecastRecords.Add(record);
+            }
+            saved++;
+        }
+        await _db.SaveChangesAsync();
+        return Ok(new { success = true, savedCount = saved });
+    }
+
     [HttpPost("submit")]
     public async Task<ActionResult> SubmitForecast([FromBody] SubmitRequest req)
     {
@@ -349,4 +395,6 @@ public class ForecastController : ControllerBase
 public record CreateRecordRequest(string ForecastPeriodId, string CustomerId, string InvoiceCompanyId, string ProductId, int Year, int Month, decimal Amount);
 public record UpdateRecordRequest(decimal Amount, string? Notes, string Status);
 public record ImportRecordRequest(string ForecastPeriodId, string CustomerId, string InvoiceCompanyId, string ProductId, int Year, int Month, decimal Amount, string? Notes);
+public record SaveDraftRequest(string PeriodId, List<SaveDraftRecord> Records);
+public record SaveDraftRecord(string CustomerId, string InvoiceCompanyId, string ProductId, int Year, int Month, decimal OrderAmount);
 public record SubmitRequest(string PeriodId);
