@@ -1,4 +1,8 @@
+import { fileURLToPath } from 'url'
 import { defineConfig, devices } from '@playwright/test'
+
+// 与配置文件同目录作为前端根目录，避免硬编码 /mnt/d/... 导致 WSL/不同机器上启动失败
+const frontendRoot = fileURLToPath(new URL('.', import.meta.url))
 
 export default defineConfig({
   testDir: './',
@@ -19,7 +23,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'cd /mnt/d/Git/SandvikForecastTool/frontend && npm run dev',
+    command: 'npm run dev',
+    cwd: frontendRoot,
     url: 'http://localhost:3002',
     reuseExistingServer: true,
     timeout: 120000,

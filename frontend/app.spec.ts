@@ -7,8 +7,8 @@ async function mkAuthPage() {
   const browser = await chromium.launch()
   const ctx = await browser.newContext()
   const page = await ctx.newPage()
-  // Inject auth
-  await page.goto(`${BASE_URL}/`)
+  // 注入登录态（与 Vite 开发服务器、外部资源配合时使用 domcontentloaded，避免 networkidle 永久等待）
+  await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded' })
   await page.evaluate(() => {
     localStorage.setItem('token', 'mock_jwt_token_test')
     localStorage.setItem('user', JSON.stringify({
@@ -17,20 +17,24 @@ async function mkAuthPage() {
     }))
   })
   await page.close()
-  return { ctx, page: await ctx.newPage() }
+  return { browser, page: await ctx.newPage() }
+}
+
+async function waitAppReady(page) {
+  await page.waitForLoadState('domcontentloaded')
 }
 
 // ─── TC-01: Login Module ─────────────────────────────────────────────────────
 test.describe('🔐 TC-01: Login Module', () => {
   test('TC-01-01: Login page renders correctly', async ({ page }) => {
-    await page.goto(`${BASE_URL}/login`)
-    await page.waitForLoadState('networkidle')
+    await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' })
+    await waitAppReady(page)
     expect(await page.locator('button').count()).toBeGreaterThanOrEqual(1)
   })
 
   test('TC-01-02: SSO login button click redirects to dashboard', async ({ page }) => {
-    await page.goto(`${BASE_URL}/login`)
-    await page.waitForLoadState('networkidle')
+    await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' })
+    await waitAppReady(page)
     const sandvikBtn = page.locator('button').filter({ hasText: /sandvik.*域/i }).first()
     if (await sandvikBtn.count() > 0) {
       await sandvikBtn.click()
@@ -44,10 +48,10 @@ test.describe('🔐 TC-01: Login Module', () => {
 
   test('TC-01-04: Unauthenticated /dashboard access shows login page', async ({ page }) => {
     // Fresh browser context — no localStorage
-    await page.goto(`${BASE_URL}/dashboard`)
+    await page.goto(`${BASE_URL}/dashboard`, { waitUntil: 'domcontentloaded' })
     // Wait for Vue router to process the redirect
     await page.waitForFunction(() => window.location.pathname !== '/dashboard' || document.querySelector('.login-page'), { timeout: 5000 }).catch(() => {})
-    await page.waitForLoadState('networkidle')
+    await waitAppReady(page)
     const url = page.url()
     // Either redirected to login, or still at /dashboard but without dashboard content
     const isLoginUrl = url.includes('/login')
@@ -58,14 +62,18 @@ test.describe('🔐 TC-01: Login Module', () => {
 
 // ─── TC-07: Layout & Navigation ──────────────────────────────────────────────
 test.describe('🧭 TC-07: Layout & Navigation', () => {
-  let ap: any
+  let ap
+  let authBrowser
   test.beforeEach(async ({ page: _p }) => {
     const r = await mkAuthPage()
+    authBrowser = r.browser
     ap = r.page
-    await ap.goto(`${BASE_URL}/dashboard`)
-    await ap.waitForLoadState('networkidle')
+    await ap.goto(`${BASE_URL}/dashboard`, { waitUntil: 'domcontentloaded' })
+    await waitAppReady(ap)
   })
-  test.afterEach(async () => { await ap.close() })
+  test.afterEach(async () => {
+    await authBrowser?.close()
+  })
 
   test('TC-07-01: Sidebar shows ≥12 flat menu items', async () => {
     // Layout.vue uses .menu-item class for sidebar items
@@ -86,14 +94,18 @@ test.describe('🧭 TC-07: Layout & Navigation', () => {
 
 // ─── TC-02: Dashboard ────────────────────────────────────────────────────────
 test.describe('📊 TC-02: Dashboard', () => {
-  let ap: any
+  let ap
+  let authBrowser
   test.beforeEach(async ({ page: _p }) => {
     const r = await mkAuthPage()
+    authBrowser = r.browser
     ap = r.page
-    await ap.goto(`${BASE_URL}/dashboard`)
-    await ap.waitForLoadState('networkidle')
+    await ap.goto(`${BASE_URL}/dashboard`, { waitUntil: 'domcontentloaded' })
+    await waitAppReady(ap)
   })
-  test.afterEach(async () => { await ap.close() })
+  test.afterEach(async () => {
+    await authBrowser?.close()
+  })
 
   test('TC-02-01: KPI cards display (≥3 cards)', async () => {
     // Look for heading + metric card-like structures
@@ -116,14 +128,18 @@ test.describe('📊 TC-02: Dashboard', () => {
 
 // ─── TC-03: Sales Forecast ───────────────────────────────────────────────────
 test.describe('📝 TC-03: Sales Forecast', () => {
-  let ap: any
+  let ap
+  let authBrowser
   test.beforeEach(async ({ page: _p }) => {
     const r = await mkAuthPage()
+    authBrowser = r.browser
     ap = r.page
-    await ap.goto(`${BASE_URL}/forecast`)
-    await ap.waitForLoadState('networkidle')
+    await ap.goto(`${BASE_URL}/forecast`, { waitUntil: 'domcontentloaded' })
+    await waitAppReady(ap)
   })
-  test.afterEach(async () => { await ap.close() })
+  test.afterEach(async () => {
+    await authBrowser?.close()
+  })
 
   test('TC-03-01: Forecast page loads with table', async () => {
     expect(await ap.locator('table, .ant-table').count()).toBeGreaterThan(0)
@@ -145,14 +161,18 @@ test.describe('📝 TC-03: Sales Forecast', () => {
 
 // ─── TC-04: Approval ──────────────────────────────────────────────────────────
 test.describe('✅ TC-04: Approval', () => {
-  let ap: any
+  let ap
+  let authBrowser
   test.beforeEach(async ({ page: _p }) => {
     const r = await mkAuthPage()
+    authBrowser = r.browser
     ap = r.page
-    await ap.goto(`${BASE_URL}/approval`)
-    await ap.waitForLoadState('networkidle')
+    await ap.goto(`${BASE_URL}/approval`, { waitUntil: 'domcontentloaded' })
+    await waitAppReady(ap)
   })
-  test.afterEach(async () => { await ap.close() })
+  test.afterEach(async () => {
+    await authBrowser?.close()
+  })
 
   test('TC-04-01: Approval list loads with table', async () => {
     expect(await ap.locator('table, .ant-table').count()).toBeGreaterThan(0)
@@ -163,8 +183,8 @@ test.describe('✅ TC-04: Approval', () => {
   })
 
   test('TC-04-04: Detail page has summary tabs (按客户/按业绩/按大区/明细)', async () => {
-    // Click first table row to enter detail
-    const row = ap.locator('.ant-table-tbody tr').first()
+    // 列表使用原生 table.forecast-table，非 ant-table
+    const row = ap.locator('.forecast-table tbody tr, .ant-table-tbody tr').first()
     if (await row.count() > 0) {
       await row.click()
       await ap.waitForTimeout(1000)
@@ -181,69 +201,77 @@ test.describe('✅ TC-04: Approval', () => {
 
 // ─── TC-05: Base Data ────────────────────────────────────────────────────────
 test.describe('🗃️ TC-05: Base Data', () => {
-  let ap: any
+  let ap
+  let authBrowser
   test.beforeEach(async ({ page: _p }) => {
     const r = await mkAuthPage()
+    authBrowser = r.browser
     ap = r.page
   })
-  test.afterEach(async () => { await ap.close() })
+  test.afterEach(async () => {
+    await authBrowser?.close()
+  })
 
   test('TC-05-01: Org page loads with content', async () => {
-    await ap.goto(`${BASE_URL}/org`)
-    await ap.waitForLoadState('networkidle')
+    await ap.goto(`${BASE_URL}/org`, { waitUntil: 'domcontentloaded' })
+    await waitAppReady(ap)
     expect(await ap.locator('table, .ant-table, [class*="tree"]').count()).toBeGreaterThan(0)
   })
 
   test('TC-05-02: Customers page loads', async () => {
-    await ap.goto(`${BASE_URL}/customers`)
-    await ap.waitForLoadState('networkidle')
+    await ap.goto(`${BASE_URL}/customers`, { waitUntil: 'domcontentloaded' })
+    await waitAppReady(ap)
     expect(await ap.locator('table, .ant-table').count()).toBeGreaterThan(0)
   })
 
   test('TC-05-03: Products page loads', async () => {
-    await ap.goto(`${BASE_URL}/products`)
-    await ap.waitForLoadState('networkidle')
+    await ap.goto(`${BASE_URL}/products`, { waitUntil: 'domcontentloaded' })
+    await waitAppReady(ap)
     expect(await ap.locator('table, .ant-table').count()).toBeGreaterThan(0)
   })
 })
 
 // ─── TC-06: System Management ───────────────────────────────────────────────
 test.describe('⚙️ TC-06: System Management', () => {
-  let ap: any
+  let ap
+  let authBrowser
   test.beforeEach(async ({ page: _p }) => {
     const r = await mkAuthPage()
+    authBrowser = r.browser
     ap = r.page
   })
-  test.afterEach(async () => { await ap.close() })
+  test.afterEach(async () => {
+    await authBrowser?.close()
+  })
 
   test('TC-06-01: Users page loads with table', async () => {
-    await ap.goto(`${BASE_URL}/users`)
-    await ap.waitForLoadState('networkidle')
+    await ap.goto(`${BASE_URL}/users`, { waitUntil: 'domcontentloaded' })
+    await waitAppReady(ap)
     expect(await ap.locator('table, .ant-table').count()).toBeGreaterThan(0)
     expect(await ap.locator('text=/账号|用户|角色|邮箱/i').count()).toBeGreaterThan(0)
   })
 
   test('TC-06-04: Permissions page loads', async () => {
-    await ap.goto(`${BASE_URL}/permissions`)
-    await ap.waitForLoadState('networkidle')
+    await ap.goto(`${BASE_URL}/permissions`, { waitUntil: 'domcontentloaded' })
+    await waitAppReady(ap)
     expect(await ap.locator('.ant-select, table, .ant-table').count()).toBeGreaterThan(0)
   })
 
   test('TC-06-05: FcVersion page loads', async () => {
-    await ap.goto(`${BASE_URL}/fc-version`)
-    await ap.waitForLoadState('networkidle')
+    await ap.goto(`${BASE_URL}/fc-version`, { waitUntil: 'domcontentloaded' })
+    await waitAppReady(ap)
     expect(await ap.locator('table, .ant-table').count()).toBeGreaterThan(0)
   })
 
   test('TC-06-06: System log page loads', async () => {
-    await ap.goto(`${BASE_URL}/system-log`)
-    await ap.waitForLoadState('networkidle')
+    await ap.goto(`${BASE_URL}/system-log`, { waitUntil: 'domcontentloaded' })
+    await waitAppReady(ap)
     expect(await ap.locator('table, .ant-table').count()).toBeGreaterThan(0)
   })
 
   test('TC-06-07: Login log page loads', async () => {
-    await ap.goto(`${BASE_URL}/login-log`)
-    await ap.waitForLoadState('networkidle')
+    await ap.goto(`${BASE_URL}/login-log`, { waitUntil: 'domcontentloaded' })
+    await waitAppReady(ap)
     expect(await ap.locator('table, .ant-table').count()).toBeGreaterThan(0)
   })
 })

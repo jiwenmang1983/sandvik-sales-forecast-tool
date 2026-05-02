@@ -137,3 +137,7 @@
 /mnt/d/Git/SandvikForecastTool/backend/tests/SandvikForecast.Tests/obj/Debug/net8.0/SandvikForecast.Tests.pdb
 /mnt/d/Git/SandvikForecastTool/backend/tests/SandvikForecast.Tests/obj/Debug/net8.0/SandvikForecast.Tests.genruntimeconfig.cache
 /mnt/d/Git/SandvikForecastTool/backend/tests/SandvikForecast.Tests/obj/Debug/net8.0/ref/SandvikForecast.Tests.dll
+/mnt/d/Git/SandvikForecastTool/backend/tests/SandvikForecast.Tests/bin/Debug/net8.0/MimeKit.dll
+/mnt/d/Git/SandvikForecastTool/backend/tests/SandvikForecast.Tests/bin/Debug/net8.0/MailKit.dll
+/mnt/d/Git/SandvikForecastTool/backend/tests/SandvikForecast.Tests/bin/Debug/net8.0/BouncyCastle.Cryptography.dll
+/mnt/d/Git/SandvikForecastTool/backend/tests/SandvikForecast.Tests/obj/Debug/net8.0/SandvikForecast.Tests.sourcelink.json

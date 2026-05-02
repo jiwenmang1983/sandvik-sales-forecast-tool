@@ -13,3 +13,4 @@
 /mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/obj/Debug/net8.0/refint/SandvikForecast.Infrastructure.dll
 /mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/obj/Debug/net8.0/SandvikForecast.Infrastructure.pdb
 /mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/obj/Debug/net8.0/ref/SandvikForecast.Infrastructure.dll
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/obj/Debug/net8.0/SandvikForecast.Infrastructure.sourcelink.json

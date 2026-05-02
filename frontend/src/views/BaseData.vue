@@ -263,10 +263,22 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
 
+const route = useRoute()
 const activeTab = ref('productLibrary')
+
+// 与菜单路由同步：/customers、/products、/datadict 共用 BaseData 时切换页签并拉取数据
+watch(
+  () => route.path,
+  () => {
+    const tab = route.meta?.baseDataTab
+    if (tab) activeTab.value = tab
+  },
+  { immediate: true }
+)
 const currentModule = ref('productLibrary')
 const keyword = ref('')
 const filterStatus = ref('')
@@ -556,9 +568,13 @@ const fetchData = () => {
   else if (activeTab.value === 'salesPerson') fetchSalesPersons()
 }
 
-onMounted(() => {
-  fetchData()
-})
+watch(
+  () => route.meta?.baseDataTab,
+  (tab) => {
+    if (tab) fetchData()
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped>

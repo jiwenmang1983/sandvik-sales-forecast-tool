@@ -1,12 +1,11 @@
 import { test, expect } from '@playwright/test'
 
-// ─── Base URL ────────────────────────────────────────────────────────────────
-const BASE_URL = 'http://localhost:5173'
+// 使用 playwright.config 中的 baseURL（与 Vite 端口 3002 一致）
 
 // ─── Helper: Login once per session ──────────────────────────────────────────
 test.describe('🔐 TC-01: Login Module', () => {
   test('TC-01-01: Login page renders correctly', async ({ page }) => {
-    await page.goto(`${BASE_URL}/login`)
+    await page.goto('/login')
     // Wait for page to load
     await page.waitForLoadState('networkidle')
     // Check key elements exist (adapting to whatever the Login page has)
@@ -17,7 +16,7 @@ test.describe('🔐 TC-01: Login Module', () => {
   })
 
   test('TC-01-02: Successful login redirects to dashboard', async ({ page }) => {
-    await page.goto(`${BASE_URL}/login`)
+    await page.goto('/login')
     await page.waitForLoadState('networkidle')
     // Try to login with demo credentials
     const inputs = page.locator('input')
@@ -39,7 +38,7 @@ test.describe('🔐 TC-01: Login Module', () => {
   test('TC-01-04: Unauthenticated access redirects to login', async ({ page }) => {
     // Clear any existing auth
     await page.context().clearCookies()
-    await page.goto(`${BASE_URL}/dashboard`)
+    await page.goto('/dashboard')
     await page.waitForLoadState('networkidle')
     // Should redirect to login
     expect(page.url()).toContain('/login')
@@ -50,7 +49,7 @@ test.describe('🔐 TC-01: Login Module', () => {
 test.describe.parallel('✅ Authenticated Tests', () => {
   // Login before each test
   test.beforeEach(async ({ page }) => {
-    await page.goto(`${BASE_URL}/login`)
+    await page.goto('/login')
     await page.waitForLoadState('networkidle')
     const inputs = page.locator('input')
     const inputCount = await inputs.count()
@@ -70,7 +69,7 @@ test.describe.parallel('✅ Authenticated Tests', () => {
   // ─── TC-07: Layout & Navigation ───────────────────────────────────────────
   test.describe('🧭 TC-07: Layout & Navigation', () => {
     test('TC-07-01: Sidebar shows 14 flat menu items in 3 groups', async ({ page }) => {
-      await page.goto(`${BASE_URL}/dashboard`)
+      await page.goto('/dashboard')
       await page.waitForLoadState('networkidle')
       // Count menu items in sidebar
       // Sidebar should have 14 menu items
@@ -81,7 +80,7 @@ test.describe.parallel('✅ Authenticated Tests', () => {
     })
 
     test('TC-07-02: Clicking menu item navigates correctly', async ({ page }) => {
-      await page.goto(`${BASE_URL}/dashboard`)
+      await page.goto('/dashboard')
       await page.waitForLoadState('networkidle')
       // Click on "销售预测审核" or approval menu
       const approvalLink = page.locator('text=销售预测审核').first()
@@ -93,7 +92,7 @@ test.describe.parallel('✅ Authenticated Tests', () => {
     })
 
     test('TC-07-04: Sidebar collapse works', async ({ page }) => {
-      await page.goto(`${BASE_URL}/dashboard`)
+      await page.goto('/dashboard')
       await page.waitForLoadState('networkidle')
       // Find collapse toggle
       const collapseBtn = page.locator('.trigger, [class*="trigger"], .ant-layout-sider-trigger').first()
@@ -114,7 +113,7 @@ test.describe.parallel('✅ Authenticated Tests', () => {
   // ─── TC-02: Dashboard ────────────────────────────────────────────────────
   test.describe('📊 TC-02: Dashboard', () => {
     test('TC-02-01: KPI cards display (4 cards)', async ({ page }) => {
-      await page.goto(`${BASE_URL}/dashboard`)
+      await page.goto('/dashboard')
       await page.waitForLoadState('networkidle')
       // KPI cards
       const kpiCards = page.locator('.kpi-card, [class*="kpi-card"]')
@@ -123,7 +122,7 @@ test.describe.parallel('✅ Authenticated Tests', () => {
     })
 
     test('TC-02-02: Charts render (6 charts)', async ({ page }) => {
-      await page.goto(`${BASE_URL}/dashboard`)
+      await page.goto('/dashboard')
       await page.waitForLoadState('networkidle')
       // Wait for echarts to render
       await page.waitForTimeout(2000)
@@ -133,9 +132,10 @@ test.describe.parallel('✅ Authenticated Tests', () => {
     })
 
     test('TC-02-03: Order/Invoice mode toggle works', async ({ page }) => {
-      await page.goto(`${BASE_URL}/dashboard`)
+      await page.goto('/dashboard')
       await page.waitForLoadState('networkidle')
-      const toggle = page.locator('.metric-tab, [class*="metric-tab"]').filter({ hasText: /开票/i }).first()
+      // 仅匹配按钮，避免 .metric-tabs 父节点命中 [class*="metric-tab"]
+      const toggle = page.locator('button.metric-tab').filter({ hasText: /开票/i }).first()
       if (await toggle.count() > 0) {
         await toggle.click()
         await page.waitForTimeout(500)
@@ -148,7 +148,7 @@ test.describe.parallel('✅ Authenticated Tests', () => {
   // ─── TC-03: Forecast ─────────────────────────────────────────────────────
   test.describe('📝 TC-03: Sales Forecast', () => {
     test('TC-03-01: Forecast page loads with period list table', async ({ page }) => {
-      await page.goto(`${BASE_URL}/forecast`)
+      await page.goto('/forecast')
       await page.waitForLoadState('networkidle')
       // Table should exist
       const table = page.locator('table, .ant-table')
@@ -156,7 +156,7 @@ test.describe.parallel('✅ Authenticated Tests', () => {
     })
 
     test('TC-03-03: Enter forecast workbench', async ({ page }) => {
-      await page.goto(`${BASE_URL}/forecast`)
+      await page.goto('/forecast')
       await page.waitForLoadState('networkidle')
       // Look for a "填报" or action button in table
       const enterBtn = page.locator('button').filter({ hasText: /填报|进入|编辑/i }).first()
@@ -174,14 +174,14 @@ test.describe.parallel('✅ Authenticated Tests', () => {
   // ─── TC-04: Approval ──────────────────────────────────────────────────────
   test.describe('✅ TC-04: Approval', () => {
     test('TC-04-01: Approval list loads with table', async ({ page }) => {
-      await page.goto(`${BASE_URL}/approval`)
+      await page.goto('/approval')
       await page.waitForLoadState('networkidle')
       const table = page.locator('table, .ant-table')
       expect(await table.count()).toBeGreaterThan(0)
     })
 
     test('TC-04-02: Status filter works', async ({ page }) => {
-      await page.goto(`${BASE_URL}/approval`)
+      await page.goto('/approval')
       await page.waitForLoadState('networkidle')
       const statusSelect = page.locator('.ant-select, [class*="filter"] select').filter({ hasText: '' }).first()
       if (await statusSelect.count() > 0) {
@@ -192,7 +192,7 @@ test.describe.parallel('✅ Authenticated Tests', () => {
     })
 
     test('TC-04-04: Tab switching in detail view', async ({ page }) => {
-      await page.goto(`${BASE_URL}/approval`)
+      await page.goto('/approval')
       await page.waitForLoadState('networkidle')
       // Click on a row to enter detail
       const firstRow = page.locator('tbody tr, .ant-table-tbody tr').first()
@@ -209,21 +209,21 @@ test.describe.parallel('✅ Authenticated Tests', () => {
   // ─── TC-05: Base Data ────────────────────────────────────────────────────
   test.describe('🗃️ TC-05: Base Data', () => {
     test('TC-05-01: Org page loads', async ({ page }) => {
-      await page.goto(`${BASE_URL}/org`)
+      await page.goto('/org')
       await page.waitForLoadState('networkidle')
       const hasContent = await page.locator('table, .ant-table, [class*="tree"]').count()
       expect(hasContent).toBeGreaterThan(0)
     })
 
     test('TC-05-02: Customer tab loads', async ({ page }) => {
-      await page.goto(`${BASE_URL}/customers`)
+      await page.goto('/customers')
       await page.waitForLoadState('networkidle')
       const hasContent = await page.locator('table, .ant-table').count()
       expect(hasContent).toBeGreaterThan(0)
     })
 
     test('TC-05-03: Products tab loads', async ({ page }) => {
-      await page.goto(`${BASE_URL}/products`)
+      await page.goto('/products')
       await page.waitForLoadState('networkidle')
       const hasContent = await page.locator('table, .ant-table').count()
       expect(hasContent).toBeGreaterThan(0)
@@ -233,36 +233,36 @@ test.describe.parallel('✅ Authenticated Tests', () => {
   // ─── TC-06: System Management ─────────────────────────────────────────────
   test.describe('⚙️ TC-06: System Management', () => {
     test('TC-06-01: Users page loads with table', async ({ page }) => {
-      await page.goto(`${BASE_URL}/users`)
+      await page.goto('/users')
       await page.waitForLoadState('networkidle')
       const table = page.locator('table, .ant-table')
       expect(await table.count()).toBeGreaterThan(0)
     })
 
     test('TC-06-04: Permissions page loads with role selector', async ({ page }) => {
-      await page.goto(`${BASE_URL}/permissions`)
+      await page.goto('/permissions')
       await page.waitForLoadState('networkidle')
       const hasSelect = await page.locator('.ant-select, select').count()
       const hasTable = await page.locator('table, .ant-table').count()
-      expect(hasSelect).toBeGreaterThan(0) || expect(hasTable).toBeGreaterThan(0)
+      expect(hasSelect > 0 || hasTable > 0).toBeTruthy()
     })
 
     test('TC-06-05: FcVersion page loads', async ({ page }) => {
-      await page.goto(`${BASE_URL}/fc-version`)
+      await page.goto('/fc-version')
       await page.waitForLoadState('networkidle')
       const hasContent = await page.locator('table, .ant-table').count()
       expect(hasContent).toBeGreaterThan(0)
     })
 
     test('TC-06-06: System log page loads', async ({ page }) => {
-      await page.goto(`${BASE_URL}/system-log`)
+      await page.goto('/system-log')
       await page.waitForLoadState('networkidle')
       const table = page.locator('table, .ant-table')
       expect(await table.count()).toBeGreaterThan(0)
     })
 
     test('TC-06-07: Login log page loads', async ({ page }) => {
-      await page.goto(`${BASE_URL}/login-log`)
+      await page.goto('/login-log')
       await page.waitForLoadState('networkidle')
       const hasContent = await page.locator('table, .ant-table').count()
       expect(hasContent).toBeGreaterThan(0)

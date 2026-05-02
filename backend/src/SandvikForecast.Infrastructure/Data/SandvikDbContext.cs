@@ -14,6 +14,7 @@ public class SandvikDbContext : DbContext
     public DbSet<ForecastPeriod> ForecastPeriods => Set<ForecastPeriod>();
     public DbSet<ForecastRecord> ForecastRecords => Set<ForecastRecord>();
     public DbSet<Approval> Approvals => Set<Approval>();
+    public DbSet<OrgNode> OrgNodes => Set<OrgNode>();
     public DbSet<LoginLog> LoginLogs => Set<LoginLog>();
     public DbSet<OpLog> OpLogs => Set<OpLog>();
 
@@ -58,6 +59,18 @@ public class SandvikDbContext : DbContext
         });
 
         modelBuilder.Entity<Approval>(e => e.ToTable("Approvals"));
+        modelBuilder.Entity<OrgNode>(e =>
+        {
+            e.ToTable("OrgNodes");
+            e.HasIndex(o => o.Email).IsUnique();
+            // OrgNodes table uses int auto-inc Id, not string — tell EF to avoid string→int cast crash on materialization
+            e.Property(o => o.Id).HasColumnType("int");
+            // OrgNodes table uses Status (varchar), not IsActive (bool), and no CreatedAt/UpdatedAt/IsDeleted columns
+            e.Ignore(o => o.CreatedAt);
+            e.Ignore(o => o.UpdatedAt);
+            e.Ignore(o => o.IsDeleted);
+            // Map Status column (table has Status, entity has Status as string)
+        });
         modelBuilder.Entity<LoginLog>(e => e.ToTable("LoginLogs"));
         modelBuilder.Entity<OpLog>(e => e.ToTable("OpLogs"));
     }
