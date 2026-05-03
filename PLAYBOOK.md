@@ -143,7 +143,34 @@ ANTHROPIC_BASE_URL="https://api.minimaxi.com/anthropic" \
 
 ---
 
-## 6. 小Q 调度流程
+### 5.3 小Q 调度方式（独立 Agent vs Subagent）
+
+> ⚠️ 2026-05-04 新认知：小Q 应为独立 Hermes Agent，不是我内部的 subagent。
+
+**目标架构：**
+```
+Mark ←→ Hermes（小P）←→ 小Q（独立Agent）
+                      ↕
+                    小A（独立Agent）
+```
+- 每个 Agent 是独立的 hermes-agent 进程，有自己的 config.yaml 和 Feishu 身份
+- Hermes 通过 Feishu DM 或 cronjob 与小Q通信
+- 小Q 完全独立运行，不依赖 Hermes 的 session 存活
+
+**当前可做到的方案（近期）：**
+1. Hermes 写好 Playwright 测试脚本 → 存入 repo
+2. Cronjob 定时或手动触发 → 小Q（独立 Agent）执行脚本
+3. 结果写回文件 → Hermes 检测到 → 通知 Mark
+
+**待探索（远期）：**
+- 小Q 作为独立 hermes-agent 进程，监听 Feishu 指令队列
+- Hermes 发指令 → 小Q 主动拉取 → 执行 → 结果回写
+
+---
+
+## 6. 小Q 调度流程（探索中）
+
+> ⚠️ 2026-05-04 注：小Q 应为独立 Agent，`delegate_task` 仅为当前过渡方案。
 
 ```
 小P 验收 CC 开发成果
