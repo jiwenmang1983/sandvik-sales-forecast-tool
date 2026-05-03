@@ -1,38 +1,9 @@
-# Sandvik Forecast Tool — 业务需求说明书 (BRS)
+# Sandvik Forecast Tool — 产品需求文档 (PRD)
 **版本：** v0.2
 **日期：** 2026-05-03
 **状态：** 🟡 编写中
 
----
-
-## 开发任务（Task Tracker）
-
-> 本章节记录所有开发任务状态，与 `docs/BRS.md` 各功能模块对应。
-> 状态流转：`待开发` → `开发中` → `已验收` → `已合并`
-
-| 任务ID | 功能模块 | 任务描述 | 负责组 | 状态 | 备注 |
-|--------|---------|---------|--------|------|------|
-| T-001 | §4.1 | 登录模块（JWT认证） | 小P组 | ✅ 已验收 | |
-| T-002 | §4.1 | 路由守卫（登录保护） | 小P组 | ✅ 已验收 | |
-| T-003 | §4.1 | Dashboard（真实API对接） | 小P组 | ✅ 已验收 | Auth header修复 |
-| T-004 | §4.2 | 预测周期管理（CRUD） | 小P组 | ✅ 已验收 | PUT/DELETE已实现 |
-| T-005 | §4.2 | 预测记录列表（真实API） | 小P组 | ✅ 已验收 | |
-| T-006 | §4.2 | 保存草稿/提交审批API | 小P组 | ✅ 已验收 | |
-| T-007 | §4.2 | Forecast数据权限隔离 | 小P组 | ✅ 已验收 | |
-| T-008 | §4.2 | 产品层级导入脚本（4级） | 小A组 | ✅ 已验收 | 350行数据 |
-| T-009 | §4.2 | 产品5级联动（SubPA-3/4） | 小P组 | 🔄 开发中 | ProductCascade.vue缺失文件，待修复后验收 |
-| T-010 | §4.3 | 审批流启动+我的待审批列表 | 小P组 | ✅ 已验收 | |
-| T-011 | §4.3 | 审批历史记录（ApprovalHistory） | 小P组 | 🔄 待开发 | 表结构已设计，API链路未通 |
-| T-012 | §4.3 | 审批调整动作（4个总量值） | 小P组 | 🔄 待开发 | |
-| T-013 | §4.3 | 消息模板管理UI | 小A组 | ✅ 已验收 | |
-| T-014 | §4.3 | 邮件通知触发（审批节点） | 小A组 | 🔄 待开发 | EmailController存在，触发链路未闭环 |
-| T-015 | §5.1 | 直线经理看团队数据权限 | 小P组 | ✅ 已验收 | OrgNode int Id修复 |
-| T-016 | §5.2 | 开票公司特别权限表 | 小A组 | 🔄 待开发 | |
-| T-017 | §6 | ForecastRecord四度量字段 | 小P组 | 🔄 待开发 | 当前仅有Amount，需拆分为订单/开票金额+数量 |
-| T-018 | §6 | ForecastPeriod七字段 | 小P组 | 🔄 待开发 | 当前字段语义与BRS不一致 |
-| T-019 | §9 | M365 SSO登录（生产） | 小A组 | 🔄 待开发 | 当前为本地测试登录 |
-| T-020 | §11 | Customer+User品牌字段 | 小A组 | 🔄 待开发 | Brand字段及客户过滤 |
-| T-021 | §4.2 | 数据导入/导出（Excel） | 小A组 | 🔄 待开发 | 前端有演示，需对接真实API |
+> **重要说明：** 本文档从 `docs/BRS.md` 更名而来（BRS → PRD），任务追踪已迁移至 `docs/WBS.md`。
 
 ---
 
@@ -373,7 +344,7 @@ user_invoice_company_permissions (id, user_id, invoice_company_id, created_at)
 
 ## 7. API 端点（已知）
 
-> **与实现对账：** 当前仓库中实际路由与下表存在差异（例如基础数据多为 `api/basedata`、`api/org`，审批流仅部分实现）。详见 **§13**「实现与 BRS 差距清单」；迭代中建议以 OpenAPI/代码为准更新下表或增加「实际路由附录」。
+> **与实现对账：** 当前仓库中实际路由与下表存在差异（例如基础数据多为 `api/basedata`、`api/org`，审批流仅部分实现）。详见 **§13**「实现与 PRD 差距清单」；迭代中建议以 OpenAPI/代码为准更新下表或增加「实际路由附录」。
 
 ### 7.1 认证
 | 方法 | 路径 | 说明 |
@@ -552,7 +523,7 @@ ProductHierarchy (
 
 ## 12. 待确认问题
 
-- [x] ~~预测金额的单位是什么？（元？万元？）~~ → **圆（元），数量单位对系统无实质影响**
+- [x] ~~预测金额的单位是什么？（元？万元？）~~ → **圆（元)，数量单位对系统无实质影响**
 - [x] ~~每个销售可以填多个客户的预测~~ → **可以，通过品牌字段过滤（Customer.Brand = Salesperson.Brand）**
 - [x] ~~驳回后销售如何重新提交？~~ → **逐层退，不重新发起；退到哪级该级可改，Frank Tao只能批/驳**
 - [x] ~~截标/填报截止设定~~ → **只阻止新提交，不影响已在流程中的数据；延期窗口给漏填人员补提交**
@@ -563,48 +534,48 @@ ProductHierarchy (
 
 ---
 
-## 13. 实现与 BRS 差距清单（对照代码库 v0.1）
+## 13. 实现与 PRD 差距清单（对照代码库 v0.1）
 
 > 以下条目按 **P0/P1/P2** 粗略分级：P0 阻断业务流程或合规；P1 核心功能不完整；P2 体验/扩展。状态为截止文档更新日期的静态审计结论，实施需在迭代中复核。
 
 ### 13.1 数据模型与持久化
 
-| 编号 | BRS 依据 | 当前实现概况 | 差距说明 | 建议 |
+| 编号 | PRD 依据 | 当前实现概况 | 差距说明 | 建议 |
 |------|-----------|---------------|-----------|------|
 | M-01 | §6.2 `forecast_records` 四度量字段 | `ForecastRecord` 仅 `Amount`，无订单/开票拆分及数量 | 无法实现「订单数量、订单金额、开票数量、开票金额」月度填报与汇总 | 扩展实体与迁移，API/DTO 同步 |
-| M-02 | §6.2 `forecast_periods`（FC 名、填报窗、预测起止年月、延期与人员名单） | `ForecastPeriod` 为 PeriodYear/Month、PeriodType、StartDate/EndDate 等，字段语义不一致 | 无法用 BRS「7+1」字段驱动填报截止/延期白名单 | 按 BRS 表结构演进或补映射层 |
+| M-02 | §6.2 `forecast_periods`（FC 名、填报窗、预测起止年月、延期与人员名单） | `ForecastPeriod` 为 PeriodYear/Month、PeriodType、StartDate/EndDate 等，字段语义不一致 | 无法用 PRD「7+1」字段驱动填报截止/延期白名单 | 按 PRD 表结构演进或补映射层 |
 | M-03 | §6.2 `approval_history`、调整四总量 | 无 `ApprovalHistory`；`ApprovalRequest` 无 adjust_* | 无法审计「通过/退回/调整」及指导值 | 新增表与写入链路 |
 | M-04 | §5.2 `user_invoice_company_permissions` | 无对应实体/表 | 财务跨部门按开票公司看数无法实现 | 建表 + 过滤逻辑接 Forecast/Dashboard |
 | M-05 | §11.2 `Customer.Brand` / `User.Brand` | `Customer`、`User` 均无 Brand 字段 | 无法实现品牌过滤客户 | 扩展字段 + 列表/填报筛选 |
 | M-06 | §10 `ProductHierarchy`（L1–L5，14 位编码） | 后端 `ProductsController`/实体需单独核对；前端 Forecast 多为演示级 PA/SubPA | 五级联动与编码规则可能未落地 | 对齐 §10.2–10.3 规则与导入脚本 |
-| M-07 | §6.2 `org_nodes`（brand、sales_region、sales_district 等） | `OrgNode` 现有 Name/Email/Role/Region/Company 等，与 BRS 字段名与语义未一一对应 | 业绩归属/大区**自动带出**规则依赖数据模型清晰映射 | 对照 §5.3 补字段或文档化映射 |
+| M-07 | §6.2 `org_nodes`（brand、sales_region、sales_district 等） | `OrgNode` 现有 Name/Email/Role/Region/Company 等，与 PRD 字段名与语义未一一对应 | 业绩归属/大区**自动带出**规则依赖数据模型清晰映射 | 对照 §5.3 补字段或文档化映射 |
 
 ### 13.2 业务规则与权限
 
-| 编号 | BRS 依据 | 当前实现概况 | 差距说明 |
+| 编号 | PRD 依据 | 当前实现概况 | 差距说明 |
 |------|-----------|---------------|-----------|
 | R-01 | §5.1 MANAGER 可看团队 | `ForecastController` 中 `MANAGER` 与 `SALES` 同为仅本人记录 | 直线经理权限不符 |
-| R-02 | §5.2 区域总监递归下属 | 存在 `DIRECTOR`/`REGION_DIRECTOR` 等与 BRS 角色命名不一致 | 需统一角色枚举并与 OrgNode 树遍历对齐 |
+| R-02 | §5.2 区域总监递归下属 | 存在 `DIRECTOR`/`REGION_DIRECTOR` 等与 PRD 角色命名不一致 | 需统一角色枚举并与 OrgNode 树遍历对齐 |
 | R-03 | §3.3 截止后仅阻止新提交 | `SubmitForecast` 等需核对是否校验 `fill_time_end`/状态 | 防呆逻辑待补全 |
 | R-04 | §4.3 Frank Tao 仅审批不得改明细 | 前端/接口层需显式约束 | 待产品与后端双重校验 |
 
 ### 13.3 API 与前端集成
 
-| 编号 | BRS 依据 | 当前实现概况 | 差距说明 |
+| 编号 | PRD 依据 | 当前实现概况 | 差距说明 |
 |------|-----------|---------------|-----------|
 | A-01 | §7.2 `GET /api/dashboard/summary` | 已实现 `DashboardController/summary` | 前端需确保走真实 API 而非 Mock |
 | A-02 | §7.3 `POST .../save-draft`、`submit`、`import`、`export` | 后端 `ForecastController` 已有近似路径；前端 `forecast.js` 大量路径仍为 `/forecast/{id}`、失败回落 Mock | **路径不一致 + Mock 回退**导致联调形同虚设 |
 | A-03 | §7.4 `approve`/`reject`/`adjust`、`history` | `ApprovalFlowController` 仅 `start`、`my` | 缺审批动作与历史 API |
-| A-04 | §7.5 `GET /api/customers` 等 | 实际多为 `api/basedata`、`api/org` 等 | **BRS §7 路径与实现不一致**，需在 BRS 更正或增加「实际路由附录」 |
+| A-04 | §7.5 `GET /api/customers` 等 | 实际多为 `api/basedata`、`api/org` 等 | **PRD §7 路径与实现不一致**，需在 PRD 更正或增加「实际路由附录」 |
 | A-05 | §4.3 邮件与模板 | 需核对 `EmailController` 是否在审批节点触发；`ApprovalFlow.vue` 偏流程配置 UI | 模板占位变量与实时触发待闭环 |
 
 ### 13.4 功能覆盖（界面/流程）
 
-| 编号 | BRS 依据 | 说明 |
+| 编号 | PRD 依据 | 说明 |
 |------|-----------|------|
 | F-01 | §4.1 Dashboard 客户维度汇总 | 需在 Dashboard 数据中确认「客户维度」与权限裁剪同时存在 |
 | F-02 | §4.2 复制上期、导入/导出 | 前端有部分导入导出演示；与后端多字段、周期规则对齐未完成 |
-| F-03 | §4.3「调整」四总量 + comments | 原型/prototype 有对话框；**主 Vue 应用 + API** 需对齐 BRS |
+| F-03 | §4.3「调整」四总量 + comments | 原型/prototype 有对话框；**主 Vue 应用 + API** 需对齐 PRD |
 | F-04 | §4.3 邮件模板在审批流程配置 | 审批流程配置页需增加「消息模板」管理能力（或与独立模块合并） |
 | F-05 | §9 M365 SSO、无本地密码 | Login 仍有开发测试本地登录；生产需仅 SSO 并下线密码存储（若存在） |
 
@@ -618,12 +589,12 @@ ProductHierarchy (
 
 ### 13.6 建议迭代顺序（供规划参考）
 
-1. **统一 Forecast/Approval API 契约**（路径、字段名、去 Mock）并与 BRS §7 互链。  
-2. **扩展 `ForecastRecord` + 周期实体**，满足填报与截止规则。  
-3. **补全审批流 API + ApprovalHistory + 调整动作**。  
-4. **权限矩阵**：MANAGER/VP_SALES/开票公司特别权限。  
-5. **Brand 与客户过滤**、产品五级与导入脚本。  
-6. **Dashboard** 多维度与权限一致。  
+1. **统一 Forecast/Approval API 契约**（路径、字段名、去 Mock）并与 PRD §7 互链。
+2. **扩展 `ForecastRecord` + 周期实体**，满足填报与截止规则。
+3. **补全审批流 API + ApprovalHistory + 调整动作**。
+4. **权限矩阵**：MANAGER/VP_SALES/开票公司特别权限。
+5. **Brand 与客户过滤**、产品五级与导入脚本。
+6. **Dashboard** 多维度与权限一致。
 
 ---
 
