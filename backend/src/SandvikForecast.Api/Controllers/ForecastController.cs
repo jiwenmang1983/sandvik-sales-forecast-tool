@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -395,6 +396,24 @@ public class ForecastController : ControllerBase
     [HttpPost("submit")]
     public async Task<ActionResult> SubmitForecast([FromBody] SubmitRequest req)
     {
+        // Extension window check
+        var period = await _periodRepo.GetByIdAsync(req.PeriodId);
+        if (period != null)
+        {
+            var now = DateTime.UtcNow;
+            var fillTimeEnded = now > period.FillTimeEnd;
+            var extensionActive = period.ExtensionEnd.HasValue && now < period.ExtensionEnd.Value;
+            if (fillTimeEnded && extensionActive)
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+                List<string> extUsers;
+                try { extUsers = JsonSerializer.Deserialize<List<string>>(period.ExtensionUsers ?? "[]") ?? new(); }
+                catch { extUsers = new List<string>(); }
+                if (!string.IsNullOrEmpty(userId) && !extUsers.Contains(userId))
+                    return BadRequest(new { success = false, message = "Submission deadline passed" });
+            }
+        }
+
         var records = await _recordRepo.GetAllAsync();
         var periodRecords = records.Where(r => r.ForecastPeriodId == req.PeriodId).ToList();
         foreach (var record in periodRecords)

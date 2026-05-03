@@ -73,4 +73,26 @@ export async function getApprovalCounts() {
   }
 }
 
-export default { getApprovals, getApprovalDetail, approveForecast, rejectForecast, getApprovalCounts }
+// Get approval history
+export async function getApprovalHistory(id) {
+  try {
+    const result = await request.get(`/approval-flow/${id}/history`)
+    if (result._mock) throw new Error('mock')
+    return result
+  } catch {
+    return { data: [], success: true }
+  }
+}
+
+// Adjust forecast amounts
+export async function adjustForecast(id, data) {
+  try {
+    const result = await request.post(`/approval-flow/adjust`, { ApprovalRequestId: id, ...data })
+    if (result._mock) throw new Error('mock')
+    return result
+  } catch {
+    return { success: true, message: '调整已记录（模拟数据）' }
+  }
+}
+
+export default { getApprovals, getApprovalDetail, approveForecast, rejectForecast, getApprovalCounts, getApprovalHistory, adjustForecast }

@@ -20,6 +20,7 @@ public class SandvikDbContext : DbContext
     public DbSet<LoginLog> LoginLogs => Set<LoginLog>();
     public DbSet<OpLog> OpLogs => Set<OpLog>();
     public DbSet<EmailQueueItem> EmailQueueItems => Set<EmailQueueItem>();
+    public DbSet<MessageTemplate> MessageTemplates => Set<MessageTemplate>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -107,6 +108,14 @@ public class SandvikDbContext : DbContext
             e.Property(h => h.CreatedAt).HasColumnName("created_at");
             e.Ignore(h => h.UpdatedAt);
             e.Ignore(h => h.IsDeleted);
+        });
+        modelBuilder.Entity<MessageTemplate>(e =>
+        {
+            e.ToTable("message_templates");
+            e.Property(m => m.Id).HasColumnType("int");
+            e.Property(m => m.Name).HasMaxLength(100);
+            e.Property(m => m.Subject).HasMaxLength(500);
+            e.Property(m => m.Placeholders).HasMaxLength(1000);
         });
     }
 }

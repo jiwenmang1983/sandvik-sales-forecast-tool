@@ -12,6 +12,7 @@ import FcVersion from '../views/FcVersion.vue'
 import SystemLog from '../views/SystemLog.vue'
 import LoginLog from '../views/LoginLog.vue'
 import ApprovalFlow from '../views/ApprovalFlow.vue'
+import TemplateManagement from '../views/TemplateManagement.vue'
 
 const routes = [
   {
@@ -50,7 +51,8 @@ const routes = [
       { path: 'fc-version', name: 'FcVersion', component: FcVersion },
       { path: 'login-log', name: 'LoginLog', component: LoginLog },
       { path: 'system-log', name: 'SystemLog', component: SystemLog },
-      { path: 'approval-flow', name: 'ApprovalFlow', component: ApprovalFlow }
+      { path: 'approval-flow', name: 'ApprovalFlow', component: ApprovalFlow },
+      { path: 'template-management', name: 'TemplateManagement', component: TemplateManagement }
     ]
   },
   {

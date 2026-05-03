@@ -170,6 +170,14 @@
               <BranchesOutlined class="menu-icon" />
               <span class="menu-label" v-if="!collapsed">审批流程配置</span>
             </div>
+            <div
+              class="menu-item"
+              :class="{ active: selectedKeys.includes('template-management') }"
+              @click="navigate('/template-management')"
+            >
+              <FileTextOutlined class="menu-icon" />
+              <span class="menu-label" v-if="!collapsed">邮件模板管理</span>
+            </div>
           </div>
         </div>
       </div>

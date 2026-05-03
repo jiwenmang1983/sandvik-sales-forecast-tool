@@ -211,6 +211,76 @@
             </span>
           </div>
         </div>
+
+        <!-- Detail View Tabs: Workflow / History -->
+        <div class="detail-view-tabs">
+          <button
+            :class="['detail-view-tab', { active: activeDetailTab === 'workflow' }]"
+            @click="activeDetailTab = 'workflow'"
+          >审批流程</button>
+          <button
+            :class="['detail-view-tab', { active: activeDetailTab === 'history' }]"
+            @click="loadHistory"
+          >历史记录</button>
+          <button
+            v-if="canIDoAction === 'approve'"
+            :class="['detail-view-tab', { active: activeDetailTab === 'adjust' }]"
+            @click="activeDetailTab = 'adjust'"
+          >调整金额</button>
+        </div>
+
+        <!-- Approval History Panel -->
+        <div v-if="activeDetailTab === 'history'" class="history-panel">
+          <div v-if="loadingHistory" class="history-loading">加载中...</div>
+          <div v-else-if="approvalHistory.length === 0" class="history-empty">暂无历史记录</div>
+          <div v-else class="history-list">
+            <div v-for="item in approvalHistory" :key="item.id" class="history-item">
+              <div class="history-item-header">
+                <span class="history-action-badge" :class="actionBadgeClass(item.action)">{{ item.action }}</span>
+                <span class="history-operator">{{ item.operatorName || '未知用户' }}</span>
+                <span class="history-time">{{ item.operatedAt }}</span>
+              </div>
+              <div v-if="item.comments" class="history-comments">备注：{{ item.comments }}</div>
+              <div v-if="item.action === 'ADJUST'" class="history-adjust-values">
+                <span v-if="item.adjustOrderAmount != null" class="adjust-chip">订单金额: ¥{{ Number(item.adjustOrderAmount).toLocaleString() }}</span>
+                <span v-if="item.adjustInvoiceAmount != null" class="adjust-chip">开票金额: ¥{{ Number(item.adjustInvoiceAmount).toLocaleString() }}</span>
+                <span v-if="item.adjustOrderQty != null" class="adjust-chip">订单数量: {{ item.adjustOrderQty }}</span>
+                <span v-if="item.adjustInvoiceQty != null" class="adjust-chip">开票数量: {{ item.adjustInvoiceQty }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Adjust Panel -->
+        <div v-if="activeDetailTab === 'adjust'" class="adjust-panel">
+          <div class="adjust-hint">填写调整值后提交，审批历史将记录本次调整。</div>
+          <div class="adjust-form-grid">
+            <div class="adjust-form-item">
+              <label class="form-label">调整订单金额</label>
+              <a-input-number v-model:value="adjustForm.adjustOrderAmount" style="width:100%" placeholder="0" :precision="2" />
+            </div>
+            <div class="adjust-form-item">
+              <label class="form-label">调整开票金额</label>
+              <a-input-number v-model:value="adjustForm.adjustInvoiceAmount" style="width:100%" placeholder="0" :precision="2" />
+            </div>
+            <div class="adjust-form-item">
+              <label class="form-label">调整订单数量</label>
+              <a-input-number v-model:value="adjustForm.adjustOrderQty" style="width:100%" placeholder="0" />
+            </div>
+            <div class="adjust-form-item">
+              <label class="form-label">调整开票数量</label>
+              <a-input-number v-model:value="adjustForm.adjustInvoiceQty" style="width:100%" placeholder="0" />
+            </div>
+            <div class="adjust-form-item adjust-form-full">
+              <label class="form-label">调整说明</label>
+              <a-textarea v-model:value="adjustForm.comments" :rows="2" placeholder="可选" />
+            </div>
+          </div>
+          <div class="adjust-actions">
+            <a-button type="primary" @click="handleAdjust">提交调整</a-button>
+            <a-button @click="activeDetailTab = 'workflow'">取消</a-button>
+          </div>
+        </div>
       </a-card>
 
       <!-- Summary Tabs -->
@@ -282,6 +352,7 @@ import {
   getPendingApprovals
 } from '../utils/workflow.js'
 import { fetchOrgChart } from '../utils/orgApi.js'
+import { getApprovalHistory, adjustForecast } from '../api/approval.js'
 
 // 邮件发送：前端演示用 mock，统一发到 Mark 的邮箱，标题区分角色
 // 后端实现时改为 API 调用真实发送
@@ -332,6 +403,17 @@ const rejectReason = ref('')
 const activeSummaryTab = ref('customer')
 const emailLogs = ref([])
 const userSelectRef = ref(null)
+const approvalHistory = ref([])
+const loadingHistory = ref(false)
+const activeDetailTab = ref('workflow') // 'workflow' | 'history' | 'adjust'
+const showAdjustModal = ref(false)
+const adjustForm = reactive({
+  adjustOrderAmount: null,
+  adjustInvoiceAmount: null,
+  adjustOrderQty: null,
+  adjustInvoiceQty: null,
+  comments: ''
+})
 
 const filter = reactive({
   fcName: '',
@@ -657,6 +739,56 @@ const formatTime = (isoStr) => {
   if (!isoStr) return ''
   const d = new Date(isoStr)
   return d.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+}
+
+const actionBadgeClass = (action) => ({
+  SUBMIT: 'badge-submit', APPROVE: 'badge-approve', REJECT: 'badge-reject', ADJUST: 'badge-adjust'
+}[action] || '')
+
+const loadHistory = async () => {
+  activeDetailTab.value = 'history'
+  if (!currentItem.value) return
+  loadingHistory.value = true
+  approvalHistory.value = []
+  try {
+    const res = await getApprovalHistory(currentItem.value.id)
+    if (res.success && res.data) {
+      approvalHistory.value = res.data
+    }
+  } catch {
+    // silent fail — stays empty
+  } finally {
+    loadingHistory.value = false
+  }
+}
+
+const handleAdjust = async () => {
+  if (!currentItem.value) return
+  const data = {
+    adjustOrderAmount: adjustForm.adjustOrderAmount,
+    adjustInvoiceAmount: adjustForm.adjustInvoiceAmount,
+    adjustOrderQty: adjustForm.adjustOrderQty,
+    adjustInvoiceQty: adjustForm.adjustInvoiceQty,
+    comments: adjustForm.comments || null
+  }
+  try {
+    const res = await adjustForecast(currentItem.value.id, data)
+    if (res.success) {
+      message.success('调整已记录')
+      adjustForm.adjustOrderAmount = null
+      adjustForm.adjustInvoiceAmount = null
+      adjustForm.adjustOrderQty = null
+      adjustForm.adjustInvoiceQty = null
+      adjustForm.comments = ''
+      showAdjustModal.value = false
+      activeDetailTab.value = 'history'
+      await loadHistory()
+    } else {
+      message.error(res.message || '调整失败')
+    }
+  } catch {
+    message.error('调整失败，请重试')
+  }
 }
 
 // 提交审批
@@ -1056,4 +1188,69 @@ const summaryData = {
 .reject-hint { color: #6B7280; margin-bottom: 16px; }
 .modal-form-item { margin-bottom: 8px; }
 .form-label { display: block; font-size: 12px; font-weight: 600; color: #6B7280; margin-bottom: 4px; }
+
+/* Detail View Tabs */
+.detail-view-tabs {
+  display: flex;
+  gap: 4px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed #E2E8F0;
+}
+.detail-view-tab {
+  padding: 8px 20px;
+  border: none;
+  background: none;
+  color: #64748B;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+.detail-view-tab:hover { background: #F1F5F9; color: #1F2937; }
+.detail-view-tab.active { background: #EFF6FF; color: #1D4ED8; font-weight: 600; }
+
+/* History Panel */
+.history-panel { padding: 8px 0; }
+.history-loading, .history-empty { font-size: 13px; color: #9CA3AF; text-align: center; padding: 24px 0; }
+.history-list { display: flex; flex-direction: column; gap: 10px; }
+.history-item {
+  padding: 12px 16px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+}
+.history-item-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.history-action-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  letter-spacing: 0.05em;
+}
+.badge-submit { background: #DBEAFE; color: #1D4ED8; }
+.badge-approve { background: #D1FAE5; color: #065F46; }
+.badge-reject { background: #FEE2E2; color: #991B1B; }
+.badge-adjust { background: #FEF3C7; color: #92400E; }
+.history-operator { font-size: 13px; font-weight: 600; color: #334155; }
+.history-time { font-size: 12px; color: #9CA3AF; margin-left: auto; }
+.history-comments { font-size: 12px; color: #6B7280; margin-top: 6px; }
+.history-adjust-values { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.adjust-chip {
+  font-size: 11px;
+  padding: 2px 8px;
+  background: #FEF3C7;
+  color: #92400E;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+/* Adjust Panel */
+.adjust-panel { padding: 8px 0; }
+.adjust-hint { font-size: 12px; color: #6B7280; margin-bottom: 16px; }
+.adjust-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.adjust-form-item { display: flex; flex-direction: column; gap: 4px; }
+.adjust-form-full { grid-column: 1 / -1; }
+.adjust-actions { display: flex; gap: 8px; margin-top: 16px; }
 </style>
