@@ -224,6 +224,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
+import { getForecastData, saveForecastData } from '@/api/forecast'
 
 const view = ref('periods')
 const currentRole = ref('销售')
@@ -302,7 +303,8 @@ const resetPeriodFilter = () => {
 }
 
 const selectPeriod = (p) => {
-  Object.assign(currentPeriod, { period: p.fcName, window: p.fillTime })
+  Object.assign(currentPeriod, { period: p.fcName, window: p.fillTime, id: p.id })
+  loadForecastData(p.id)
   view.value = 'workbench'
 }
 
@@ -310,13 +312,42 @@ const backToPeriods = () => {
   view.value = 'periods'
 }
 
-// Forecast data
-const forecastRows = ref([
-  { __id: 'r1', customer: '苏州精密工具', performance: '精密工具事业部', invoice: '山特维克商贸(上海)', region: '华东大区', pa: '刀具', subpa1: '标准刀具', subpa2: '2刃', data: { '2026-04': { qty: 100, inv: 80 }, '2026-05': { qty: 120, inv: 0 }, '2026-06': { qty: 150, inv: 0 } } },
-  { __id: 'r2', customer: '昆山智造装备', performance: '刀具事业部', invoice: '阿诺精密切削工具(成都)', region: '西南大区', pa: '钻头', subpa1: '普通钻头', subpa2: '3刃', data: { '2026-04': { qty: 200, inv: 150 }, '2026-05': { qty: 220, inv: 0 }, '2026-06': { qty: 250, inv: 0 } } },
-  { __id: 'r3', customer: '上海刃具', performance: '精密工具事业部', invoice: '武汉阿诺精密', region: '华东大区', pa: '铣刀', subpa1: '非标刀具', subpa2: '4刃', data: { '2026-04': { qty: 80, inv: 70 }, '2026-05': { qty: 90, inv: 0 }, '2026-06': { qty: 110, inv: 0 } } },
-  { __id: 'r4', customer: '杭州刀具科技', performance: '工业仪器事业部', invoice: '山特维克商贸(上海)', region: '华南大区', pa: '量具', subpa1: '标准刀具', subpa2: '2刃', data: { '2026-04': { qty: 150, inv: 120 }, '2026-05': { qty: 180, inv: 0 }, '2026-06': { qty: 200, inv: 0 } } }
-])
+// Forecast data (populated by loadForecastData from real API)
+const forecastRows = ref([])
+
+const loadForecastData = async (periodId) => {
+  try {
+    const result = await getForecastData(periodId)
+    if (result && result.data) {
+      forecastRows.value = result.data.map((r, idx) => ({
+        __id: r.id || r.Id || ('r' + idx),
+        customerId: r.customerId || r.CustomerId || '',
+        customer: r.customerName || r.CustomerName || '',
+        performanceId: r.performanceId || '',
+        performance: r.performance || r.Performance || '',
+        invoiceId: r.invoiceCompanyId || r.InvoiceCompanyId || '',
+        invoice: r.invoiceCompany || r.InvoiceCompany || '',
+        regionId: r.regionId || '',
+        region: r.region || r.Region || '',
+        productId: r.productId || r.ProductId || '',
+        pa: r.productName || r.ProductName || '',
+        subpa1: r.subPa1 || r.SubPa1 || '',
+        subpa2: r.subPa2 || r.SubPa2 || '',
+        data: {
+          [r.year + '-' + String(r.month).padStart(2, '0')]: {
+            qty: r.orderQty || 0,
+            orderAmount: r.orderAmount || 0,
+            inv: r.invoiceQty || 0,
+            invoiceAmount: r.invoiceAmount || 0,
+            notes: r.notes || ''
+          }
+        }
+      }))
+    }
+  } catch (err) {
+    console.error('Failed to load forecast data:', err)
+  }
+}
 
 const filteredRows = computed(() => {
   return forecastRows.value.filter(row => {
@@ -334,18 +365,18 @@ const filteredRows = computed(() => {
 const getColspan = computed(() => 7 + currentMonths.value.length * 6 + 1)
 
 const getQty = (row, m) => row.data[m]?.qty || 0
-const setQty = (row, m, e) => { if (!row.data[m]) row.data[m] = { qty: 0, inv: 0 }; row.data[m].qty = parseFloat(e.target.value) || 0 }
+const setQty = (row, m, e) => { if (!row.data[m]) row.data[m] = {}; row.data[m].qty = parseFloat(e.target.value) || 0 }
 const getInv = (row, m) => row.data[m]?.inv || 0
-const setInv = (row, m, e) => { if (!row.data[m]) row.data[m] = { qty: 0, inv: 0 }; row.data[m].inv = parseFloat(e.target.value) || 0 }
-const orderAmt = (row, m) => { const qty = getQty(row, m); return qty > 0 ? (qty * 1000).toLocaleString() : '-' }
-const orderPrice = (row, m) => { const qty = getQty(row, m); return qty > 0 ? '1,000' : '-' }
-const invAmt = (row, m) => { const inv = getInv(row, m); return inv > 0 ? (inv * 1000).toLocaleString() : '-' }
-const invPrice = (row, m) => { const inv = getInv(row, m); return inv > 0 ? '1,000' : '-' }
+const setInv = (row, m, e) => { if (!row.data[m]) row.data[m] = {}; row.data[m].inv = parseFloat(e.target.value) || 0 }
+const orderAmt = (row, m) => { const amt = row.data[m]?.orderAmount; return amt ? amt.toLocaleString() : '-' }
+const orderPrice = (row, m) => { const d = row.data[m]; return (d?.qty > 0 && d?.orderAmount) ? (d.orderAmount / d.qty).toFixed(2) : '-' }
+const invAmt = (row, m) => { const amt = row.data[m]?.invoiceAmount; return amt ? amt.toLocaleString() : '-' }
+const invPrice = (row, m) => { const d = row.data[m]; return (d?.inv > 0 && d?.invoiceAmount) ? (d.invoiceAmount / d.inv).toFixed(2) : '-' }
 
-const totalQty = (m) => filteredRows.value.reduce((s, r) => s + (getQty(r, m) || 0), 0)
-const totalInv = (m) => filteredRows.value.reduce((s, r) => s + (getInv(r, m) || 0), 0)
-const totalOrderAmt = (m) => { const t = totalQty(m); return t > 0 ? (t * 1000).toLocaleString() : '-' }
-const totalInvAmt = (m) => { const t = totalInv(m); return t > 0 ? (t * 1000).toLocaleString() : '-' }
+const totalQty = (m) => filteredRows.value.reduce((s, r) => s + (r.data[m]?.qty || 0), 0)
+const totalInv = (m) => filteredRows.value.reduce((s, r) => s + (r.data[m]?.inv || 0), 0)
+const totalOrderAmt = (m) => { const amt = filteredRows.value.reduce((s, r) => s + (r.data[m]?.orderAmount || 0), 0); return amt > 0 ? amt.toLocaleString() : '-' }
+const totalInvAmt = (m) => { const amt = filteredRows.value.reduce((s, r) => s + (r.data[m]?.invoiceAmount || 0), 0); return amt > 0 ? amt.toLocaleString() : '-' }
 
 const runQuery = () => { message.info('查询功能') }
 const resetFilters = () => { Object.keys(filters).forEach(k => filters[k] = '') }
@@ -469,36 +500,19 @@ const addNewRow = () => {
 const saveDraft = async () => {
   saving.value = true
   try {
-    // Transform forecastRows to API format
-    const records = []
-    forecastRows.value.forEach(row => {
-      currentMonths.value.forEach(m => {
-        if (row.data[m]?.qty > 0 || row.data[m]?.inv > 0) {
-          records.push({
-            customerId: row.customer,
-            invoiceCompanyId: row.invoice,
-            productId: row.pa,
-            year: parseInt(m.split('-')[0]),
-            month: parseInt(m.split('-')[1]),
-            orderAmount: row.data[m].qty * 1000
-          })
-        }
-      })
-    })
-    const token = localStorage.getItem('token')
-    const response = await fetch('/api/forecast/save-draft', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': token ? `Bearer ${token}` : ''
-      },
-      body: JSON.stringify({ PeriodId: currentPeriod.id || currentPeriod.period, records })
-    })
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}))
-      throw new Error(errData.message || '保存失败')
-    }
-    message.success('草稿保存成功 (' + records.length + ' 条记录)')
+    const records = forecastRows.value.map(row => ({
+      customerId: row.customerId || row.customer || '',
+      productId: row.productId || row.pa || '',
+      year: parseInt(currentMonths.value[0].split('-')[0]),
+      month: parseInt(currentMonths.value[0].split('-')[1]),
+      orderQty: row.data[currentMonths.value[0]]?.qty || 0,
+      orderAmount: row.data[currentMonths.value[0]]?.orderAmount || 0,
+      invoiceQty: row.data[currentMonths.value[0]]?.inv || 0,
+      invoiceAmount: row.data[currentMonths.value[0]]?.invoiceAmount || 0,
+      notes: row.data[currentMonths.value[0]]?.notes || ''
+    }))
+    await saveForecastData(currentPeriod.id, records)
+    message.success('草稿保存成功')
   } catch (err) {
     message.error('保存失败: ' + err.message)
   } finally {

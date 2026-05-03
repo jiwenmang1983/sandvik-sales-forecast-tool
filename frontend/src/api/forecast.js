@@ -34,13 +34,7 @@ export async function getPeriods(params) {
 
 // Get forecast data for a period
 export async function getForecastData(periodId) {
-  try {
-    const result = await request.get(`/forecast/${periodId}`)
-    if (result._mock) throw new Error('mock')
-    return result
-  } catch {
-    return { data: mockForecastData }
-  }
+  return request.get(`/forecast/${periodId}`)
 }
 
 // Save forecast data

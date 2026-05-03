@@ -56,9 +56,6 @@ public class ForecastController : ControllerBase
         return await GetRecords(periodId, year, month);
     }
 
-    /// <summary>
-    /// Route alias - returns only records created by the current user
-    /// </summary>
     [HttpGet("my")]
     public async Task<ActionResult> GetMyRecords([FromQuery] string? periodId, [FromQuery] int? year, [FromQuery] int? month)
     {
@@ -66,12 +63,22 @@ public class ForecastController : ControllerBase
         if (string.IsNullOrEmpty(userId))
             return Ok(new { success = true, data = new List<ForecastRecord>() });
 
-        var records = await _recordRepo.GetAllAsync();
-        var filtered = records.Where(r => r.CreatedByUserId == userId);
-        if (!string.IsNullOrEmpty(periodId)) filtered = filtered.Where(r => r.ForecastPeriodId == periodId);
-        if (year.HasValue) filtered = filtered.Where(r => r.Year == year.Value);
-        if (month.HasValue) filtered = filtered.Where(r => r.Month == month.Value);
-        return Ok(new { success = true, data = filtered.ToList() });
+        var dbUser = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+        if (dbUser == null)
+            return Ok(new { success = true, data = new List<ForecastRecord>() });
+
+        var userBrand = dbUser.Brand ?? "Sandvik";
+
+        // Brand filter: only records where the customer belongs to the user's brand
+        var records = await _db.ForecastRecords
+            .Where(r => r.CreatedByUserId == userId && !r.IsDeleted)
+            .Where(r => _db.Customers.Any(c => c.Id == r.CustomerId && c.Brand == userBrand))
+            .ToListAsync();
+
+        if (!string.IsNullOrEmpty(periodId)) records = records.Where(r => r.ForecastPeriodId == periodId).ToList();
+        if (year.HasValue) records = records.Where(r => r.Year == year.Value).ToList();
+        if (month.HasValue) records = records.Where(r => r.Month == month.Value).ToList();
+        return Ok(new { success = true, data = records });
     }
 
     /// <summary>
@@ -82,6 +89,21 @@ public class ForecastController : ControllerBase
     {
         var record = await _recordRepo.GetByIdAsync(id);
         if (record == null) return NotFound(new { success = false, message = "Record not found" });
+
+        // Brand check: only allow viewing records whose customer belongs to the user's brand
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!string.IsNullOrEmpty(userId))
+        {
+            var dbUser = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+            if (dbUser != null)
+            {
+                var userBrand = dbUser.Brand ?? "Sandvik";
+                var customer = await _db.Customers.FirstOrDefaultAsync(c => c.Id == record.CustomerId);
+                if (customer == null || customer.Brand != userBrand)
+                    return NotFound(new { success = false, message = "Record not found" });
+            }
+        }
+
         return Ok(new { success = true, data = record });
     }
 
@@ -99,6 +121,7 @@ public class ForecastController : ControllerBase
             return Ok(new { success = true, data = new List<ForecastRecord>() });
 
         var role = dbUser.Role?.ToUpperInvariant() ?? "";
+        var userBrand = dbUser.Brand ?? "Sandvik";
         var userRegion = "";
         
         // Get user's region from OrgNode if available
@@ -124,11 +147,11 @@ public class ForecastController : ControllerBase
 
             case "VP_SALES":
             case "REGION_DIRECTOR":
-                // See only records where Customer.Region matches their region
+                // See only records where Customer.Region matches their region AND Customer.Brand matches user's brand
                 if (!string.IsNullOrEmpty(userRegion))
                 {
                     var customerIds = _db.Customers
-                        .Where(c => c.Region == userRegion)
+                        .Where(c => c.Region == userRegion && c.Brand == userBrand)
                         .Select(c => c.Id)
                         .ToList();
                     filtered = allRecords.Where(r => customerIds.Contains(r.CustomerId)).ToList();
@@ -140,27 +163,43 @@ public class ForecastController : ControllerBase
                 break;
 
             case "DIRECTOR":
-                // See records from users in their org subtree
+                // See records from users in their org subtree AND where Customer.Brand matches user's brand
                 var subtreeUserIds = await GetOrgSubtreeUserIdsAsync(dbUser.Id);
                 if (subtreeUserIds.Any())
                 {
-                    filtered = allRecords.Where(r => subtreeUserIds.Contains(r.CreatedByUserId)).ToList();
+                    var brandCustomerIds = _db.Customers
+                        .Where(c => c.Brand == userBrand)
+                        .Select(c => c.Id)
+                        .ToHashSet();
+                    filtered = allRecords.Where(r => subtreeUserIds.Contains(r.CreatedByUserId) && brandCustomerIds.Contains(r.CustomerId)).ToList();
                 }
                 else
                 {
-                    filtered = allRecords.Where(r => r.CreatedByUserId == userIdClaim).ToList();
+                    var myBrandCustomerIds = _db.Customers
+                        .Where(c => c.Brand == userBrand)
+                        .Select(c => c.Id)
+                        .ToHashSet();
+                    filtered = allRecords.Where(r => r.CreatedByUserId == userIdClaim && myBrandCustomerIds.Contains(r.CustomerId)).ToList();
                 }
                 break;
 
             case "MANAGER":
             case "SALES":
-                // See only their own records
-                filtered = allRecords.Where(r => r.CreatedByUserId == userIdClaim).ToList();
+                // See only their own records where Customer.Brand matches their brand
+                var userCustomerIds = _db.Customers
+                    .Where(c => c.Brand == userBrand)
+                    .Select(c => c.Id)
+                    .ToHashSet();
+                filtered = allRecords.Where(r => r.CreatedByUserId == userIdClaim && userCustomerIds.Contains(r.CustomerId)).ToList();
                 break;
 
             default:
-                // Unknown role - show only their own records as safety
-                filtered = allRecords.Where(r => r.CreatedByUserId == userIdClaim).ToList();
+                // Unknown role - show only their own records where Customer.Brand matches their brand as safety
+                var safeCustomerIds = _db.Customers
+                    .Where(c => c.Brand == userBrand)
+                    .Select(c => c.Id)
+                    .ToHashSet();
+                filtered = allRecords.Where(r => r.CreatedByUserId == userIdClaim && safeCustomerIds.Contains(r.CustomerId)).ToList();
                 break;
         }
 
@@ -229,6 +268,16 @@ public class ForecastController : ControllerBase
         if (string.IsNullOrEmpty(userId))
             return Unauthorized(new { success = false, message = "User not authenticated" });
 
+        // Brand check: only allow creating records for customers of the user's brand
+        var dbUser = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+        if (dbUser == null)
+            return Unauthorized(new { success = false, message = "User not authenticated" });
+
+        var userBrand = dbUser.Brand ?? "Sandvik";
+        var customer = await _db.Customers.FirstOrDefaultAsync(c => c.Id == req.CustomerId);
+        if (customer == null || customer.Brand != userBrand)
+            return BadRequest(new { success = false, message = "Invalid customer for this brand" });
+
         // Check for duplicate record (same ForecastPeriodId, CustomerId, ProductId)
         var existingRecord = await _db.ForecastRecords
             .FirstOrDefaultAsync(r =>
@@ -272,6 +321,21 @@ public class ForecastController : ControllerBase
     {
         var record = await _recordRepo.GetByIdAsync(id);
         if (record == null) return NotFound(new { success = false, message = "Record not found" });
+
+        // Brand check
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!string.IsNullOrEmpty(userId))
+        {
+            var dbUser = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+            if (dbUser != null)
+            {
+                var userBrand = dbUser.Brand ?? "Sandvik";
+                var customer = await _db.Customers.FirstOrDefaultAsync(c => c.Id == record.CustomerId);
+                if (customer == null || customer.Brand != userBrand)
+                    return NotFound(new { success = false, message = "Record not found" });
+            }
+        }
+
         record.OrderQty = req.OrderQty;
         record.OrderAmount = req.OrderAmount;
         record.InvoiceQty = req.InvoiceQty;
@@ -285,6 +349,24 @@ public class ForecastController : ControllerBase
     [HttpDelete("records/{id}")]
     public async Task<ActionResult> DeleteRecord(string id)
     {
+        // Brand check
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!string.IsNullOrEmpty(userId))
+        {
+            var dbUser = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+            if (dbUser != null)
+            {
+                var record = await _recordRepo.GetByIdAsync(id);
+                if (record != null)
+                {
+                    var userBrand = dbUser.Brand ?? "Sandvik";
+                    var customer = await _db.Customers.FirstOrDefaultAsync(c => c.Id == record.CustomerId);
+                    if (customer == null || customer.Brand != userBrand)
+                        return NotFound(new { success = false, message = "Record not found" });
+                }
+            }
+        }
+
         await _recordRepo.DeleteAsync(id);
         return Ok(new { success = true, message = "Deleted" });
     }
@@ -299,7 +381,21 @@ public class ForecastController : ControllerBase
     [HttpGet("export")]
     public async Task<ActionResult> ExportData([FromQuery] string? periodId)
     {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userBrand = "Sandvik";
+        if (!string.IsNullOrEmpty(userIdClaim))
+        {
+            var dbUser = await _db.Users.FirstOrDefaultAsync(u => u.Id == userIdClaim && u.IsActive);
+            if (dbUser != null) userBrand = dbUser.Brand ?? "Sandvik";
+        }
+
+        var brandCustomerIds = _db.Customers
+            .Where(c => c.Brand == userBrand)
+            .Select(c => c.Id)
+            .ToHashSet();
+
         var records = await _recordRepo.GetAllAsync();
+        records = records.Where(r => brandCustomerIds.Contains(r.CustomerId)).ToList();
         if (!string.IsNullOrEmpty(periodId))
             records = records.Where(r => r.ForecastPeriodId == periodId).ToList();
 
@@ -316,9 +412,25 @@ public class ForecastController : ControllerBase
     public async Task<ActionResult> ImportData([FromBody] List<ImportRecordRequest> records)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(new { success = false, message = "User not authenticated" });
+
+        var dbUser = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+        if (dbUser == null)
+            return Unauthorized(new { success = false, message = "User not authenticated" });
+
+        var userBrand = dbUser.Brand ?? "Sandvik";
+        var brandCustomerIds = _db.Customers
+            .Where(c => c.Brand == userBrand)
+            .Select(c => c.Id)
+            .ToHashSet();
+
         var imported = 0;
         foreach (var req in records)
         {
+            if (!brandCustomerIds.Contains(req.CustomerId))
+                continue; // Skip records not matching user's brand
+
             var record = new ForecastRecord
             {
                 ForecastPeriodId = req.ForecastPeriodId,
@@ -348,9 +460,22 @@ public class ForecastController : ControllerBase
         if (string.IsNullOrEmpty(userId))
             return Unauthorized(new { success = false, message = "User not authenticated" });
 
+        var dbUser = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+        if (dbUser == null)
+            return Unauthorized(new { success = false, message = "User not authenticated" });
+
+        var userBrand = dbUser.Brand ?? "Sandvik";
+        var brandCustomerIds = _db.Customers
+            .Where(c => c.Brand == userBrand)
+            .Select(c => c.Id)
+            .ToHashSet();
+
         int saved = 0;
         foreach (var r in req.Records)
         {
+            if (!brandCustomerIds.Contains(r.CustomerId))
+                continue; // Skip records not matching user's brand
+
             var existing = await _db.ForecastRecords
                 .FirstOrDefaultAsync(x =>
                     x.ForecastPeriodId == req.PeriodId &&
@@ -396,6 +521,19 @@ public class ForecastController : ControllerBase
     [HttpPost("submit")]
     public async Task<ActionResult> SubmitForecast([FromBody] SubmitRequest req)
     {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+        var userBrand = "Sandvik";
+        if (!string.IsNullOrEmpty(userIdClaim))
+        {
+            var dbUser = await _db.Users.FirstOrDefaultAsync(u => u.Id == userIdClaim && u.IsActive);
+            if (dbUser != null) userBrand = dbUser.Brand ?? "Sandvik";
+        }
+
+        var brandCustomerIds = _db.Customers
+            .Where(c => c.Brand == userBrand)
+            .Select(c => c.Id)
+            .ToHashSet();
+
         // Extension window check
         var period = await _periodRepo.GetByIdAsync(req.PeriodId);
         if (period != null)
@@ -405,22 +543,20 @@ public class ForecastController : ControllerBase
             var extensionActive = period.ExtensionEnd.HasValue && now < period.ExtensionEnd.Value;
             if (fillTimeEnded && extensionActive)
             {
-                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
                 List<string> extUsers;
                 try { extUsers = JsonSerializer.Deserialize<List<string>>(period.ExtensionUsers ?? "[]") ?? new(); }
                 catch { extUsers = new List<string>(); }
-                if (!string.IsNullOrEmpty(userId) && !extUsers.Contains(userId))
+                if (!string.IsNullOrEmpty(userIdClaim) && !extUsers.Contains(userIdClaim))
                     return BadRequest(new { success = false, message = "Submission deadline passed" });
             }
         }
 
-        var records = await _recordRepo.GetAllAsync();
-        var periodRecords = records.Where(r => r.ForecastPeriodId == req.PeriodId).ToList();
+        var allRecords = await _db.ForecastRecords.Where(r => r.ForecastPeriodId == req.PeriodId).ToListAsync();
+        var periodRecords = allRecords.Where(r => brandCustomerIds.Contains(r.CustomerId)).ToList();
         foreach (var record in periodRecords)
         {
             record.Status = "Submitted";
         }
-        // Note: In a real app, you'd create an approval workflow record here
         return Ok(new { success = true, submittedCount = periodRecords.Count });
     }
 }
