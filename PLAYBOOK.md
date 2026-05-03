@@ -143,7 +143,30 @@ ANTHROPIC_BASE_URL="https://api.minimaxi.com/anthropic" \
 
 ---
 
-### 5.3 小Q 调度方式（独立 Agent vs Subagent）
+### 5.5 调度限制（Session 无记忆）
+
+> ⚠️ **已知限制，记录于 2026-05-04**
+
+**CC 调度：**
+- 每次 `claude --print -p "..."` 都是全新 session
+- 单次 `--max-turns=N` 内有多轮对话（CC 记得上下文）
+- 跨调用之间**不记得**上次做了什么
+- **影响：** 需要传递完整上下文（文件路径、之前尝试过的方案、卡点位置）
+
+**小Q 调度（tmux spawn 方式）：**
+- 每次 `tmux new-session -d "hermes -p slh-bot chat -q '...'"` 都是全新 session
+- 单次调用内有多轮对话（小Q 记得上下文）
+- 跨调用之间**不记得**上次做了什么
+- **影响：** 多轮测试场景需要任务文件传递上下文
+
+**适合的工作方式：**
+- ✅ 单次完成的任务（修 bug、加字段）
+- ✅ 多轮但分次独立调用（每次传完整上下文）
+- ⚠️ 需要小Q 持续跟踪多个测试项 → 需要任务清单文件传递
+
+---
+
+### 5.6 小Q 调度方式（独立 Agent vs Subagent）
 
 > ⚠️ 2026-05-04 新认知：小Q 应为独立 Hermes Agent，不是我内部的 subagent。
 
@@ -168,20 +191,23 @@ Mark ←→ Hermes（小P）←→ 小Q（独立Agent）
 
 ---
 
-## 6. 小Q 调度流程（探索中）
+## 6. 小Q 调度流程（tmux spawn 方式）
 
-> ⚠️ 2026-05-04 注：小Q 应为独立 Agent，`delegate_task` 仅为当前过渡方案。
+> ⚠️ **当前实现（2026-05-04）：** 使用 `tmux new-session -d` 派发任务到 slh-bot（暂代小Q）
+> ⚠️ **长期目标：** 小Q 作为独立 hermes-agent 进程，有自己的 Feishu 身份
 
 ```
 小P 验收 CC 开发成果
     ↓
-小P 通过 delegate_task 调度小Q（subagent）
+小P 写任务到文件（如 /tmp/xiaoq_task.md）
     ↓
-小Q 执行功能测试（浏览器 + API）
+小P 执行：tmux new-session -d -s <session> "hermes -p slh-bot chat -q 'read /tmp/xiaoq_task.md → 测试 → 写 /tmp/xiaoq_result.md'"
     ↓
-小Q 返回测试报告（PASS/FAIL + 详情）
+小Q（slh-bot 暂代）后台执行，非阻塞
     ↓
-小P 决策：
+小Q 执行完成后写 /tmp/xiaoq_result.md
+    ↓
+小P 读取结果 → 决策：
   - PASS → 更新 ISSUE_LOG（标记 Resolved）+ WBS（标记 ✅）+ 通知 Mark
   - FAIL → 打回 CC 修复，循环
 ```
