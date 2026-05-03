@@ -48,6 +48,15 @@ type: feat | fix | docs | refactor | test | chore
 
 > 禁止空 commit，禁止无意义的 WIP commit。
 
+### Commit 策略（A+B 双轨）
+
+| 方案 | 触发条件 | 动作 |
+|------|---------|------|
+| **A（主动）** | 较大功能开发完成 + 测试通过后 | Hermes 主动 commit + push，通知 Mark |
+| **B（自动兜底）** | 每日 18:30 cron | Build 验证通过 → commit + push；失败则通知 Mark |
+
+> Build 验证失败时**不 commit**，静待下次机会。Force-push 必须经 Mark 审批。
+
 ---
 
 ## 4. PR 流程
@@ -57,6 +66,12 @@ type: feat | fix | docs | refactor | test | chore
 ```
 
 > **Mark 说"推送 master"时，直接 push master，不走 PR 流程。**
+
+### Push 规则
+
+- **默认使用普通 `git push`**，不用 force-push
+- 如需 force-push（如清理垃圾 commit），必须先发飞书 DM 给 Mark 审批，拿到确认后才能执行
+- Push 失败（远程有新 commit）时，发飞书通知 Mark，不自动 merge
 
 ### Review 分组
 
@@ -139,7 +154,18 @@ WBS 文件（`docs/WBS.md`）记录所有开发任务和测试任务，格式：
 | 小Q 测试完成 | 小P | 更新 WBS 测试任务状态，commit + push |
 | PRD 有技术错误 | 小P | 通知 Mark 确认后修改 |
 
-### 6.4 两组任务分配
+### 6.4 文档自动同步（Doc-Sync）
+
+每 30 分钟自动运行一次，检查以下联动：
+
+| 检测条件 | 自动动作 |
+|---------|---------|
+| PRD.md 有新 commit | Hermes 分析 diff → 更新 WBS 任务 + TEST_SUITE 用例 → 通知 Mark |
+| WBS.md 有新状态变化 | Hermes 同步更新 TEST_SUITE 测试任务状态 → 通知 Mark |
+| 代码有未commit改动 + build 通过 | 自动 commit + push |
+| 代码有未commit改动 + build 失败 | 静默跳过，不 commit |
+
+### 6.5 两组任务分配
 
 | PRD 变更内容 | 默认负责组 |
 |------------|---------|
@@ -149,7 +175,7 @@ WBS 文件（`docs/WBS.md`）记录所有开发任务和测试任务，格式：
 | 产品层级、数据导入脚本 | 小A组 |
 | 跨模块改动 | Hermes 判断主责 |
 
-### 6.5 小P变更感知
+### 6.6 小P变更感知
 
 每次对话开始前，小P自动检查 `origin/master` 的 PRD commit log：
 - 有新 commit → 提取 diff 内容
