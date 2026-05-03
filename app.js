@@ -257,6 +257,163 @@ const productHierarchy = {
         "自动补偿": ["机械补偿", "数字补偿"]
       }
     }
+  },
+  // XR Brand Products
+  XR_Products: {
+    // AH_INSERT brand
+    "AH_INSERT 标准刀片-Loong": { "车Turning": { "负角刀片Negative turning": ["规格型号"] } },
+    "AH_INSERT 标准刀片-干将通用": { "铣Milling": { "正角刀片positive turning": ["规格型号"] } },
+    "AH_INSERT 标准刀体-Loong": { "钻Drilling": { "重载Heavy machining": ["规格型号"] } },
+    "AH_INSERT 标准刀体-干将通用": { "切断切槽Parting&Grooving": { "小零件Small part machining": ["规格型号"] } },
+    "AH_INSERT 贸易": { "螺纹Threading": { "毛坯Blank": ["规格型号"] } },
+    "AH_INSERT 非标": { "镗削Boring": { "面铣Face milling": ["规格型号"] } },
+    "AH_INSERT 配件": { "配件Spare parts": { "方肩铣Shoulder milling": ["规格型号"] } },
+    "AH_INSERT 杂项": { "高级切削材料Advanced material": { "仿形铣Profile milling": ["规格型号"] } },
+    "AH_INSERT 其他Others": { "其他Others": { "快进给High feed milling": ["规格型号"] } },
+    // KLT INSERT brand
+    "KLT 标准刀片": { "车Turning": { "负角刀片Negative turning": ["规格型号"] } },
+    "KLT 非标刀片": { "铣Milling": { "正角刀片positive turning": ["规格型号"] } },
+    "KLT 贸易": { "钻Drilling": { "重载Heavy machining": ["规格型号"] } },
+    "KLT 配件": { "切断切槽Parting&Grooving": { "小零件Small part machining": ["规格型号"] } },
+    "KLT 杂项": { "螺纹Threading": { "毛坯Blank": ["规格型号"] } },
+    "KLT 其他Others": { "其他Others": { "快进给High feed milling": ["规格型号"] } },
+    // ROUND brand
+    "ROUND 标准Standard": {
+      "钻头Drill": {
+        "麻花钻Twist drill": ["规格型号"],
+        "直槽钻Straight flute drill": ["规格型号"],
+        "深孔直槽钻Deep hole straight flute drill": ["规格型号"],
+        "中心钻Center drill": ["规格型号"],
+        "定心钻Spot drill / Pilot drill": ["规格型号"],
+        "倒角钻Chamfer drill": ["规格型号"],
+        "扩孔钻Reaming drill": ["规格型号"],
+        "深孔扩孔钻Deep hole reaming drill": ["规格型号"],
+        "波刃钻Wave edge drill": ["规格型号"],
+        "深孔波刃钻Deep hole wave flute drill": ["规格型号"],
+        "多槽钻Multi-flute drill": ["规格型号"],
+        "成型钻Form drill": ["规格型号"],
+        "强力钻Rock bit drill": ["规格型号"],
+        "深孔钻Deep hole drill": ["规格型号"],
+        "沉孔钻Countersink drill": ["规格型号"],
+        "平底钻Flat bottom drill": ["规格型号"],
+        "引导钻Pilot drill": ["规格型号"],
+        "深孔引导钻Deep hole pilot drill": ["规格型号"],
+        "三刃钻3-flute drill": ["规格型号"],
+        "枪钻Gun drill": ["规格型号"],
+        "扁钻Spade drill": ["规格型号"],
+        "直槽扩孔钻Straight flute reaming drill": ["规格型号"],
+        "强力三刃钻3-flute rock bit drill": ["规格型号"],
+        "三尖钻Three-point drill": ["规格型号"],
+        "阶梯钻Step drill": ["规格型号"],
+        "多槽阶梯钻Multi-flute step drill": ["规格型号"],
+        "可换头钻头Exchangeable head drill head": ["规格型号"],
+        "可换头钻杆Exchangeable head drill body": ["规格型号"]
+      },
+      "铣刀End mill": {
+        "平铣刀Flat end mill": ["规格型号"],
+        "球头铣刀Ball nose end mill": ["规格型号"],
+        "圆鼻刀Corner radius end mill": ["规格型号"],
+        "成型铣刀Form end mill": ["规格型号"],
+        "T型铣刀T-slot end mill": ["规格型号"],
+        "高硬铣刀Hardness end mill": ["规格型号"],
+        "插铣刀Plunge end mill": ["规格型号"],
+        "波刃铣刀Wave edge end mill": ["规格型号"],
+        "倒角铣刀Chamfer end mill": ["规格型号"],
+        "螺纹铣刀Thread end mill": ["规格型号"],
+        "燕尾铣刀Dovetail end mill": ["规格型号"],
+        "反倒角铣刀Back chamfer end mill": ["规格型号"],
+        "单刃铣刀Single-flute end mill": ["规格型号"],
+        "正反倒角铣刀Double chamfer mill": ["规格型号"],
+        "内R铣刀Concave radius end mill": ["规格型号"],
+        "锯片铣刀Slitting saw": ["规格型号"],
+        "鼓形铣刀Barrel end mill": ["规格型号"],
+        "快进给铣刀High feed end mill": ["规格型号"],
+        "漩涡铣刀Scroll rotor end mill": ["规格型号"],
+        "菠萝铣刀Pineapple end mill": ["规格型号"],
+        "玉米铣刀Long edge end mill": ["规格型号"],
+        "钻铣刀Drill end mill": ["规格型号"],
+        "雕刻铣刀Engraving end mill": ["规格型号"]
+      },
+      "铰刀Reamer": {
+        "常规铰刀Reamer": ["规格型号"],
+        "球头铰刀Ball nose reamer": ["规格型号"],
+        "成型铰刀Form reamer": ["规格型号"],
+        "直槽铰刀Straight flute reamer": ["规格型号"],
+        "深孔铰刀Deep hole reamer": ["规格型号"],
+        "深孔钻铰刀Deep hole drill reamer": ["规格型号"],
+        "铣铰刀Mill reamer": ["规格型号"],
+        "铰刀刀头Exchangeable head reamer": ["规格型号"]
+      },
+      "丝锥Tap": {
+        "定心钻Spot drill / Pilot drill": ["规格型号"]
+      }
+    },
+    "ROUND 非标Special": {
+      "铣刀End mill": {
+        "直槽钻Straight flute drill": ["规格型号"],
+        "成型铣刀Form end mill": ["规格型号"],
+        "高硬铣刀Hardness end mill": ["规格型号"],
+        "波刃铣刀Wave edge end mill": ["规格型号"],
+        "雕刻铣刀Engraving end mill": ["规格型号"]
+      }
+    },
+    "ROUND 贸易Trade": {
+      "铰刀Reamer": {
+        "深孔直槽钻Deep hole straight flute drill": ["规格型号"],
+        "深孔扩孔钻Deep hole reaming drill": ["规格型号"]
+      }
+    },
+    "ROUND 配件Spare parts": {
+      "滚刀Hub": {
+        "中心钻Center drill": ["规格型号"]
+      }
+    },
+    // PCD brand
+    "PCD 标准PCD/CBN刀片": {
+      "钻Drilling": { "焊接PCD钻Brazed PCD tip drill": ["规格型号"] },
+      "铰削Rerming": { "PCD整头钻PCD head drill": ["规格型号"] },
+      "铣Milling": { "导条铰刀Reamer with guide blade": ["规格型号"] },
+      "镗削Boring": { "普通铰刀Traditional reamer": ["规格型号"] },
+      "车Turning": { "面铣Face milling": ["规格型号"] },
+      "切断切槽Parting&Grooving": { "槽刀片Parting&Grooving insert": ["规格型号"] },
+      "螺纹Threading": { "螺纹车刀片Threading insert": ["规格型号"] }
+    },
+    "PCD 新刀标准PCD/CBN刀具": {
+      "钻Drilling": { "PCD整头钻PCD head drill": ["规格型号"] },
+      "铣Milling": { "PCD整头铣刀PCD head end mill": ["规格型号"] },
+      "切断切槽Parting&Grooving": { "槽刀片Parting&Grooving insert": ["规格型号"] }
+    },
+    "PCD 换片标准PCD/CBN刀具": {
+      "车Turning": { "面铣Face milling": ["规格型号"] },
+      "切断切槽Parting&Grooving": { "可转位PCD镗刀Indexable insert boring tool": ["规格型号"] }
+    },
+    "PCD 非标PCD/CBN刀片": {
+      "铣Milling": { "仿形铣Profile milling": ["规格型号"] },
+      "切断切槽Parting&Grooving": { "槽铣Slot milling": ["规格型号"] },
+      "螺纹Threading": { "螺纹铣Thread milling": ["规格型号"] }
+    },
+    "PCD 修磨标准PCD/CBN刀具": {
+      "镗削Boring": { "PCD焊片镗刀Brazed boring tool": ["规格型号"] },
+      "车Turning": { "PCD刀片Insert": ["规格型号"] },
+      "切断切槽Parting&Grooving": { "槽刀杆Parting&Grooving soft tools": ["规格型号"] }
+    },
+    "PCD 贸易": {
+      "配件Spare parts": { "配件Spare parts": ["规格型号"] }
+    },
+    "PCD 配件": {
+      "其他Others": { "其他Others": ["规格型号"] }
+    },
+    // Coating
+    "涂层 刀具涂层": { "涂层Coating": { "刀具涂层Tool coating": ["规格型号"] } },
+    "涂层 零部件涂层": { "涂层Coating": { "零部件涂层Component coating": ["规格型号"] } },
+    "涂层 模具涂层": { "涂层Coating": { "模具涂层Mold coating": ["规格型号"] } },
+    // Medical
+    "医疗 骨科": { "医疗Medical": { "骨科Orthopedics": ["规格型号"] } },
+    "医疗 牙科": { "医疗Medical": { "牙科Dentistry": ["规格型号"] } },
+    "医疗 其他": { "医疗Medical": { "其他Others": ["规格型号"] } },
+    // Multiple
+    "多类别 刀具柜": { "多类别Multiple": { "刀具柜Tool cabinet": ["规格型号"] } },
+    "多类别 其他": { "多类别Multiple": { "其他Others": ["规格型号"] } }
   }
 };
 

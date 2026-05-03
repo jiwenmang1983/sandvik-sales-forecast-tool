@@ -354,7 +354,15 @@
           </div>
           <div class="filter-item">
             <span class="filter-label">Sub PA-2</span>
-            <select class="filter-select" v-model="filters.subpa2" :disabled="!filters.subpa1"><option value="">全部</option><option v-for="s in subpa2Options" :key="s" :value="s">{{ s }}</option></select>
+            <select class="filter-select" v-model="filters.subpa2" :disabled="!filters.subpa1" @change="syncSubPa2"><option value="">全部</option><option v-for="s in subpa2Options" :key="s" :value="s">{{ s }}</option></select>
+          </div>
+          <div class="filter-item">
+            <span class="filter-label">Sub PA-3</span>
+            <select class="filter-select" v-model="filters.subpa3" :disabled="!filters.subpa2" @change="syncSubPa3"><option value="">全部</option><option v-for="s in subpa3Options" :key="s" :value="s">{{ s }}</option></select>
+          </div>
+          <div class="filter-item">
+            <span class="filter-label">Sub PA-4</span>
+            <select class="filter-select" v-model="filters.subpa4" :disabled="!filters.subpa3"><option value="">全部</option><option v-for="s in subpa4Options" :key="s" :value="s">{{ s }}</option></select>
           </div>
         </div>
 
@@ -379,6 +387,8 @@
                 <th class="left compact-hidden">PA</th>
                 <th class="left compact-hidden">Sub PA-1</th>
                 <th class="left compact-hidden">Sub PA-2</th>
+                <th class="left compact-hidden">Sub PA-3</th>
+                <th class="left compact-hidden">Sub PA-4</th>
                 <th v-for="m in currentMonths" :key="m" :colspan="6" class="month-colgroup-title">{{ getYearMonth(m, currentPeriod.yearMap) }}</th>
                 <th>操作</th>
               </tr>
@@ -391,6 +401,8 @@
                 <th class="left">PA</th>
                 <th class="left">Sub PA-1</th>
                 <th class="left">Sub PA-2</th>
+                <th class="left">Sub PA-3</th>
+                <th class="left">Sub PA-4</th>
                 <th v-for="m in currentMonths" :key="m + '_c'" :colspan="6" class="month-colgroup-title">{{ getYearMonth(m, currentPeriod.yearMap) }}</th>
                 <th>操作</th>
               </tr>
@@ -398,10 +410,10 @@
               <tr>
                 <template v-if="viewMode === 'detail'">
                   <th></th><th></th><th></th><th></th><th></th>
-                  <th class="compact-hidden"></th><th class="compact-hidden"></th><th class="compact-hidden"></th>
+                  <th class="compact-hidden"></th><th class="compact-hidden"></th><th class="compact-hidden"></th><th class="compact-hidden"></th><th class="compact-hidden"></th>
                 </template>
                 <template v-if="viewMode === 'compact'">
-                  <th></th><th></th><th class="compact-hidden"></th><th></th><th></th><th></th><th></th>
+                  <th></th><th></th><th class="compact-hidden"></th><th></th><th></th><th></th><th></th><th></th><th></th>
                 </template>
                 <th v-for="m in currentMonths" :key="m + '_oq'" class="left">订单数量</th>
                 <th v-for="m in currentMonths" :key="m + '_oa'" class="left">订单金额</th>
@@ -424,6 +436,8 @@
                   <td class="left compact-hidden">{{ row.pa }}</td>
                   <td class="left compact-hidden">{{ row.subpa1 }}</td>
                   <td class="left compact-hidden">{{ row.subpa2 }}</td>
+                  <td class="left compact-hidden">{{ row.subpa3 }}</td>
+                  <td class="left compact-hidden">{{ row.subpa4 }}</td>
                   <td v-for="m in currentMonths" :key="m" class="editable"><input type="number" :value="getQty(row, m)" @change="setQty(row, m, $event)" placeholder="0"></td>
                   <td v-for="m in currentMonths" :key="m + '_oq'">{{ orderAmt(row, m) }}</td>
                   <td v-for="m in currentMonths" :key="m + '_op'">{{ orderPrice(row, m) }}</td>
@@ -441,6 +455,8 @@
                   <td class="left">{{ row.pa }}</td>
                   <td class="left">{{ row.subpa1 }}</td>
                   <td class="left">{{ row.subpa2 }}</td>
+                  <td class="left">{{ row.subpa3 }}</td>
+                  <td class="left">{{ row.subpa4 }}</td>
                   <td v-for="m in currentMonths" :key="m" class="editable"><input type="number" :value="getQty(row, m)" @change="setQty(row, m, $event)" placeholder="0"></td>
                   <td v-for="m in currentMonths" :key="m + '_oq'">{{ orderAmt(row, m) }}</td>
                   <td v-for="m in currentMonths" :key="m + '_op'">{{ orderPrice(row, m) }}</td>
@@ -451,7 +467,7 @@
                 </template>
               </tr>
               <tr v-if="filteredRows.length === 0">
-                <td :colspan="viewMode === 'detail' ? 8 + currentMonths.length * 6 : 7 + currentMonths.length * 6">
+                <td :colspan="viewMode === 'detail' ? 11 + currentMonths.length * 6 : 10 + currentMonths.length * 6">
                   <div class="empty-state">
                     <div class="empty-state-icon">📋</div>
                     <p>暂无数据，请添加或上传预测数据</p>
@@ -528,15 +544,27 @@
           </div>
           <div class="form-group">
             <label class="form-label">Sub PA-2</label>
-            <select class="form-select" v-model="newRow.subpa2" :disabled="!newRow.subpa1">
+            <select class="form-select" v-model="newRow.subpa2" :disabled="!newRow.subpa1" @change="onSubpa2Change">
               <option value="">请选择</option>
               <option v-for="s in modalSubpa2Options" :key="s" :value="s">{{ s }}</option>
             </select>
           </div>
         </div>
         <div class="form-row-3">
-          <div class="form-group" style="visibility:hidden;"><div class="form-label">占位</div></div>
-          <div class="form-group" style="visibility:hidden;"><div class="form-label">占位</div></div>
+          <div class="form-group">
+            <label class="form-label">Sub PA-3（产品名称）</label>
+            <select class="form-select" v-model="newRow.subpa3" :disabled="!newRow.subpa2" @change="onSubpa3Change">
+              <option value="">请选择</option>
+              <option v-for="s in modalSubpa3Options" :key="s" :value="s">{{ s }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sub PA-4（产品型号）</label>
+            <select class="form-select" v-model="newRow.subpa4" :disabled="!newRow.subpa3">
+              <option value="">请选择</option>
+              <option v-for="s in modalSubpa4Options" :key="s" :value="s">{{ s }}</option>
+            </select>
+          </div>
           <div class="form-group" style="visibility:hidden;"><div class="form-label">占位</div></div>
         </div>
         <div>
@@ -722,10 +750,10 @@ const app = createApp({
     const setViewMode = (m) => { viewMode.value = m; };
 
     // ── Filters ──
-    const filters = ref({ customer: '', invoice: '', performance: '', region: '', pa: '', subpa1: '', subpa2: '' });
+    const filters = ref({ customer: '', invoice: '', performance: '', region: '', pa: '', subpa1: '', subpa2: '', subpa3: '', subpa4: '' });
 
     const resetFilters = () => {
-      filters.value = { customer: '', invoice: '', performance: '', region: '', pa: '', subpa1: '', subpa2: '' };
+      filters.value = { customer: '', invoice: '', performance: '', region: '', pa: '', subpa1: '', subpa2: '', subpa3: '', subpa4: '' };
     };
 
     const runQuery = () => { page.value = 1; showMessage('查询完成', 'success'); };
@@ -750,23 +778,280 @@ const app = createApp({
 
     const productHierarchy = {
       Holemaking: {
-        '整体硬质合金钻头': ['3xD', '5xD', '通用钢件', '不锈钢'],
-        '可转位钻头': ['钢件', '不锈钢'],
-        '铰刀': ['通孔', '盲孔'],
+        "整体硬质合金钻头": {
+          "3xD": {
+            "通用钢件": ["PVD-A", "PVD-B"],
+            "不锈钢": ["PVD-S", "PVD-HS"]
+          },
+          "5xD": {
+            "通用钢件": ["PVD-A", "PVD-B"],
+            "铸铁": ["CVD-CI", "CVD-CI Plus"]
+          }
+        },
+        "可转位钻头": {
+          "U钻系列": {
+            "浅孔加工": ["双刃片", "四刃片"],
+            "深孔加工": ["中心刃加强", "外刃加强"]
+          },
+          "冠钻系列": {
+            "高精度孔": ["冠部A", "冠部B"],
+            "高进给孔": ["冠部HF", "冠部HF+"]
+          }
+        },
+        "铰刀": {
+          "整体铰刀": {
+            "H7公差": ["直槽", "螺旋槽"],
+            "高硬材料": ["微刃口", "纳米涂层"]
+          }
+        }
       },
       Milling: {
-        '方肩铣刀': ['标准', 'ME', 'MF'],
-        '圆刀片铣刀': ['粗加工', '精加工'],
+        "立铣刀": {
+          "方肩铣": {
+            "通用加工": ["4刃", "6刃"],
+            "高速加工": ["高螺旋", "可变螺旋"]
+          },
+          "高进给铣": {
+            "粗加工": ["大前角", "抗冲击"],
+            "半精加工": ["小切深", "高齿密"]
+          }
+        },
+        "面铣刀盘": {
+          "45度主偏角": {
+            "粗加工": ["双面刀片", "重切削"],
+            "精加工": ["修光刃", "低振动"]
+          }
+        },
+        "槽铣刀": {
+          "T型槽刀": {
+            "标准槽": ["窄槽", "宽槽"],
+            "深槽": ["加长颈", "高刚性"]
+          }
+        }
       },
       Turning: {
-        '外圆车刀': ['钢件', '不锈钢'],
+        "外圆车刀": {
+          "负前角刀杆": {
+            "钢件精车": ["CNMG", "WNMG"],
+            "铸铁粗车": ["SNMG", "TNMG"]
+          },
+          "正前角刀杆": {
+            "不锈钢": ["VCGT", "DCGT"],
+            "有色金属": ["抛光刃", "镜面刃"]
+          }
+        },
+        "切槽切断刀": {
+          "外圆切槽": {
+            "2mm槽宽": ["PVD槽刀片", "CVD槽刀片"],
+            "3mm槽宽": ["PVD槽刀片", "耐热槽刀片"]
+          },
+          "切断刀": {
+            "棒料切断": ["抗震刀杆", "高压冷却"],
+            "薄壁件": ["小刃口", "低进给"]
+          }
+        }
       },
       Threading: {
-        '螺纹刀片': ['内螺纹', '外螺纹'],
+        "丝锥": {
+          "机用螺旋丝锥": {
+            "M3-M8": ["HSS-E", "粉末冶金"],
+            "M10-M16": ["高韧性", "高耐磨"]
+          },
+          "挤压丝锥": {
+            "铝合金": ["无屑成形", "镜面槽"],
+            "不锈钢": ["强化圆弧", "高润滑槽"]
+          }
+        },
+        "车削螺纹刀": {
+          "外螺纹": {
+            "60度公制": ["单牙型", "全牙型"],
+            "55度英制": ["Whitworth", "UN"]
+          },
+          "内螺纹": {
+            "小孔径": ["微型杆", "抗振杆"],
+            "深孔径": ["加长杆", "减振杆"]
+          }
+        }
       },
       ToolingSystem: {
-        '刀柄': ['侧固', '增速'],
+        "刀柄系统": {
+          "液压刀柄": {
+            "标准夹持": ["HSK-A63", "BT40"],
+            "高跳动精度": ["2.5D", "5D"]
+          },
+          "热缩刀柄": {
+            "高速主轴": ["HSK-E40", "HSK-E32"],
+            "通用主轴": ["BT30", "BT40"]
+          }
+        },
+        "镗刀系统": {
+          "粗镗刀": {
+            "孔径20-60": ["模块式", "一体式"],
+            "孔径60-120": ["重载型", "高刚型"]
+          },
+          "精镗刀": {
+            "微调结构": ["2微米级", "5微米级"],
+            "自动补偿": ["机械补偿", "数字补偿"]
+          }
+        }
       },
+      // XR Brand Products
+      XR_Products: {
+        // AH_INSERT brand
+        "AH_INSERT 标准刀片-Loong": { "车Turning": { "负角刀片Negative turning": ["规格型号"] } },
+        "AH_INSERT 标准刀片-干将通用": { "铣Milling": { "正角刀片positive turning": ["规格型号"] } },
+        "AH_INSERT 标准刀体-Loong": { "钻Drilling": { "重载Heavy machining": ["规格型号"] } },
+        "AH_INSERT 标准刀体-干将通用": { "切断切槽Parting&Grooving": { "小零件Small part machining": ["规格型号"] } },
+        "AH_INSERT 贸易": { "螺纹Threading": { "毛坯Blank": ["规格型号"] } },
+        "AH_INSERT 非标": { "镗削Boring": { "面铣Face milling": ["规格型号"] } },
+        "AH_INSERT 配件": { "配件Spare parts": { "方肩铣Shoulder milling": ["规格型号"] } },
+        "AH_INSERT 杂项": { "高级切削材料Advanced material": { "仿形铣Profile milling": ["规格型号"] } },
+        "AH_INSERT 其他Others": { "其他Others": { "快进给High feed milling": ["规格型号"] } },
+        // KLT INSERT brand
+        "KLT 标准刀片": { "车Turning": { "负角刀片Negative turning": ["规格型号"] } },
+        "KLT 非标刀片": { "铣Milling": { "正角刀片positive turning": ["规格型号"] } },
+        "KLT 贸易": { "钻Drilling": { "重载Heavy machining": ["规格型号"] } },
+        "KLT 配件": { "切断切槽Parting&Grooving": { "小零件Small part machining": ["规格型号"] } },
+        "KLT 杂项": { "螺纹Threading": { "毛坯Blank": ["规格型号"] } },
+        "KLT 其他Others": { "其他Others": { "快进给High feed milling": ["规格型号"] } },
+        // ROUND brand
+        "ROUND 标准Standard": {
+          "钻头Drill": {
+            "麻花钻Twist drill": ["规格型号"],
+            "直槽钻Straight flute drill": ["规格型号"],
+            "深孔直槽钻Deep hole straight flute drill": ["规格型号"],
+            "中心钻Center drill": ["规格型号"],
+            "定心钻Spot drill / Pilot drill": ["规格型号"],
+            "倒角钻Chamfer drill": ["规格型号"],
+            "扩孔钻Reaming drill": ["规格型号"],
+            "深孔扩孔钻Deep hole reaming drill": ["规格型号"],
+            "波刃钻Wave edge drill": ["规格型号"],
+            "深孔波刃钻Deep hole wave flute drill": ["规格型号"],
+            "多槽钻Multi-flute drill": ["规格型号"],
+            "成型钻Form drill": ["规格型号"],
+            "强力钻Rock bit drill": ["规格型号"],
+            "深孔钻Deep hole drill": ["规格型号"],
+            "沉孔钻Countersink drill": ["规格型号"],
+            "平底钻Flat bottom drill": ["规格型号"],
+            "引导钻Pilot drill": ["规格型号"],
+            "深孔引导钻Deep hole pilot drill": ["规格型号"],
+            "三刃钻3-flute drill": ["规格型号"],
+            "枪钻Gun drill": ["规格型号"],
+            "扁钻Spade drill": ["规格型号"],
+            "直槽扩孔钻Straight flute reaming drill": ["规格型号"],
+            "强力三刃钻3-flute rock bit drill": ["规格型号"],
+            "三尖钻Three-point drill": ["规格型号"],
+            "阶梯钻Step drill": ["规格型号"],
+            "多槽阶梯钻Multi-flute step drill": ["规格型号"],
+            "可换头钻头Exchangeable head drill head": ["规格型号"],
+            "可换头钻杆Exchangeable head drill body": ["规格型号"]
+          },
+          "铣刀End mill": {
+            "平铣刀Flat end mill": ["规格型号"],
+            "球头铣刀Ball nose end mill": ["规格型号"],
+            "圆鼻刀Corner radius end mill": ["规格型号"],
+            "成型铣刀Form end mill": ["规格型号"],
+            "T型铣刀T-slot end mill": ["规格型号"],
+            "高硬铣刀Hardness end mill": ["规格型号"],
+            "插铣刀Plunge end mill": ["规格型号"],
+            "波刃铣刀Wave edge end mill": ["规格型号"],
+            "倒角铣刀Chamfer end mill": ["规格型号"],
+            "螺纹铣刀Thread end mill": ["规格型号"],
+            "燕尾铣刀Dovetail end mill": ["规格型号"],
+            "反倒角铣刀Back chamfer end mill": ["规格型号"],
+            "单刃铣刀Single-flute end mill": ["规格型号"],
+            "正反倒角铣刀Double chamfer mill": ["规格型号"],
+            "内R铣刀Concave radius end mill": ["规格型号"],
+            "锯片铣刀Slitting saw": ["规格型号"],
+            "鼓形铣刀Barrel end mill": ["规格型号"],
+            "快进给铣刀High feed end mill": ["规格型号"],
+            "漩涡铣刀Scroll rotor end mill": ["规格型号"],
+            "菠萝铣刀Pineapple end mill": ["规格型号"],
+            "玉米铣刀Long edge end mill": ["规格型号"],
+            "钻铣刀Drill end mill": ["规格型号"],
+            "雕刻铣刀Engraving end mill": ["规格型号"]
+          },
+          "铰刀Reamer": {
+            "常规铰刀Reamer": ["规格型号"],
+            "球头铰刀Ball nose reamer": ["规格型号"],
+            "成型铰刀Form reamer": ["规格型号"],
+            "直槽铰刀Straight flute reamer": ["规格型号"],
+            "深孔铰刀Deep hole reamer": ["规格型号"],
+            "深孔钻铰刀Deep hole drill reamer": ["规格型号"],
+            "铣铰刀Mill reamer": ["规格型号"],
+            "铰刀刀头Exchangeable head reamer": ["规格型号"]
+          },
+          "丝锥Tap": {
+            "定心钻Spot drill / Pilot drill": ["规格型号"]
+          }
+        },
+        "ROUND 非标Special": {
+          "铣刀End mill": {
+            "直槽钻Straight flute drill": ["规格型号"],
+            "成型铣刀Form end mill": ["规格型号"],
+            "高硬铣刀Hardness end mill": ["规格型号"],
+            "波刃铣刀Wave edge end mill": ["规格型号"],
+            "雕刻铣刀Engraving end mill": ["规格型号"]
+          }
+        },
+        "ROUND 贸易Trade": {
+          "铰刀Reamer": {
+            "深孔直槽钻Deep hole straight flute drill": ["规格型号"],
+            "深孔扩孔钻Deep hole reaming drill": ["规格型号"]
+          }
+        },
+        "ROUND 配件Spare parts": {
+          "滚刀Hub": {
+            "中心钻Center drill": ["规格型号"]
+          }
+        },
+        // PCD brand
+        "PCD 标准PCD/CBN刀片": {
+          "钻Drilling": { "焊接PCD钻Brazed PCD tip drill": ["规格型号"] },
+          "铰削Rerming": { "PCD整头钻PCD head drill": ["规格型号"] },
+          "铣Milling": { "导条铰刀Reamer with guide blade": ["规格型号"] },
+          "镗削Boring": { "普通铰刀Traditional reamer": ["规格型号"] },
+          "车Turning": { "面铣Face milling": ["规格型号"] },
+          "切断切槽Parting&Grooving": { "槽刀片Parting&Grooving insert": ["规格型号"] },
+          "螺纹Threading": { "螺纹车刀片Threading insert": ["规格型号"] }
+        },
+        "PCD 新刀标准PCD/CBN刀具": {
+          "钻Drilling": { "PCD整头钻PCD head drill": ["规格型号"] },
+          "铣Milling": { "PCD整头铣刀PCD head end mill": ["规格型号"] },
+          "切断切槽Parting&Grooving": { "槽刀片Parting&Grooving insert": ["规格型号"] }
+        },
+        "PCD 换片标准PCD/CBN刀具": {
+          "车Turning": { "面铣Face milling": ["规格型号"] },
+          "切断切槽Parting&Grooving": { "可转位PCD镗刀Indexable insert boring tool": ["规格型号"] }
+        },
+        "PCD 非标PCD/CBN刀片": {
+          "铣Milling": { "仿形铣Profile milling": ["规格型号"] },
+          "切断切槽Parting&Grooving": { "槽铣Slot milling": ["规格型号"] },
+          "螺纹Threading": { "螺纹铣Thread milling": ["规格型号"] }
+        },
+        "PCD 修磨标准PCD/CBN刀具": {
+          "镗削Boring": { "PCD焊片镗刀Brazed boring tool": ["规格型号"] },
+          "车Turning": { "PCD刀片Insert": ["规格型号"] },
+          "切断切槽Parting&Grooving": { "槽刀杆Parting&Grooving soft tools": ["规格型号"] }
+        },
+        "PCD 贸易": {
+          "配件Spare parts": { "配件Spare parts": ["规格型号"] }
+        },
+        "PCD 配件": {
+          "其他Others": { "其他Others": ["规格型号"] }
+        },
+        // Coating
+        "涂层 刀具涂层": { "涂层Coating": { "刀具涂层Tool coating": ["规格型号"] } },
+        "涂层 零部件涂层": { "涂层Coating": { "零部件涂层Component coating": ["规格型号"] } },
+        "涂层 模具涂层": { "涂层Coating": { "模具涂层Mold coating": ["规格型号"] } },
+        // Medical
+        "医疗 骨科": { "医疗Medical": { "骨科Orthopedics": ["规格型号"] } },
+        "医疗 牙科": { "医疗Medical": { "牙科Dentistry": ["规格型号"] } },
+        "医疗 其他": { "医疗Medical": { "其他Others": ["规格型号"] } },
+        // Multiple
+        "多类别 刀具柜": { "多类别Multiple": { "刀具柜Tool cabinet": ["规格型号"] } },
+        "多类别 其他": { "多类别Multiple": { "其他Others": ["规格型号"] } }
+      }
     };
 
     const paOptions = computed(() => Object.keys(productHierarchy));
@@ -776,7 +1061,26 @@ const app = createApp({
     });
     const subpa2Options = computed(() => {
       if (!filters.value.pa || !filters.value.subpa1) return [];
-      return productHierarchy[filters.value.pa]?.[filters.value.subpa1] || [];
+      const paData = productHierarchy[filters.value.pa];
+      if (!paData || !paData[filters.value.subpa1]) return [];
+      return Object.keys(paData[filters.value.subpa1]);
+    });
+    const subpa3Options = computed(() => {
+      if (!filters.value.pa || !filters.value.subpa1) return [];
+      const paData = productHierarchy[filters.value.pa];
+      if (!paData || !paData[filters.value.subpa1]) return [];
+      const sub2Map = paData[filters.value.subpa1];
+      const subpa2 = filters.value.subpa2 || Object.keys(sub2Map)[0];
+      if (!sub2Map[subpa2]) return [];
+      return Object.keys(sub2Map[subpa2]);
+    });
+    const subpa4Options = computed(() => {
+      if (!filters.value.pa || !filters.value.subpa1 || !filters.value.subpa2) return [];
+      const paData = productHierarchy[filters.value.pa];
+      if (!paData || !paData[filters.value.subpa1]) return [];
+      const sub2Map = paData[filters.value.subpa1];
+      if (!sub2Map[filters.value.subpa2]) return [];
+      return sub2Map[filters.value.subpa2] || [];
     });
 
     const syncInvoiceDependent = () => {
@@ -786,8 +1090,10 @@ const app = createApp({
         filters.value.region = inv.region;
       }
     };
-    const syncPaFilter = () => { filters.value.subpa1 = ''; filters.value.subpa2 = ''; };
-    const syncSubPa1 = () => { filters.value.subpa2 = ''; };
+    const syncPaFilter = () => { filters.value.subpa1 = ''; filters.value.subpa2 = ''; filters.value.subpa3 = ''; filters.value.subpa4 = ''; };
+    const syncSubPa1 = () => { filters.value.subpa2 = ''; filters.value.subpa3 = ''; filters.value.subpa4 = ''; };
+    const syncSubPa2 = () => { filters.value.subpa3 = ''; filters.value.subpa4 = ''; };
+    const syncSubPa3 = () => { filters.value.subpa4 = ''; };
 
     // Cascading options for filter dropdowns
     const filteredPerformance = computed(() => {
@@ -802,20 +1108,20 @@ const app = createApp({
     // ── Forecast Data ──
     let rowIdCounter = 100;
     const forecastRows = ref([
-      makeRow('昆山智造装备有限公司', '张伟', '苏州销售部', '苏州阿诺医疗器械有限公司', '苏州销售部', 'Holemaking', '整体硬质合金钻头', '3xD'),
-      makeRow('苏州精工模具科技', '李娜', '东部销售大区-苏州', '苏州阿诺医疗科技有限公司', '东部销售大区', 'Milling', '方肩铣刀', 'ME'),
-      makeRow('无锡锐虎机械制造', '王强', '东部销售大区-杭州', '苏州百锐纳米科技有限公司', '南部销售大区', 'Holemaking', '整体硬质合金钻头', '5xD'),
-      makeRow('常州高精汽车零部件', '赵敏', '南部销售大区-业务一组', '常熟阿诺切削工具有限公司', '常熟阿诺', 'Turning', '外圆车刀', '钢件'),
-      makeRow('宁波海越航空部件', '孙磊', '北部销售大区-北京', '天津吉恒纳米科技有限公司', '苏州迈拓', 'Holemaking', '铰刀', '通孔'),
-      makeRow('嘉兴联成精密工业', '周婷', '西部销售大区-重庆', '广东吉恒纳米科技有限公司', '新加坡阿诺', 'Milling', '圆刀片铣刀', '粗加工'),
-      makeRow('上海博远自动化', '吴昊', '科而诺', '武汉阿诺精密工具有限公司', '科而诺', 'Holemaking', '可转位钻头', '钢件'),
-      makeRow('重庆川虎机电', '郑楠', '西部销售大区-重庆', '重庆阿诺威尔刀具有限公司', '常熟刀克', 'Threading', '螺纹刀片', '内螺纹'),
-      makeRow('武汉华创数控', '钱坤', '西部销售大区-重庆', '重庆阿诺威尔刀具有限公司', '常熟刀克', 'Holemaking', '整体硬质合金钻头', '不锈钢'),
-      makeRow('天津北辰重工', '冯宇', '苏州销售部', '苏州阿诺医疗器械有限公司', '苏州销售部', 'ToolingSystem', '刀柄', '侧固'),
+      makeRow('昆山智造装备有限公司', '张伟', '苏州销售部', '苏州阿诺医疗器械有限公司', '苏州销售部', 'Holemaking', '整体硬质合金钻头', '3xD', '通用钢件', 'PVD-A'),
+      makeRow('苏州精工模具科技', '李娜', '东部销售大区-苏州', '苏州阿诺医疗科技有限公司', '东部销售大区', 'Milling', '立铣刀', '方肩铣', '通用加工', '4刃'),
+      makeRow('无锡锐虎机械制造', '王强', '东部销售大区-杭州', '苏州百锐纳米科技有限公司', '南部销售大区', 'Holemaking', '整体硬质合金钻头', '5xD', '铸铁', 'CVD-CI'),
+      makeRow('常州高精汽车零部件', '赵敏', '南部销售大区-业务一组', '常熟阿诺切削工具有限公司', '常熟阿诺', 'Turning', '外圆车刀', '负前角刀杆', '钢件精车', 'CNMG'),
+      makeRow('宁波海越航空部件', '孙磊', '北部销售大区-北京', '天津吉恒纳米科技有限公司', '苏州迈拓', 'Holemaking', '铰刀', '整体铰刀', 'H7公差', '直槽'),
+      makeRow('嘉兴联成精密工业', '周婷', '西部销售大区-重庆', '广东吉恒纳米科技有限公司', '新加坡阿诺', 'Milling', '面铣刀盘', '45度主偏角', '粗加工', '双面刀片'),
+      makeRow('上海博远自动化', '吴昊', '科而诺', '武汉阿诺精密工具有限公司', '科而诺', 'Holemaking', '可转位钻头', 'U钻系列', '浅孔加工', '双刃片'),
+      makeRow('重庆川虎机电', '郑楠', '西部销售大区-重庆', '重庆阿诺威尔刀具有限公司', '常熟刀克', 'Threading', '丝锥', '机用螺旋丝锥', 'M3-M8', 'HSS-E'),
+      makeRow('武汉华创数控', '钱坤', '西部销售大区-重庆', '重庆阿诺威尔刀具有限公司', '常熟刀克', 'Holemaking', '整体硬质合金钻头', '3xD', '不锈钢', 'PVD-S'),
+      makeRow('天津北辰重工', '冯宇', '苏州销售部', '苏州阿诺医疗器械有限公司', '苏州销售部', 'ToolingSystem', '刀柄系统', '液压刀柄', '标准夹持', 'HSK-A63'),
     ]);
 
-    function makeRow(customer, sales, performance, invoice, region, pa, subpa1, subpa2) {
-      const row = { __id: 'row_' + (rowIdCounter++), customer, sales, performance, invoice, region, pa, subpa1, subpa2 };
+    function makeRow(customer, sales, performance, invoice, region, pa, subpa1, subpa2, subpa3, subpa4) {
+      const row = { __id: 'row_' + (rowIdCounter++), customer, sales, performance, invoice, region, pa, subpa1, subpa2, subpa3, subpa4 };
       monthOrder.forEach(m => {
         row[monthKeyMap[m] + '_qty'] = Math.floor(Math.random() * 200);
         row[monthKeyMap[m] + '_inv'] = Math.floor(Math.random() * 150);
@@ -832,6 +1138,8 @@ const app = createApp({
         if (filters.value.pa && r.pa !== filters.value.pa) return false;
         if (filters.value.subpa1 && r.subpa1 !== filters.value.subpa1) return false;
         if (filters.value.subpa2 && r.subpa2 !== filters.value.subpa2) return false;
+        if (filters.value.subpa3 && r.subpa3 !== filters.value.subpa3) return false;
+        if (filters.value.subpa4 && r.subpa4 !== filters.value.subpa4) return false;
         return true;
       });
     });
@@ -865,12 +1173,34 @@ const app = createApp({
 
     // ── Add Row Modal ──
     const showAddModal = ref(false);
-    const newRow = ref({ customer: '', invoice: '', performance: '', region: '', pa: '', subpa1: '', subpa2: '' });
+    const newRow = ref({ customer: '', invoice: '', performance: '', region: '', pa: '', subpa1: '', subpa2: '', subpa3: '', subpa4: '' });
     const modalSubpa1Options = computed(() => !newRow.value.pa ? [] : Object.keys(productHierarchy[newRow.value.pa] || {}));
-    const modalSubpa2Options = computed(() => !newRow.value.pa || !newRow.value.subpa1 ? [] : productHierarchy[newRow.value.pa]?.[newRow.value.subpa1] || []);
+    const modalSubpa2Options = computed(() => {
+      if (!newRow.value.pa || !newRow.value.subpa1) return [];
+      const paData = productHierarchy[newRow.value.pa];
+      if (!paData || !paData[newRow.value.subpa1]) return [];
+      return Object.keys(paData[newRow.value.subpa1]);
+    });
+    const modalSubpa3Options = computed(() => {
+      if (!newRow.value.pa || !newRow.value.subpa1) return [];
+      const paData = productHierarchy[newRow.value.pa];
+      if (!paData || !paData[newRow.value.subpa1]) return [];
+      const sub2Map = paData[newRow.value.subpa1];
+      const subpa2 = newRow.value.subpa2 || Object.keys(sub2Map)[0];
+      if (!sub2Map[subpa2]) return [];
+      return Object.keys(sub2Map[subpa2]);
+    });
+    const modalSubpa4Options = computed(() => {
+      if (!newRow.value.pa || !newRow.value.subpa1 || !newRow.value.subpa2) return [];
+      const paData = productHierarchy[newRow.value.pa];
+      if (!paData || !paData[newRow.value.subpa1]) return [];
+      const sub2Map = paData[newRow.value.subpa1];
+      if (!sub2Map[newRow.value.subpa2]) return [];
+      return sub2Map[newRow.value.subpa2] || [];
+    });
 
     const openAddRowDialog = () => {
-      newRow.value = { customer: '', invoice: '', performance: '', region: '', pa: '', subpa1: '', subpa2: '' };
+      newRow.value = { customer: '', invoice: '', performance: '', region: '', pa: '', subpa1: '', subpa2: '', subpa3: '', subpa4: '' };
       showAddModal.value = true;
     };
 
@@ -878,8 +1208,10 @@ const app = createApp({
       const inv = invoiceMaster.find(i => i.invoice === newRow.value.invoice);
       if (inv) { newRow.value.performance = inv.performance; newRow.value.region = inv.region; }
     };
-    const onPaChange = () => { newRow.value.subpa1 = ''; newRow.value.subpa2 = ''; };
-    const onSubpa1Change = () => { newRow.value.subpa2 = ''; };
+    const onPaChange = () => { newRow.value.subpa1 = ''; newRow.value.subpa2 = ''; newRow.value.subpa3 = ''; newRow.value.subpa4 = ''; };
+    const onSubpa1Change = () => { newRow.value.subpa2 = ''; newRow.value.subpa3 = ''; newRow.value.subpa4 = ''; };
+    const onSubpa2Change = () => { newRow.value.subpa3 = ''; newRow.value.subpa4 = ''; };
+    const onSubpa3Change = () => { newRow.value.subpa4 = ''; };
 
     const saveAddRow = () => {
       if (!newRow.value.customer || !newRow.value.invoice || !newRow.value.pa) {
@@ -899,7 +1231,7 @@ const app = createApp({
     };
 
     const downloadTemplate = () => {
-      const headers = ['customer','sales','performance','invoice','region','pa','subpa1','subpa2', ...currentMonths.value.flatMap(m => [m + '_qty', m + '_inv'])];
+      const headers = ['customer','sales','performance','invoice','region','pa','subpa1','subpa2','subpa3','subpa4', ...currentMonths.value.flatMap(m => [m + '_qty', m + '_inv'])];
       const csv = headers.join(',') + '\n';
       const blob = new Blob([csv], { type: 'text/csv' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'forecast_template.csv'; a.click();
@@ -909,10 +1241,10 @@ const app = createApp({
     const downloadData = () => {
       const rows = filteredRows.value;
       if (rows.length === 0) { showMessage('无数据可下载', 'error'); return; }
-      const headers = ['客户','业绩归属','开票公司','销售大区','PA','Sub PA-1','Sub PA-2', ...currentMonths.value.flatMap(m => [m + '_qty', m + '_inv'])];
+      const headers = ['客户','业绩归属','开票公司','销售大区','PA','Sub PA-1','Sub PA-2','Sub PA-3','Sub PA-4', ...currentMonths.value.flatMap(m => [m + '_qty', m + '_inv'])];
       const csvLines = [headers.join(',')];
       rows.forEach(r => {
-        const vals = [r.customer, r.performance, r.invoice, r.region, r.pa, r.subpa1, r.subpa2];
+        const vals = [r.customer, r.performance, r.invoice, r.region, r.pa, r.subpa1, r.subpa2, r.subpa3 || '', r.subpa4 || ''];
         currentMonths.value.forEach(m => { vals.push(r[monthKeyMap[m] + '_qty'] || 0, r[monthKeyMap[m] + '_inv'] || 0); });
         csvLines.push(vals.join(','));
       });
@@ -951,14 +1283,14 @@ const app = createApp({
       currentPeriod, currentMonths, selectPeriod, backToPeriods, setViewMode,
       filters, resetFilters, runQuery,
       customerMaster, invoiceMaster, monthOrder, monthKeyMap,
-      paOptions, subpa1Options, subpa2Options,
-      syncInvoiceDependent, syncPaFilter, syncSubPa1,
+      paOptions, subpa1Options, subpa2Options, subpa3Options, subpa4Options,
+      syncInvoiceDependent, syncPaFilter, syncSubPa1, syncSubPa2, syncSubPa3,
       filteredPerformance, filteredRegions,
       forecastRows, filteredRows, page, pageSize, totalPages,
       getQty, getInv, setQty, setInv, orderPrice, orderAmt, invPrice, invAmt, getYearMonth,
       deleteRow, editRow, showAddModal, newRow,
-      openAddRowDialog, onInvoiceChange, onPaChange, onSubpa1Change,
-      saveAddRow, modalSubpa1Options, modalSubpa2Options,
+      openAddRowDialog, onInvoiceChange, onPaChange, onSubpa1Change, onSubpa2Change, onSubpa3Change,
+      saveAddRow, modalSubpa1Options, modalSubpa2Options, modalSubpa3Options, modalSubpa4Options,
       message, showMessage, downloadTemplate, downloadData, uploadCsv, copyLastPeriod, saveDraft, submitForApproval,
       currentRole, currentFlow,
       openGroups, currentGroup, currentModule, toggleGroup, navigateTo, navGroups,

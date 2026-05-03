@@ -1065,11 +1065,12 @@ const app = createApp({
     ]);
 
     const productData = ref([
-      { id: 'p1', name: '整体硬质合金钻头 3xD', code: 'HM-CA-3XD-001', pa: 'Holemaking', subpa: '3xD', spec: 'φ10mm', unit: '件', price: 1580, status: 'active' },
-      { id: 'p2', name: '整体硬质合金钻头 5xD', code: 'HM-CA-5XD-001', pa: 'Holemaking', subpa: '5xD', spec: 'φ12mm', unit: '件', price: 2180, status: 'active' },
-      { id: 'p3', name: '方肩铣刀 ME18', code: 'ML-FC-ME18', pa: 'Milling', subpa: 'ME', spec: 'φ18mm', unit: '把', price: 680, status: 'active' },
-      { id: 'p4', name: '外圆车刀 CNMG120408', code: 'TR-TN-CNMG120408', pa: 'Turning', subpa: 'CNMG', spec: 'CNMG120408', unit: '片', price: 85, status: 'active' },
-      { id: 'p5', name: '螺纹刀片 IC 1/2"-14', code: 'TH-TI-IC12', pa: 'Threading', subpa: 'IC', spec: '1/2"-14UN', unit: '片', price: 120, status: 'inactive' },
+      { id: 'p1', name: '整体硬质合金钻头 3xD 通用钢件 PVD-A', code: 'HM-CA-3XD-001', pa: 'Holemaking', subpa1: '整体硬质合金钻头', subpa2: '3xD', subpa3: '通用钢件', subpa4: 'PVD-A', spec: 'φ10mm', unit: '件', price: 1580, status: 'active' },
+      { id: 'p2', name: '整体硬质合金钻头 5xD 铸铁 CVD-CI', code: 'HM-CA-5XD-001', pa: 'Holemaking', subpa1: '整体硬质合金钻头', subpa2: '5xD', subpa3: '铸铁', subpa4: 'CVD-CI', spec: 'φ12mm', unit: '件', price: 2180, status: 'active' },
+      { id: 'p3', name: '立铣刀 方肩铣 通用加工 4刃', code: 'ML-FC-ME18', pa: 'Milling', subpa1: '立铣刀', subpa2: '方肩铣', subpa3: '通用加工', subpa4: '4刃', spec: 'φ18mm', unit: '把', price: 680, status: 'active' },
+      { id: 'p4', name: '外圆车刀 负前角刀杆 钢件精车 CNMG', code: 'TR-TN-CNMG120408', pa: 'Turning', subpa1: '外圆车刀', subpa2: '负前角刀杆', subpa3: '钢件精车', subpa4: 'CNMG', spec: 'CNMG120408', unit: '片', price: 85, status: 'active' },
+      { id: 'p5', name: '丝锥 机用螺旋丝锥 M3-M8 HSS-E', code: 'TH-TI-IC12', pa: 'Threading', subpa1: '丝锥', subpa2: '机用螺旋丝锥', subpa3: 'M3-M8', subpa4: 'HSS-E', spec: 'M3-M8', unit: '支', price: 120, status: 'inactive' },
+      { id: 'p6', name: '液压刀柄 标准夹持 HSK-A63', code: 'TS-HY-HSKA63', pa: 'ToolingSystem', subpa1: '刀柄系统', subpa2: '液压刀柄', subpa3: '标准夹持', subpa4: 'HSK-A63', spec: 'HSK-A63', unit: '件', price: 2500, status: 'active' },
     ]);
 
     const pricingData = ref([
