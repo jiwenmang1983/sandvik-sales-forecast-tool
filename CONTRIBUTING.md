@@ -11,12 +11,14 @@
 | 角色 | 姓名 | 职责 |
 |------|------|------|
 | **最终审批人** | Mark | 确认并批准 PR 合并 |
-| **PM / 产品负责人** | Hermes（小P） | 需求拆解、调度 CC 开发 B 组代码、Review A 组代码 |
+| **PM / 产品负责人** | Hermes（小P） | 需求拆解、调度 CC 开发一组代码、Review 二组代码 |
 | **PM** | 小A | Review 所有 PR，通知 Mark 进行合并确认 |
-| **助理** | — | 调度 Codex 开发 A 组前端代码 |
-| **后端开发** | Claude Code (CC) | B 组后端 / 基础设施实现（Hermes 调度） |
-| **前端开发** | Codex | A 组前端 / 业务逻辑实现（助理调度） |
-| **代码审查** | 吉文 | Review B 组（后端）代码 |
+| **助理** | — | 调度 Codex 开发二组代码 |
+| **全栈开发** | Claude Code (CC) | 一组全栈实现（Hermes 调度） |
+| **全栈开发** | Codex | 二组全栈实现（助理调度） |
+| **代码审查** | 吉文 | Review 所有 PR |
+
+> **两组均为全栈**，不分前端后端。
 
 ---
 
@@ -69,6 +71,8 @@ docs: 更新 BRS 需求说明书
 分支开发 → commit → push → 创建 PR → Review → Mark 确认 → 合并到 master
 ```
 
+> **Mark 说"推送 master"时，直接推送到 master，不走 PR 流程。**
+
 ### 4.1 PR 创建规范
 
 每个 PR 必须包含：
@@ -82,16 +86,18 @@ docs: 更新 BRS 需求说明书
 
 ### 4.2 Review 分组
 
-| 代码分组 | 内容 | 代码实现 | Review 责任人 |
-|---------|------|---------|-------------|
-| **A组** | 前端 / 业务逻辑 | Codex（助理调度） | **Hermes** |
-| **B组** | 后端 / 基础设施 | CC（Hermes调度） | **吉文** |
+| 代码分组 | 代码实现 | Review 责任人 |
+|---------|---------|-------------|
+| **一组** | CC（Hermes 调度） | **Hermes** |
+| **二组** | Codex（助理调度） | **吉文** |
+
+> 两组均为全栈开发，不区分前端后端。
 
 ### 4.3 合并规则
 
 - 至少 **1 人 approve** 方可合并
-- A组 PR → Hermes Review → 小A 通知 Mark → Mark 确认合并
-- B组 PR → 吉文 Review → 小A 通知 Mark → Mark 确认合并
+- 一组 PR → Hermes Review → 小A 通知 Mark → Mark 确认合并
+- 二组 PR → 吉文 Review → 小A 通知 Mark → Mark 确认合并
 - CI 必须通过
 - 合入后删除源分支
 
@@ -101,7 +107,7 @@ docs: 更新 BRS 需求说明书
 
 - **CC** 生成的代码必须经过 Review 才能合入
 - **Codex** 生成的代码必须经过 Review 才能合入
-- **禁止任何 AI 代码直接 push 到 master**
+- **禁止任何 AI 代码直接 push 到 master**（Mark 指令"推送 master"除外）
 - 关键逻辑必须添加中文注释
 - 新增函数须注明输入输出
 
@@ -109,7 +115,7 @@ docs: 更新 BRS 需求说明书
 
 ## 6. 禁止事项
 
-- ❌ AI 代码直接 push master
+- ❌ AI 代码直接 push master（Mark 指令除外）
 - ❌ 未经 Review 直接合并 PR
 - ❌ force push master 分支
 - ❌ 在 master 直接提交（所有改动走 PR）
@@ -132,7 +138,6 @@ sandvik-sales-forecast-tool/
 │       └── router/            # 路由
 ├── docs/                      # 文档
 │   ├── BRS_v0.1.md           # 需求规格说明书
-│   ├── PRD_REVIEW_WORKFLOW.md # 协作流程
 │   └── 02-数据库设计.md       # 数据库设计
 ├── CONTRIBUTING.md            # 本文件
 └── README.md
@@ -160,8 +165,8 @@ git commit -m "feat: 你的功能描述"
 git push origin feat/your-feature
 
 # 5. 在 GitHub 创建 PR，指定 Reviewer
-# A组代码 → 指定 Hermes review
-# B组代码 → 指定 吉文 review
+# 一组代码 → 指定 Hermes review
+# 二组代码 → 指定 吉文 review
 
 # 6. Review 通过后，小A 通知 Mark
 # 7. Mark 确认合并 → PR 合并到 master
