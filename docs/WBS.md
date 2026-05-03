@@ -39,7 +39,7 @@
 | T-012 | §4.3 | 审批调整动作（4个总量值） | ✅ 已验收 | ✅ Q-008 | AdjustApproval Panel+4字段+历史记录展示 |
 | T-015 | §5.1 | 直线经理看团队数据权限 | ✅ 已验收 | — | OrgNode int Id修复 |
 | T-017 | §6 | ForecastRecord四度量字段 | ✅ 已验收 | 🔄 Q-010 | forecast.js移除mock，四度量真实显示 |
-| T-018 | §6 §303 | ForecastPeriod延期窗口（ExtensionStart/End/Users） | 🔄 待开发 | 🔄 Q-010 | PRD §303：仅三字段，CC前次误做7字段已回滚 |
+| T-018 | §6 §303 | ForecastPeriod延期窗口（ExtensionStart/End/Users） | ✅ 已验收 | 🔄 Q-010 | 前端已有三字段控件+列表列+API序列化，Backend DTO已贯通 |
 | T-019 | §9 | M365 SSO登录（生产） | 🔄 待开发 | 🔄 Q-011 | 当前为本地测试登录 |
 
 ### 小A组任务（UI/Admin/数据导入）
