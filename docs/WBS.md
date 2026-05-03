@@ -38,8 +38,8 @@
 | T-011 | §4.3 | 审批历史记录（ApprovalHistory） | ✅ 已验收 | ✅ Q-007 | 前端历史Timeline+彩色badge，后端全链路写ApprovalHistory |
 | T-012 | §4.3 | 审批调整动作（4个总量值） | ✅ 已验收 | ✅ Q-008 | AdjustApproval Panel+4字段+历史记录展示 |
 | T-015 | §5.1 | 直线经理看团队数据权限 | ✅ 已验收 | — | OrgNode int Id修复 |
-| T-017 | §6 | ForecastRecord四度量字段 | ✅ 已验收 | 🔄 Q-010 | forecast.js移除mock，四度量真实显示 |
-| T-018 | §6 §303 | ForecastPeriod延期窗口（ExtensionStart/End/Users） | ✅ 已验收 | 🔄 Q-010 | 前端已有三字段控件+列表列+API序列化，Backend DTO已贯通 |
+| T-017 | §6 | ForecastRecord四度量字段 | 🔄 开发完成待验收 | 🔄 Q-010 | CC完成forecast.js移除mock，四度量真实显示，Q-010测试通过后闭环 |
+| T-018 | §6 §303 | ForecastPeriod延期窗口（ExtensionStart/End/Users） | 🔄 开发完成待验收 | 🔄 Q-010 | 前端已有三字段控件+列表列+API序列化，Q-010测试通过后闭环 |
 | T-019 | §9 | M365 SSO登录（生产） | 🔄 待开发 | 🔄 Q-011 | 当前为本地测试登录 |
 
 ### 小A组任务（UI/Admin/数据导入）
@@ -63,10 +63,11 @@
 |------|------|
 | 🔄 待开发 | 已排入计划，等待开发资源 |
 | 🔄 开发中 | CC/Codex 正在开发中 |
-| ✅ 已验收 | Hermes 小P 验收通过 |
+| 🔄 开发完成待验收 | 开发代码已就位，等待小Q测试通过后才算验收 |
+| ✅ 已验收 | Hermes 小P 验收通过（开发 + 测试均完成） |
 | ✅ 已合并 | PR 已合并到 master |
 
-**状态流转：** `🔄 待开发` → `🔄 开发中` → `✅ 已验收` → `✅ 已合并`
+**状态流转：** `🔄 待开发` → `🔄 开发中` → `🔄 开发完成待验收` → `✅ 已验收` → `✅ 已合并`
 
 ---
 
