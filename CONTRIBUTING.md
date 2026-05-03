@@ -23,7 +23,8 @@
 | 文档 | 说明 | 维护人 |
 |------|------|--------|
 | `docs/PRD.md` | 产品需求文档（Source of Truth） | Mark + 小P |
-| `docs/WBS.md` | 开发任务工作分解结构 | 小P |
+| `docs/WBS.md` | 开发任务工作分解结构 + ISSUE LOG | 小P |
+| `docs/TEST_SUITE.md` | 测试用例套件 | 小Q |
 | `CONTRIBUTING.md` | 开发规范（本文件） | 小P |
 
 > **重要：** `docs/BRS.md` 已更名为 `docs/PRD.md`，任务追踪已迁移至 `docs/WBS.md`。
