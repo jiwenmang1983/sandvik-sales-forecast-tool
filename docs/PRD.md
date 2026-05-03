@@ -79,7 +79,7 @@
 | 预测结束年月 | 控制填报表头的月份范围终点（如2027-03） |
 | 延期起始时间 | 延迟提交的窗口开始（可选） |
 | 延期截止时间 | 延迟提交的窗口结束（可选） |
-| 延期人员名单 | 可多选，允许哪些销售在延期窗口内补提交 |
+| 延期人员名单 | 可多选，**按名称搜索筛选**勾选，允许哪些销售在延期窗口内补提交 |
 
 ### 3.3 预测填报流程
 
@@ -125,9 +125,12 @@
 - 产品线（PA / Sub PA-1 / Sub PA-2 / Sub PA-3 / Sub PA-4，5级联动）
 - 月度数据：订单数量、订单金额、开票数量、开票金额
 
-**金额单位：**
-- 金额：圆（元）
-- 数量：个/件（单位对系统无实质影响）
+**月度数据字段（4个，全部必填）：**
+- 订单数量（order_qty）
+- 订单金额（order_amount，圆）
+- 开票数量（invoice_qty）
+- 开票金额（invoice_amount，圆）
+- **单价由系统自动计算**（订单金额 ÷ 订单数量），不手工填写
 
 **操作：**
 - 填报（进入填报表单）
@@ -149,16 +152,16 @@
 |------|------|
 | **通过** | 继续往上一级提交 |
 | **退回** | 直接退回下一级，附comments说明原因 |
-| **调整** | 退回的增强版：退回的同时输入4个结构性预期总量值 + comments |
+| **调整** | 增强版退回：退回的同时输入4个汇总级别指导值 + comments；明细如何调整由销售自行决定 |
 
-**调整（退回增强版）输入字段：**
+**调整动作输入字段（4个汇总值）：**
 | 字段 | 说明 |
 |------|------|
-| 预期销售总量（Total Order Amount） | 指导值，下级参考调整，不强制 |
-| 预期开票总量（Total Invoice Amount） | 指导值 |
-| 预期销售数量（Total Order Qty） | 指导值 |
-| 预期开票数量（Total Invoice Qty） | 指导值 |
-| 调整说明（Comments） | 说明明细维度的调整期望 |
+| 调整的订单总金额（adjust_order_amount） | 汇总指导值，下级参考 |
+| 调整的开票总金额（adjust_invoice_amount） | 汇总指导值，下级参考 |
+| 调整的订单总数量（adjust_order_qty） | 汇总指导值，下级参考 |
+| 调整的开票总数量（adjust_invoice_qty） | 汇总指导值，下级参考 |
+| 调整说明（Comments） | 说明调整期望，明细由销售自行决定 |
 
 **关键规则：**
 - 调整输入的总量值是**指导值**，不是锁定值；下级参考但可自行决定如何调整
@@ -167,7 +170,8 @@
 - 其他级别审批者收到退回后可以修改数据后再提交
 
 **邮件通知（第一期）：**
-- 每种动作（提交/通过/退回/调整）实时触发邮件通知
+- 邮件**不实时同步发送**，走**队列架构**：触发 → 写入待发送表 → 队列服务定时轮询推送
+- 每个审批节点单独配置：**是否触发邮件 + 使用哪个模板**
 - 邮件内容由**消息模板**定义（用户可自定义，占位变量为汇总级别字段）
 - 消息模板在**系统管理→审批流程配置**中管理
 - 占位变量包括：周期名称、提交人、动作类型、4个总量值（调整时）、comments、时间戳
@@ -288,10 +292,12 @@
 ### 6.2 数据库表（已知）
 
 ```sql
--- 预测记录
+-- 预测记录（含4个度量字段，单价由系统自动计算）
 forecast_records (id, forecast_period_id, customer_id, invoice_company_id,
-                  product_id, year, month, order_amount, invoice_amount,
-                  order_qty, invoice_qty, status,
+                  product_id, year, month,
+                  order_amount, invoice_amount,   -- 金额（圆）
+                  order_qty, invoice_qty,       -- 数量
+                  status,
                   created_by_user_id, is_deleted, created_at, updated_at)
 
 -- 预测周期（含延期窗口）
@@ -506,11 +512,16 @@ ProductHierarchy (
 - **Admin 统一维护**：由 SYS_ADMIN 负责客户数据的录入和更新
 - 销售从客户列表中选择，不可自行添加
 
-### 11.2 品牌字段与数据过滤
+### 11.2 品牌字段与数据过滤（第一期）
+
+> ✅ **已确认：品牌过滤作为第一期必做功能**
+
 - **Customer（客户）** 有一个 `品牌（Brand）` 字段
 - **Salesperson（销售）** 也有一个 `品牌（Brand）` 字段
 - 销售只能看到/填报其**品牌与自己一致**的客户
 - 即：`Customer.Brand = Salesperson.Brand` 时，该客户对该销售可见
+- **过滤发生在所有涉及客户列表的场景**：填报页面客户下拉、历史记录客户过滤、报表客户过滤
+- 一个品牌下可以有多个客户；一个销售归属单一品牌
 
 ### 11.3 客户字段（待确认完整清单）
 - 客户名称
@@ -546,7 +557,7 @@ ProductHierarchy (
 | M-02 | §6.2 `forecast_periods`（FC 名、填报窗、预测起止年月、延期与人员名单） | `ForecastPeriod` 为 PeriodYear/Month、PeriodType、StartDate/EndDate 等，字段语义不一致 | 无法用 PRD「7+1」字段驱动填报截止/延期白名单 | 按 PRD 表结构演进或补映射层 |
 | M-03 | §6.2 `approval_history`、调整四总量 | 无 `ApprovalHistory`；`ApprovalRequest` 无 adjust_* | 无法审计「通过/退回/调整」及指导值 | 新增表与写入链路 |
 | M-04 | §5.2 `user_invoice_company_permissions` | 无对应实体/表 | 财务跨部门按开票公司看数无法实现 | 建表 + 过滤逻辑接 Forecast/Dashboard |
-| M-05 | §11.2 `Customer.Brand` / `User.Brand` | `Customer`、`User` 均无 Brand 字段 | 无法实现品牌过滤客户 | 扩展字段 + 列表/填报筛选 |
+| M-05 | §11.2 `Customer.Brand` / `User.Brand` | `Customer`、`User` 均无 Brand 字段 | 品牌过滤客户逻辑无法实现 | **第一期必做**：扩展字段 + 列表/填报筛选 |
 | M-06 | §10 `ProductHierarchy`（L1–L5，14 位编码） | 后端 `ProductsController`/实体需单独核对；前端 Forecast 多为演示级 PA/SubPA | 五级联动与编码规则可能未落地 | 对齐 §10.2–10.3 规则与导入脚本 |
 | M-07 | §6.2 `org_nodes`（brand、sales_region、sales_district 等） | `OrgNode` 现有 Name/Email/Role/Region/Company 等，与 PRD 字段名与语义未一一对应 | 业绩归属/大区**自动带出**规则依赖数据模型清晰映射 | 对照 §5.3 补字段或文档化映射 |
 
