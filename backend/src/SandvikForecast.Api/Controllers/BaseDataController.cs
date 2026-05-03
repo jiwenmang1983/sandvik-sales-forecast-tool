@@ -1,7 +1,10 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SandvikForecast.Core.Entities;
 using SandvikForecast.Core.Interfaces;
+using SandvikForecast.Infrastructure.Data;
 
 namespace SandvikForecast.Api.Controllers;
 
@@ -13,15 +16,18 @@ public class BaseDataController : ControllerBase
     private readonly IRepository<Customer> _customerRepo;
     private readonly IRepository<InvoiceCompany> _invoiceRepo;
     private readonly IRepository<ProductHierarchy> _productRepo;
+    private readonly SandvikDbContext _db;
 
     public BaseDataController(
         IRepository<Customer> customerRepo,
         IRepository<InvoiceCompany> invoiceRepo,
-        IRepository<ProductHierarchy> productRepo)
+        IRepository<ProductHierarchy> productRepo,
+        SandvikDbContext db)
     {
         _customerRepo = customerRepo;
         _invoiceRepo = invoiceRepo;
         _productRepo = productRepo;
+        _db = db;
     }
 
     #region Customers
@@ -31,23 +37,36 @@ public class BaseDataController : ControllerBase
     {
         try
         {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userBrand = "Sandvik";
+
+            if (!string.IsNullOrEmpty(userIdClaim))
+            {
+                var dbUser = await _db.Users.FirstOrDefaultAsync(u => u.Id == userIdClaim && u.IsActive);
+                if (dbUser != null && !string.IsNullOrEmpty(dbUser.Brand))
+                    userBrand = dbUser.Brand;
+            }
+
             var customers = await _customerRepo.GetAllAsync();
-            
+
+            // Filter by user's Brand
+            customers = customers.Where(c => c.Brand == userBrand);
+
             // Filter by status (IsActive)
             if (!string.IsNullOrEmpty(status))
             {
                 var isActive = status == "active";
                 customers = customers.Where(c => c.IsActive == isActive);
             }
-            
+
             // Filter by keyword (CustomerName or CustomerCode)
             if (!string.IsNullOrEmpty(keyword))
             {
-                customers = customers.Where(c => 
-                    c.CustomerName.Contains(keyword) || 
+                customers = customers.Where(c =>
+                    c.CustomerName.Contains(keyword) ||
                     c.CustomerCode.Contains(keyword));
             }
-            
+
             return Ok(new { success = true, data = customers.ToList() });
         }
         catch (Exception ex)
@@ -82,9 +101,10 @@ public class BaseDataController : ControllerBase
                 CustomerCode = request.Code,
                 CustomerName = request.Name,
                 Region = request.Region ?? "",
+                Brand = request.Brand ?? "Sandvik",
                 IsActive = request.IsActive ?? true
             };
-            
+
             var created = await _customerRepo.AddAsync(customer);
             return StatusCode(201, new { success = true, data = created, message = "Customer created" });
         }
@@ -102,16 +122,18 @@ public class BaseDataController : ControllerBase
             var customer = await _customerRepo.GetByIdAsync(id);
             if (customer == null)
                 return NotFound(new { success = false, message = "Customer not found" });
-            
+
             if (!string.IsNullOrEmpty(request.Name))
                 customer.CustomerName = request.Name;
             if (!string.IsNullOrEmpty(request.Code))
                 customer.CustomerCode = request.Code;
             if (!string.IsNullOrEmpty(request.Region))
                 customer.Region = request.Region;
+            if (!string.IsNullOrEmpty(request.Brand))
+                customer.Brand = request.Brand;
             if (request.IsActive.HasValue)
                 customer.IsActive = request.IsActive.Value;
-            
+
             await _customerRepo.UpdateAsync(customer);
             return Ok(new { success = true, data = customer, message = "Customer updated" });
         }
@@ -383,8 +405,8 @@ public class BaseDataController : ControllerBase
 
 #region DTOs
 
-public record CreateCustomerRequest(string Code, string Name, string? Region, bool? IsActive);
-public record UpdateCustomerRequest(string? Name, string? Code, string? Region, bool? IsActive);
+public record CreateCustomerRequest(string Code, string Name, string? Region, string? Brand, bool? IsActive);
+public record UpdateCustomerRequest(string? Name, string? Code, string? Region, string? Brand, bool? IsActive);
 
 public record CreateInvoiceCompanyRequest(string Code, string Name, string? TaxNumber, string? BankAccount, string? Address, string? Phone, bool? IsActive);
 public record UpdateInvoiceCompanyRequest(string? Name, string? Code, string? TaxNumber, string? BankAccount, string? Address, string? Phone, bool? IsActive);

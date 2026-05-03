@@ -85,18 +85,23 @@ public class DashboardController : ControllerBase
             var userRegion = user.Region ?? "";
 
             // 3. Get current period info (most recent ForecastPeriod with Status='Active')
-            var currentPeriod = await _db.ForecastPeriods
-                .Where(p => p.Status == "Active" && !p.IsDeleted)
-                .OrderByDescending(p => p.PeriodYear)
-                .ThenByDescending(p => p.PeriodMonth)
-                .FirstOrDefaultAsync();
+            // Load into memory to parse PeriodStartYearMonth (EF can't translate string parsing to SQL)
+            var allPeriods = await _db.ForecastPeriods.Where(p => !p.IsDeleted).ToListAsync();
+            var currentPeriod = allPeriods
+                .Where(p => p.Status == "Active")
+                .OrderByDescending(p => int.TryParse(p.PeriodStartYearMonth.Split('-').FirstOrDefault(), out var y) ? y : 0)
+                .ThenByDescending(p => int.TryParse(p.PeriodStartYearMonth.Split('-').Skip(1).FirstOrDefault(), out var m) ? m : 0)
+                .FirstOrDefault();
 
             string currentPeriodName = "";
             string currentPeriodTime = "";
             if (currentPeriod != null)
             {
-                currentPeriodName = $"{currentPeriod.PeriodYear}年{currentPeriod.PeriodMonth}月";
-                currentPeriodTime = $"{currentPeriod.StartDate:yyyy-MM-dd} ~ {currentPeriod.EndDate:yyyy-MM-dd}";
+                var parts = currentPeriod.PeriodStartYearMonth.Split('-');
+                var py = parts.Length > 0 && int.TryParse(parts[0], out var y) ? y : 0;
+                var pm = parts.Length > 1 && int.TryParse(parts[1], out var m) ? m : 0;
+                currentPeriodName = $"{py}年{pm}月";
+                currentPeriodTime = $"{currentPeriod.FillTimeStart:yyyy-MM-dd} ~ {currentPeriod.FillTimeEnd:yyyy-MM-dd}";
             }
 
             // 4. Build the filtered forecast record IDs based on role
@@ -344,29 +349,32 @@ public class DashboardController : ControllerBase
             // Get period name
             string periodName = "";
             if (periods.TryGetValue(r.ForecastPeriodId, out var period))
-                periodName = $"{period.PeriodYear}年{period.PeriodMonth}月";
+                periodName = period.PeriodStartYearMonth ?? "";
 
             customers.TryGetValue(r.CustomerId, out var customer);
             invoiceCompanies.TryGetValue(r.InvoiceCompanyId, out var invoiceCompany);
 
-            result.Add(new ForecastRecordDetail
-            {
-                Id = r.Id,
-                Amount = r.Amount,
-                Status = r.Status,
-                ForecastPeriodId = r.ForecastPeriodId,
-                CustomerId = r.CustomerId,
-                ProductId = r.ProductId,
-                InvoiceCompanyId = r.InvoiceCompanyId,
-                CreatedByUserId = r.CreatedByUserId,
-                CustomerName = customer?.CustomerName ?? "",
-                CustomerRegion = customer?.Region ?? "",
-                PeriodYear = period?.PeriodYear ?? 0,
-                PeriodMonth = period?.PeriodMonth ?? 0,
-                ForecastPeriodName = periodName,
-                InvoiceCompanyName = invoiceCompany?.CompanyName ?? "",
-                ProductLevel1Name = productL1Name
-            });
+                var periodParts = period?.PeriodStartYearMonth?.Split('-') ?? Array.Empty<string>();
+                var pYear = periodParts.Length > 0 && int.TryParse(periodParts[0], out var py2) ? py2 : 0;
+                var pMonth = periodParts.Length > 1 && int.TryParse(periodParts[1], out var pm2) ? pm2 : 0;
+                result.Add(new ForecastRecordDetail
+                {
+                    Id = r.Id,
+                    Amount = r.OrderAmount + r.InvoiceAmount,
+                    Status = r.Status,
+                    ForecastPeriodId = r.ForecastPeriodId,
+                    CustomerId = r.CustomerId,
+                    ProductId = r.ProductId,
+                    InvoiceCompanyId = r.InvoiceCompanyId,
+                    CreatedByUserId = r.CreatedByUserId,
+                    CustomerName = customer?.CustomerName ?? "",
+                    CustomerRegion = customer?.Region ?? "",
+                    PeriodYear = pYear,
+                    PeriodMonth = pMonth,
+                    ForecastPeriodName = periodName,
+                    InvoiceCompanyName = invoiceCompany?.CompanyName ?? "",
+                    ProductLevel1Name = productL1Name
+                });
         }
 
         return result;

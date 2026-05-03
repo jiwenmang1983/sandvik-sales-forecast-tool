@@ -16,8 +16,10 @@ public class SandvikDbContext : DbContext
     public DbSet<Approval> Approvals => Set<Approval>();
     public DbSet<OrgNode> OrgNodes => Set<OrgNode>();
     public DbSet<ApprovalRequest> ApprovalRequests => Set<ApprovalRequest>();
+    public DbSet<ApprovalHistory> ApprovalHistories => Set<ApprovalHistory>();
     public DbSet<LoginLog> LoginLogs => Set<LoginLog>();
     public DbSet<OpLog> OpLogs => Set<OpLog>();
+    public DbSet<EmailQueueItem> EmailQueueItems => Set<EmailQueueItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -50,7 +52,11 @@ public class SandvikDbContext : DbContext
         modelBuilder.Entity<ForecastPeriod>(e =>
         {
             e.ToTable("ForecastPeriods");
-            e.HasIndex(f => new { f.PeriodYear, f.PeriodMonth, f.PeriodType }).IsUnique();
+            e.HasKey(f => f.Id);
+            e.Property(f => f.Id).HasColumnType("varchar(36)");
+            e.Ignore(f => f.CreatedAt);
+            e.Ignore(f => f.UpdatedAt);
+            e.Ignore(f => f.IsDeleted);
         });
 
         modelBuilder.Entity<ForecastRecord>(e =>
@@ -84,6 +90,23 @@ public class SandvikDbContext : DbContext
             e.Ignore(a => a.CreatedAt);
             e.Ignore(a => a.UpdatedAt);
             e.Ignore(a => a.IsDeleted);
+        });
+        modelBuilder.Entity<ApprovalHistory>(e =>
+        {
+            e.ToTable("approval_histories");
+            e.Property(h => h.Id).HasColumnType("int");
+            e.Property(h => h.ApprovalRequestId).HasColumnName("approval_request_id");
+            e.Property(h => h.Action).HasColumnName("action").HasMaxLength(20);
+            e.Property(h => h.OperatorUserId).HasColumnName("operator_user_id");
+            e.Property(h => h.OperatedAt).HasColumnName("operated_at");
+            e.Property(h => h.Comments).HasColumnName("comments").HasMaxLength(500);
+            e.Property(h => h.AdjustOrderAmount).HasColumnName("adjust_order_amount").HasPrecision(18, 2);
+            e.Property(h => h.AdjustInvoiceAmount).HasColumnName("adjust_invoice_amount").HasPrecision(18, 2);
+            e.Property(h => h.AdjustOrderQty).HasColumnName("adjust_order_qty").HasPrecision(18, 2);
+            e.Property(h => h.AdjustInvoiceQty).HasColumnName("adjust_invoice_qty").HasPrecision(18, 2);
+            e.Property(h => h.CreatedAt).HasColumnName("created_at");
+            e.Ignore(h => h.UpdatedAt);
+            e.Ignore(h => h.IsDeleted);
         });
     }
 }

@@ -129,3 +129,9 @@
 /mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Api/bin/Debug/net8.0/MailKit.dll
 /mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Api/bin/Debug/net8.0/MimeKit.dll
 /mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Api/obj/Debug/net8.0/SandvikForecast.Api.sourcelink.json
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Api/bin/Debug/net8.0/Microsoft.Extensions.Caching.Memory.dll
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Api/bin/Debug/net8.0/Microsoft.Extensions.DependencyInjection.dll
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Api/bin/Debug/net8.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Api/bin/Debug/net8.0/Microsoft.Extensions.Logging.dll
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Api/bin/Debug/net8.0/Microsoft.Extensions.Logging.Abstractions.dll
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Api/bin/Debug/net8.0/Microsoft.Extensions.Options.dll

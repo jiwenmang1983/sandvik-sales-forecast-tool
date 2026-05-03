@@ -230,12 +230,12 @@ public class ForecastController : ControllerBase
 
         // Check for duplicate record (same ForecastPeriodId, CustomerId, ProductId)
         var existingRecord = await _db.ForecastRecords
-            .FirstOrDefaultAsync(r => 
-                r.ForecastPeriodId == req.ForecastPeriodId && 
-                r.CustomerId == req.CustomerId && 
+            .FirstOrDefaultAsync(r =>
+                r.ForecastPeriodId == req.ForecastPeriodId &&
+                r.CustomerId == req.CustomerId &&
                 r.ProductId == req.ProductId &&
                 !r.IsDeleted);
-        
+
         if (existingRecord != null)
             return BadRequest(new { success = false, message = "A record with the same ForecastPeriodId, CustomerId, and ProductId already exists" });
 
@@ -249,7 +249,10 @@ public class ForecastController : ControllerBase
                 ProductId = req.ProductId,
                 Year = req.Year,
                 Month = req.Month,
-                Amount = req.Amount,
+                OrderQty = req.OrderQty,
+                OrderAmount = req.OrderAmount,
+                InvoiceQty = req.InvoiceQty,
+                InvoiceAmount = req.InvoiceAmount,
                 CreatedByUserId = userId,
                 Status = "Draft"
             };
@@ -258,7 +261,6 @@ public class ForecastController : ControllerBase
         }
         catch (DbUpdateException ex)
         {
-            // Handle unique constraint violations or other DB errors
             Console.WriteLine($"CreateRecord error: {ex.Message} {ex.StackTrace}");
             return StatusCode(500, new { success = false, message = "Failed to create record: " + ex.InnerException?.Message });
         }
@@ -269,7 +271,10 @@ public class ForecastController : ControllerBase
     {
         var record = await _recordRepo.GetByIdAsync(id);
         if (record == null) return NotFound(new { success = false, message = "Record not found" });
-        record.Amount = req.Amount;
+        record.OrderQty = req.OrderQty;
+        record.OrderAmount = req.OrderAmount;
+        record.InvoiceQty = req.InvoiceQty;
+        record.InvoiceAmount = req.InvoiceAmount;
         record.Notes = req.Notes;
         record.Status = req.Status;
         await _recordRepo.UpdateAsync(record);
@@ -297,10 +302,10 @@ public class ForecastController : ControllerBase
         if (!string.IsNullOrEmpty(periodId))
             records = records.Where(r => r.ForecastPeriodId == periodId).ToList();
 
-        var lines = new List<string> { "Customer,InvoiceCompany,Product,Year,Month,Amount,Notes" };
+        var lines = new List<string> { "Customer,InvoiceCompany,Product,Year,Month,OrderQty,OrderAmount,InvoiceQty,InvoiceAmount,Notes" };
         foreach (var r in records)
         {
-            lines.Add($"{r.CustomerId},{r.InvoiceCompanyId},{r.ProductId},{r.Year},{r.Month},{r.Amount},{r.Notes ?? ""}");
+            lines.Add($"{r.CustomerId},{r.InvoiceCompanyId},{r.ProductId},{r.Year},{r.Month},{r.OrderQty},{r.OrderAmount},{r.InvoiceQty},{r.InvoiceAmount},{r.Notes ?? ""}");
         }
         var csv = string.Join("\n", lines);
         return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", $"forecast_export_{periodId ?? "all"}.csv");
@@ -321,7 +326,10 @@ public class ForecastController : ControllerBase
                 ProductId = req.ProductId,
                 Year = req.Year,
                 Month = req.Month,
-                Amount = req.Amount,
+                OrderQty = req.OrderQty,
+                OrderAmount = req.OrderAmount,
+                InvoiceQty = req.InvoiceQty,
+                InvoiceAmount = req.InvoiceAmount,
                 Notes = req.Notes,
                 CreatedByUserId = userId,
                 Status = "Draft"
@@ -353,7 +361,10 @@ public class ForecastController : ControllerBase
 
             if (existing != null)
             {
-                existing.Amount = r.orderAmount;
+                existing.OrderQty = r.orderQty;
+                existing.OrderAmount = r.orderAmount;
+                existing.InvoiceQty = r.invoiceQty;
+                existing.InvoiceAmount = r.invoiceAmount;
                 existing.Status = "Draft";
             }
             else
@@ -366,7 +377,10 @@ public class ForecastController : ControllerBase
                     ProductId = r.ProductId,
                     Year = r.Year,
                     Month = r.Month,
-                    Amount = r.orderAmount,
+                    OrderQty = r.orderQty,
+                    OrderAmount = r.orderAmount,
+                    InvoiceQty = r.invoiceQty,
+                    InvoiceAmount = r.invoiceAmount,
                     Status = "Draft",
                     CreatedByUserId = userId
                 };
@@ -392,9 +406,9 @@ public class ForecastController : ControllerBase
     }
 }
 
-public record CreateRecordRequest(string ForecastPeriodId, string CustomerId, string InvoiceCompanyId, string ProductId, int Year, int Month, decimal Amount);
-public record UpdateRecordRequest(decimal Amount, string? Notes, string Status);
-public record ImportRecordRequest(string ForecastPeriodId, string CustomerId, string InvoiceCompanyId, string ProductId, int Year, int Month, decimal Amount, string? Notes);
+public record CreateRecordRequest(string ForecastPeriodId, string CustomerId, string InvoiceCompanyId, string ProductId, int Year, int Month, decimal OrderQty, decimal OrderAmount, decimal InvoiceQty, decimal InvoiceAmount);
+public record UpdateRecordRequest(decimal OrderQty, decimal OrderAmount, decimal InvoiceQty, decimal InvoiceAmount, string? Notes, string Status);
+public record ImportRecordRequest(string ForecastPeriodId, string CustomerId, string InvoiceCompanyId, string ProductId, int Year, int Month, decimal OrderQty, decimal OrderAmount, decimal InvoiceQty, decimal InvoiceAmount, string? Notes);
 public record SaveDraftRequest(string PeriodId, List<SaveDraftRecord> Records);
-public record SaveDraftRecord(string CustomerId, string InvoiceCompanyId, string ProductId, int Year, int Month, decimal orderAmount);
+public record SaveDraftRecord(string CustomerId, string InvoiceCompanyId, string ProductId, int Year, int Month, decimal orderQty, decimal orderAmount, decimal invoiceQty, decimal invoiceAmount);
 public record SubmitRequest(string PeriodId);

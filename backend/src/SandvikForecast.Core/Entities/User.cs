@@ -6,5 +6,6 @@ public class User : BaseEntity
     public string DisplayName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Role { get; set; } = "SALES";
+    public string Brand { get; set; } = "Sandvik";
     public bool IsActive { get; set; } = true;
 }
