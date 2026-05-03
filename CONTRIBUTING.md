@@ -1,46 +1,50 @@
 # Sandvik Sales Forecast Tool — Contributing Guide
 
-## 开发团队
-
-| 团队 | 成员 | 职责 |
-|------|------|------|
-| **A组** | 吉文 + 助理(我) + Codex | 功能开发、代码实现 |
-| **B组** | hermes(PM) + Claude Code | 产品需求、PRD输出 |
+> 本项目（SFT）所有开发人员必须遵循本文档规范。
+> 仓库地址：https://github.com/jiwenmang1983/sandvik-sales-forecast-tool
+> 正式开发分支：`master`
 
 ---
 
-## 代码管理规范
+## 1. 团队角色
 
-### 1. 分支模型：GitHub Flow（简化版）
+| 角色 | 姓名 | 职责 |
+|------|------|------|
+| **最终审批人** | Mark | 确认并批准 PR 合并 |
+| **PM / 产品负责人** | Hermes（小P） | 需求拆解、调度 CC 开发 B 组代码、Review A 组代码 |
+| **PM** | 小A | Review 所有 PR，通知 Mark 进行合并确认 |
+| **助理** | — | 调度 Codex 开发 A 组前端代码 |
+| **后端开发** | Claude Code (CC) | B 组后端 / 基础设施实现（Hermes 调度） |
+| **前端开发** | Codex | A 组前端 / 业务逻辑实现（助理调度） |
+| **代码审查** | 吉文 | Review B 组（后端）代码 |
 
+---
+
+## 2. 分支管理
+
+### 分支命名
 ```
-main ─────────────────────────────────────── 始终可部署
-       ↖ PR#1        ↖ PR#2
-feat/xxx ──── 开发完成 → PR → review → 合并
-```
-
-- **main** — 稳定分支，始终可部署
-- **feat/xxx** — 功能分支，每人用自己的分支
-- **docs/xxx** — 文档分支
-- **fix/xxx** — 修复分支
-
-### 2. 分支命名规范
-
-```
-feat/<功能简述>-<负责人>
-fix/<问题简述>-<负责人>
-docs/<文档类型>-<负责人>
+feat/<功能简述>
+fix/<问题简述>
+docs/<文档类型>
 ```
 
 示例：
 ```
-feat/forecast-chart-jw        # A组 - 预测图表
-feat/user-auth-hm             # B组 - 用户认证
-fix/login-bug-jw              # A组 - 登录bug修复
-docs/api-spec-hm              # B组 - API文档
+feat/forecast-period-api      # 预测周期管理 API
+fix/approval-workflow        # 审批流程 Bug
+docs/brs-update             # BRS 文档更新
 ```
 
-### 3. Commit 规范
+### 分支策略
+- **`master`** — 正式开发分支，始终可部署，所有代码最终合入此分支
+- **`feature/xxx`** — 新功能开发分支
+- **`fix/xxx`** — Bug 修复分支
+- **`docs/xxx`** — 文档更新分支
+
+---
+
+## 3. Commit 规范
 
 ```
 <type>: <简短描述>
@@ -50,106 +54,115 @@ type: feat | fix | docs | refactor | test | chore
 
 示例：
 ```
-feat: 添加预测图表导出功能
-fix: 修复登录页面白屏问题
-docs: 更新API接口文档
+feat: 预测周期管理页面对接真实 API
+fix: 修复审批提交空指针异常
+docs: 更新 BRS 需求说明书
 ```
+
+**规则：禁止空 commit，禁止提交无意义的 WIP commit。**
 
 ---
 
-## PR 流程
+## 4. PR 流程
 
-### 提 PR 规范
+```
+分支开发 → commit → push → 创建 PR → Review → Mark 确认 → 合并到 master
+```
+
+### 4.1 PR 创建规范
 
 每个 PR 必须包含：
 
 | 字段 | 说明 |
 |------|------|
 | **标题** | `<type>: <改动简述>` |
-| **描述** | 改了什么、为什么改、怎么测的 |
-| ** reviewers** | 指定至少 1 人 review |
-| **labels** | `feat` / `fix` / `docs` 等 |
+| **描述** | 改了什么、为什么改、怎么测试的 |
+| **Reviewers** | 按分组指定至少 1 人 |
+| **Labels** | `feat` / `fix` / `docs` 等 |
 
-### Review 规则
+### 4.2 Review 分组
 
-- **A组代码** → 由 B组 (hermes) review
-- **B组代码** → 由 A组 (吉文) review
-- 助理(我) 做自动化检查（格式、lint、测试）
-- **至少 1 人 approve** 才能合并
+| 代码分组 | 内容 | 代码实现 | Review 责任人 |
+|---------|------|---------|-------------|
+| **A组** | 前端 / 业务逻辑 | Codex（助理调度） | **Hermes** |
+| **B组** | 后端 / 基础设施 | CC（Hermes调度） | **吉文** |
+
+### 4.3 合并规则
+
+- 至少 **1 人 approve** 方可合并
+- A组 PR → Hermes Review → 小A 通知 Mark → Mark 确认合并
+- B组 PR → 吉文 Review → 小A 通知 Mark → Mark 确认合并
 - CI 必须通过
-
-### 合并后
-
-- 删除源分支
-- main 自动部署（或触发部署流程）
+- 合入后删除源分支
 
 ---
 
-## 任务协作流程
+## 5. AI 代码规范
 
-### 任务分配
-
-1. **hermes(PM)** 出 PRD / 需求文档
-2. **助理(我)** 拆任务、估工时、排期
-3. 双方各自领任务
-4. 领任务者在对应分支开发
-
-### 任务看板（GitHub Projects）
-
-```
-ToDo → In Progress → In Review → Done
-```
+- **CC** 生成的代码必须经过 Review 才能合入
+- **Codex** 生成的代码必须经过 Review 才能合入
+- **禁止任何 AI 代码直接 push 到 master**
+- 关键逻辑必须添加中文注释
+- 新增函数须注明输入输出
 
 ---
 
-## AI 辅助开发规范
+## 6. 禁止事项
 
-### Codex / Claude Code 使用
-
-- **我调度 Codex** 执行 A组代码实现
-- **hermes调度 Claude Code** 执行 B组代码实现
-- 生成的代码必须经过 review 才能合并
-- 不允许 AI 生成的代码直接 push 到 main
-
-### 代码质量
-
-- 关键逻辑必须有中文注释
-- 新增函数要写清楚输入输出
-- 禁止提交空 commit 或 WIP commit
+- ❌ AI 代码直接 push master
+- ❌ 未经 Review 直接合并 PR
+- ❌ force push master 分支
+- ❌ 在 master 直接提交（所有改动走 PR）
 
 ---
 
-## 目录结构
+## 7. 目录结构
 
 ```
 sandvik-sales-forecast-tool/
-├── app.js                    # 核心业务逻辑
-├── index.html                # 主入口
-├── styles.css
-├── lib/                      # 第三方库
-├── docs/                     # 文档（API、设计等）
-├── screenshots/              # 截图
-├── tests/                    # 测试用例（后续添加）
-├── CONTRIBUTING.md           # 本文件
+├── backend/                    # 后端 (.NET)
+│   └── src/
+│       ├── SandvikForecast.Core/       # Entity / Domain
+│       ├── SandvikForecast.Infrastructure/ # Data / Repository
+│       └── SandvikForecast.Api/        # API / Controller / Service
+├── frontend/                   # 前端 (Vue 3)
+│   └── src/
+│       ├── views/             # 页面组件
+│       ├── components/         # 公共组件
+│       └── router/            # 路由
+├── docs/                      # 文档
+│   ├── BRS_v0.1.md           # 需求规格说明书
+│   ├── PRD_REVIEW_WORKFLOW.md # 协作流程
+│   └── 02-数据库设计.md       # 数据库设计
+├── CONTRIBUTING.md            # 本文件
 └── README.md
 ```
 
 ---
 
-## 快速开始
+## 8. 快速开始
 
 ```bash
-# clone 项目
+# 1. 克隆项目
 git clone https://github.com/jiwenmang1983/sandvik-sales-forecast-tool.git
 cd sandvik-sales-forecast-tool
 
-# 创建功能分支
+# 2. 确保在 master 分支
+git checkout master
+git pull origin master
+
+# 3. 创建功能分支
 git checkout -b feat/your-feature
 
-# 开发完成后提交
+# 4. 开发 & 提交
 git add .
-git commit -m "feat: your feature"
+git commit -m "feat: 你的功能描述"
 git push origin feat/your-feature
 
-# 在 GitHub 提 PR，等待 review
+# 5. 在 GitHub 创建 PR，指定 Reviewer
+# A组代码 → 指定 Hermes review
+# B组代码 → 指定 吉文 review
+
+# 6. Review 通过后，小A 通知 Mark
+# 7. Mark 确认合并 → PR 合并到 master
 ```
