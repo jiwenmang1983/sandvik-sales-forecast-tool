@@ -13,6 +13,7 @@ import SystemLog from '../views/SystemLog.vue'
 import LoginLog from '../views/LoginLog.vue'
 import ApprovalFlow from '../views/ApprovalFlow.vue'
 import TemplateManagement from '../views/TemplateManagement.vue'
+import ForecastPeriod from '../views/ForecastPeriod.vue'
 
 const routes = [
   {
@@ -48,11 +49,12 @@ const routes = [
       },
       { path: 'users', name: 'Users', component: Users },
       { path: 'permissions', name: 'Permissions', component: Permissions },
-      { path: 'fc-version', name: 'FcVersion', component: FcVersion },
+      { path: 'fc-version', name: 'FcVersion', component: ForecastPeriod },
       { path: 'login-log', name: 'LoginLog', component: LoginLog },
       { path: 'system-log', name: 'SystemLog', component: SystemLog },
       { path: 'approval-flow', name: 'ApprovalFlow', component: ApprovalFlow },
-      { path: 'template-management', name: 'TemplateManagement', component: TemplateManagement }
+      { path: 'template-management', name: 'TemplateManagement', component: TemplateManagement },
+      { path: 'forecast-periods', name: 'ForecastPeriod', component: ForecastPeriod }
     ]
   },
   {

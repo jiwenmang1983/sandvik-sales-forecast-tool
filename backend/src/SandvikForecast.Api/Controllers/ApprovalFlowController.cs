@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using SandvikForecast.Api.Services;
 using SandvikForecast.Core.Entities;
+using SandvikForecast.Core.Interfaces;
 using SandvikForecast.Infrastructure.Data;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace SandvikForecast.Api.Controllers;
 
@@ -14,12 +15,12 @@ namespace SandvikForecast.Api.Controllers;
 public class ApprovalFlowController : ControllerBase
 {
     private readonly SandvikDbContext _db;
-    private readonly ApprovalEmailService _emailService;
+    private readonly IEmailQueueService _emailQueueService;
 
-    public ApprovalFlowController(SandvikDbContext db, ApprovalEmailService emailService)
+    public ApprovalFlowController(SandvikDbContext db, IEmailQueueService emailQueueService)
     {
         _db = db;
-        _emailService = emailService;
+        _emailQueueService = emailQueueService;
     }
 
     [HttpPost("start")]
@@ -85,23 +86,11 @@ public class ApprovalFlowController : ControllerBase
         var histories = await _db.ApprovalHistories
             .Where(h => h.ApprovalRequestId == id)
             .OrderBy(h => h.OperatedAt)
-            .Select(h => new {
-                h.Id,
-                h.Action,
-                h.OperatorUserId,
-                OperatedAt = h.OperatedAt.ToString("yyyy-MM-dd HH:mm:ss"),
-                h.Comments,
-                h.AdjustOrderAmount,
-                h.AdjustInvoiceAmount,
-                h.AdjustOrderQty,
-                h.AdjustInvoiceQty
-            })
             .ToListAsync();
 
         return Ok(new { success = true, data = new { approval, histories } });
     }
 
-    // GET /api/approval-flow/{id}/history  — returns history records only, with operator display name
     [HttpGet("{id}/history")]
     public async Task<ActionResult> GetApprovalHistory(int id)
     {
@@ -110,10 +99,9 @@ public class ApprovalFlowController : ControllerBase
             .OrderByDescending(h => h.OperatedAt)
             .ToListAsync();
 
-        var userIds = histories.Select(h => h.OperatorUserId).Distinct().ToList();
-        var userIdStrs = userIds.Select(id => id.ToString()).ToList();
+        var stringUserIds = histories.Select(h => h.OperatorUserId).Distinct().ToList();
         var userMap = await _db.Users
-            .Where(u => userIdStrs.Contains(u.Id))
+            .Where(u => stringUserIds.Contains(u.Id))
             .ToDictionaryAsync(u => u.Id, u => u.DisplayName);
 
         var result = histories.Select(h => new {
@@ -121,7 +109,7 @@ public class ApprovalFlowController : ControllerBase
             h.ApprovalRequestId,
             h.Action,
             h.OperatorUserId,
-            OperatorName = userMap.GetValueOrDefault(h.OperatorUserId.ToString(), $"User {h.OperatorUserId}"),
+            OperatorName = userMap.GetValueOrDefault(h.OperatorUserId, $"User {h.OperatorUserId}"),
             OperatedAt = h.OperatedAt.ToString("yyyy-MM-dd HH:mm:ss"),
             h.Comments,
             h.AdjustOrderAmount,
@@ -151,7 +139,7 @@ public class ApprovalFlowController : ControllerBase
         {
             ApprovalRequestId = req.ApprovalRequestId,
             Action = "SUBMIT",
-            OperatorUserId = int.TryParse(userId, out var uid) ? uid : 0,
+            OperatorUserId = userId,
             OperatedAt = DateTime.UtcNow,
             Comments = req.Comments
         };
@@ -159,18 +147,25 @@ public class ApprovalFlowController : ControllerBase
         approval.Status = "Pending";
         await _db.SaveChangesAsync();
 
-        // Notify next approver (placeholder for org-node lookup)
         var nextApproverEmail = await GetNextApproverEmailAsync(approval);
         if (!string.IsNullOrEmpty(nextApproverEmail))
         {
-            await _emailService.SendApprovalNotificationAsync(
+            var periodFcName = period?.FcName ?? approval.ForecastPeriodId;
+            var operatorName = user?.UserName ?? userId;
+            var templateVars = JsonSerializer.Serialize(new Dictionary<string, string>
+            {
+                { "periodName", periodFcName },
+                { "submitter", operatorName },
+                { "action", "SUBMIT" },
+                { "comments", req.Comments ?? "" }
+            });
+            await _emailQueueService.QueueEmailAsync(
                 nextApproverEmail,
-                nextApproverEmail.Split('@')[0],
-                "SUBMIT",
-                period?.FcName ?? approval.ForecastPeriodId,
-                user?.UserName ?? userId,
-                req.Comments,
-                DateTime.UtcNow);
+                null,
+                $"审批请求 - {periodFcName}",
+                $"{operatorName} 提交了预测数据，等待您的审批",
+                null,
+                templateVars);
         }
 
         return Ok(new { success = true, message = "Submitted for approval" });
@@ -194,7 +189,7 @@ public class ApprovalFlowController : ControllerBase
         {
             ApprovalRequestId = req.ApprovalRequestId,
             Action = "APPROVE",
-            OperatorUserId = int.TryParse(userId, out var uid) ? uid : 0,
+            OperatorUserId = userId,
             OperatedAt = DateTime.UtcNow,
             Comments = req.Comments
         };
@@ -203,18 +198,24 @@ public class ApprovalFlowController : ControllerBase
         approval.Comments = req.Comments;
         await _db.SaveChangesAsync();
 
-        // Notify submitter
         var submitter = await _db.Users.FindAsync(approval.UserId);
         if (submitter != null && !string.IsNullOrEmpty(submitter.Email))
         {
-            await _emailService.SendApprovalNotificationAsync(
+            var periodFcName = period?.FcName ?? approval.ForecastPeriodId;
+            var templateVars = JsonSerializer.Serialize(new Dictionary<string, string>
+            {
+                { "periodName", periodFcName },
+                { "submitter", submitter.UserName ?? approval.UserId },
+                { "action", "APPROVE" },
+                { "comments", req.Comments ?? "" }
+            });
+            await _emailQueueService.QueueEmailAsync(
                 submitter.Email,
-                submitter.UserName,
-                "APPROVE",
-                period?.FcName ?? approval.ForecastPeriodId,
-                user?.UserName ?? userId,
-                req.Comments,
-                DateTime.UtcNow);
+                null,
+                $"审批通过 - {periodFcName}",
+                $"您的预测数据已通过审批",
+                null,
+                templateVars);
         }
 
         return Ok(new { success = true, message = "Approved" });
@@ -238,7 +239,7 @@ public class ApprovalFlowController : ControllerBase
         {
             ApprovalRequestId = req.ApprovalRequestId,
             Action = "REJECT",
-            OperatorUserId = int.TryParse(userId, out var uid) ? uid : 0,
+            OperatorUserId = userId,
             OperatedAt = DateTime.UtcNow,
             Comments = req.Comments
         };
@@ -247,18 +248,24 @@ public class ApprovalFlowController : ControllerBase
         approval.Comments = req.Comments;
         await _db.SaveChangesAsync();
 
-        // Notify submitter
         var submitter = await _db.Users.FindAsync(approval.UserId);
         if (submitter != null && !string.IsNullOrEmpty(submitter.Email))
         {
-            await _emailService.SendApprovalNotificationAsync(
+            var periodFcName = period?.FcName ?? approval.ForecastPeriodId;
+            var templateVars = JsonSerializer.Serialize(new Dictionary<string, string>
+            {
+                { "periodName", periodFcName },
+                { "submitter", submitter.UserName ?? approval.UserId },
+                { "action", "REJECT" },
+                { "comments", req.Comments ?? "" }
+            });
+            await _emailQueueService.QueueEmailAsync(
                 submitter.Email,
-                submitter.UserName,
-                "REJECT",
-                period?.FcName ?? approval.ForecastPeriodId,
-                user?.UserName ?? userId,
-                req.Comments,
-                DateTime.UtcNow);
+                null,
+                $"审批驳回 - {periodFcName}",
+                $"您的预测数据被驳回，原因：{req.Comments ?? "无"}",
+                null,
+                templateVars);
         }
 
         return Ok(new { success = true, message = "Rejected" });
@@ -282,7 +289,7 @@ public class ApprovalFlowController : ControllerBase
         {
             ApprovalRequestId = req.ApprovalRequestId,
             Action = "ADJUST",
-            OperatorUserId = int.TryParse(userId, out var uid) ? uid : 0,
+            OperatorUserId = userId,
             OperatedAt = DateTime.UtcNow,
             Comments = req.Comments,
             AdjustOrderAmount = req.AdjustOrderAmount,
@@ -295,18 +302,24 @@ public class ApprovalFlowController : ControllerBase
         approval.Comments = req.Comments;
         await _db.SaveChangesAsync();
 
-        // Notify submitter
         var submitter = await _db.Users.FindAsync(approval.UserId);
         if (submitter != null && !string.IsNullOrEmpty(submitter.Email))
         {
-            await _emailService.SendApprovalNotificationAsync(
+            var periodFcName = period?.FcName ?? approval.ForecastPeriodId;
+            var templateVars = JsonSerializer.Serialize(new Dictionary<string, string>
+            {
+                { "periodName", periodFcName },
+                { "submitter", submitter.UserName ?? approval.UserId },
+                { "action", "ADJUST" },
+                { "comments", req.Comments ?? "" }
+            });
+            await _emailQueueService.QueueEmailAsync(
                 submitter.Email,
-                submitter.UserName,
-                "ADJUST",
-                period?.FcName ?? approval.ForecastPeriodId,
-                user?.UserName ?? userId,
-                req.Comments,
-                DateTime.UtcNow);
+                null,
+                $"数据调整 - {periodFcName}",
+                "您的预测数据已被调整",
+                null,
+                templateVars);
         }
 
         return Ok(new { success = true, message = "Adjusted" });
@@ -314,7 +327,6 @@ public class ApprovalFlowController : ControllerBase
 
     private async Task<string?> GetNextApproverEmailAsync(ApprovalRequest approval)
     {
-        // Find the next approver in the org chart based on the submitter's role/position
         var submitter = await _db.Users.FindAsync(approval.UserId);
         if (submitter == null || string.IsNullOrEmpty(submitter.Email))
             return null;

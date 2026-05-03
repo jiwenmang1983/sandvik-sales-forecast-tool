@@ -5,7 +5,7 @@ public class ApprovalHistory
     public int Id { get; set; }
     public int ApprovalRequestId { get; set; }
     public string Action { get; set; } = string.Empty; // SUBMIT / APPROVE / REJECT / ADJUST
-    public int OperatorUserId { get; set; }
+    public string OperatorUserId { get; set; }
     public DateTime OperatedAt { get; set; } = DateTime.UtcNow;
     public string? Comments { get; set; }
     public decimal? AdjustOrderAmount { get; set; }

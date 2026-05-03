@@ -331,9 +331,7 @@ const addExtUser = (user) => {
 }
 
 const removeExtUser = (uid) => {
-  formData.extensionUsers.extensionUsers = formData.extensionUsers.filter(id => id !== uid)
-  const idx = formData.extensionUsers.indexOf(uid)
-  if (idx > -1) formData.extensionUsers.splice(idx, 1)
+  formData.extensionUsers = formData.extensionUsers.filter(id => id !== uid)
 }
 
 const openAddDialog = () => {

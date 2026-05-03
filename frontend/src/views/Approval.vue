@@ -810,6 +810,8 @@ const handleSubmit = async () => {
       })
       logEmail(step.approverEmail, `【待审批】${rec.period}`, r.success, r.message)
     }
+    activeDetailTab.value = 'history'
+    await loadHistory()
     message.success('✅ 已提交审批，通知邮件已发送！')
   } else {
     message.error(result.message)
@@ -848,6 +850,8 @@ const handlePass = async () => {
       }
       message.success(`✅ 已通过，当前等待 ${result.nextApprover} 审批`)
     }
+    activeDetailTab.value = 'history'
+    await loadHistory()
   } else {
     message.error(result.message)
   }
@@ -881,6 +885,8 @@ const confirmReject = async () => {
     message.success('🔙 已退回给提交人')
     showRejectModal.value = false
     rejectReason.value = ''
+    activeDetailTab.value = 'history'
+    await loadHistory()
   } else {
     message.error(result.message)
   }

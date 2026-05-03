@@ -67,6 +67,25 @@ type: feat | fix | docs | refactor | test | chore
 
 > **Mark 说"推送 master"时，直接 push master，不走 PR 流程。**
 
+### 当前阶段：探索期（近期）
+
+由于 CC 探索式开发的特殊性，代码会直接写入 master 分支，不走 PR 流程：
+
+- CC 开发的代码 → 直接 commit 到 master → **普通 `git push`** 推送到 GitHub
+- 每天 23:00 cron 检查：如果 master 有未 push 的 commit，自动 push
+- Build 验证失败的代码不 push，发飞书通知负责人
+
+### 未来阶段：规范期（远期）
+
+CC 流程稳定、代码质量有保证后，切入标准 PR 流程：
+
+- 所有开发走 feature branch：`feat/<功能简述>`
+- 每日 23:00 自动创建 PR（各组分别创建）
+- Mark 审阅后 approve → 合并到 master
+- **Force-push 仍须 Mark 审批**
+
+> 切换时机由 Mark 决定，届时更新本章节。
+
 ### Push 规则
 
 - **默认使用普通 `git push`**，不用 force-push
