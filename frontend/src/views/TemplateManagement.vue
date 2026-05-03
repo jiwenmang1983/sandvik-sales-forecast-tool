@@ -50,7 +50,7 @@
                 <a-button size="small" @click="viewTemplate(record)">查看</a-button>
                 <a-button size="small" @click="editTemplate(record)">编辑</a-button>
                 <a-button size="small" type="primary" ghost @click="activateTemplate(record)" :disabled="record.isActive">激活</a-button>
-                <a-popconfirm title="确定删除该模板？" @confirm="deleteTemplate(record)">
+                <a-popconfirm title="确定删除该模板？" @confirm="handleDeleteTemplate(record)">
                   <a-button size="small" danger>删除</a-button>
                 </a-popconfirm>
               </a-space>
@@ -136,7 +136,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { FileTextOutlined } from '@ant-design/icons-vue'
-import { getTemplates, createTemplate, updateTemplate, deleteTemplate, activateTemplate as activateTplApi } from '../../api/templates'
+import { getTemplates, createTemplate, updateTemplate, deleteTemplate as deleteTemplateApi, activateTemplate as activateTplApi } from '@/api/templates'
 
 const keyword = ref('')
 const statusFilter = ref('')
@@ -256,9 +256,9 @@ const activateTemplate = async (tpl) => {
   }
 }
 
-const deleteTemplate = async (tpl) => {
+const handleDeleteTemplate = async (tpl) => {
   try {
-    const res = await deleteTemplate(tpl.id)
+    const res = await deleteTemplateApi(tpl.id)
     if (res.success) {
       message.success('模板已删除')
       fetchTemplates()
