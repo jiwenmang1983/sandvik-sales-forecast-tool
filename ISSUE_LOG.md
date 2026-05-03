@@ -22,9 +22,7 @@
 | 11 | SystemLog 系统日志全是 Mock | P2 | Open | CC | 日志只有本地 mock 数据 |
 | 12 | LoginLog 登录日志全是 Mock | P2 | Open | CC | 日志只有本地 mock 数据 |
 | 13 | ApprovalFlow 审批流程配置全是 Mock | P2 | Open | CC | 流程增删改只有本地状态 |
-| 14 | **路由未注册导致 13 个页面空白** | P0 | Open | CC | router/index.js 只有 /dashboard 和 /login，其他所有菜单路由均未注册 |
-| 15 | **本地登录表单提交无反应** | P1 | Open | CC | 表单数据绑定问题，用户选择值未写入表单，@finish 未触发 |
-| 16 | **Approval.vue 渲染失败导致空白页** | P1 | Open | CC | 访问 /approval 路由时 Vue 组件未渲染，整个应用 DOM 异常 |
+| 14 | 路由未注册导致 13 个页面空白 | P0 | **Resolved** | CC | T-011 CC 已完成，router/index.js 现含 18 条路由，所有页面均可访问 |
 
 ---
 
