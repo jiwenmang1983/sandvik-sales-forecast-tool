@@ -13,8 +13,8 @@
 
 | 状态 | 计数 |
 |------|------|
-| ✅ 已验收/已合并 | 14 |
-| 🔄 开发中 | 3 |
+| ✅ 已验收/已合并 | 15 |
+| 🔄 开发中 | 2 |
 | 🔄 待开发 | 3 |
 | **合计** | **21** |
 
@@ -38,7 +38,7 @@
 | T-011 | §4.3 | 审批历史记录（ApprovalHistory） | ✅ 已验收 | T-011 CC完成，前端历史Timeline+彩色badge，后端全链路写ApprovalHistory，build通过 |
 | T-012 | §4.3 | 审批调整动作（4个总量值） | ✅ 已验收 | T-011同CC完成，AdjustApproval Panel+4字段+历史记录展示，build通过 |
 | T-015 | §5.1 | 直线经理看团队数据权限 | ✅ 已验收 | OrgNode int Id修复 |
-| T-017 | §6 | ForecastRecord四度量字段 | 🔄 部分完成 | Entity+DTO已好，Controller已改，**前端待开发**，后端编译通过 |
+| T-017 | §6 | ForecastRecord四度量字段 | ✅ 已验收 | T-017 CC完成，forecast.js移除mock，Forecast.vue显示真实orderQty/orderAmount/invoiceQty/invoiceAmount，合计行和单价计算修复，build通过 |
 | T-018 | §6 | ForecastPeriod七字段 | 🔄 部分完成 | Entity已改，**Controller+前端+延期逻辑待开发** |
 | T-019 | §9 | M365 SSO登录（生产） | 🔄 待开发 | 当前为本地测试登录 |
 
