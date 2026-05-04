@@ -1,0 +1,12 @@
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/bin/Release/net8.0/SandvikForecast.Core.deps.json
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/bin/Release/net8.0/SandvikForecast.Core.dll
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/bin/Release/net8.0/SandvikForecast.Core.pdb
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/obj/Release/net8.0/SandvikForecast.Core.GeneratedMSBuildEditorConfig.editorconfig
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/obj/Release/net8.0/SandvikForecast.Core.AssemblyInfoInputs.cache
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/obj/Release/net8.0/SandvikForecast.Core.AssemblyInfo.cs
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/obj/Release/net8.0/SandvikForecast.Core.csproj.CoreCompileInputs.cache
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/obj/Release/net8.0/SandvikForecast.Core.sourcelink.json
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/obj/Release/net8.0/SandvikForecast.Core.dll
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/obj/Release/net8.0/refint/SandvikForecast.Core.dll
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/obj/Release/net8.0/SandvikForecast.Core.pdb
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/obj/Release/net8.0/ref/SandvikForecast.Core.dll

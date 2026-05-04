@@ -22,6 +22,11 @@ public class ForecastRecord : BaseEntity
     [System.Text.Json.Serialization.JsonIgnore]
     public decimal UnitPrice => OrderQty != 0 ? Math.Round(OrderAmount / OrderQty, 2) : 0;
 
+    /// <summary>Extension submission window start date</summary>
+    public DateTime? ExtensionStart { get; set; }
+    /// <summary>Extension submission window end date</summary>
+    public DateTime? ExtensionEnd { get; set; }
+
     public string Status { get; set; } = "Draft";
     public string? Notes { get; set; }
 }

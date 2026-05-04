@@ -1,0 +1,16 @@
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/bin/Release/net8.0/SandvikForecast.Infrastructure.deps.json
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/bin/Release/net8.0/SandvikForecast.Infrastructure.dll
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/bin/Release/net8.0/SandvikForecast.Infrastructure.pdb
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/bin/Release/net8.0/SandvikForecast.Core.dll
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/bin/Release/net8.0/SandvikForecast.Core.pdb
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/obj/Release/net8.0/SandvikForecast.Infrastructure.csproj.AssemblyReference.cache
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/obj/Release/net8.0/SandvikForecast.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/obj/Release/net8.0/SandvikForecast.Infrastructure.AssemblyInfoInputs.cache
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/obj/Release/net8.0/SandvikForecast.Infrastructure.AssemblyInfo.cs
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/obj/Release/net8.0/SandvikForecast.Infrastructure.csproj.CoreCompileInputs.cache
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/obj/Release/net8.0/SandvikForecast.Infrastructure.sourcelink.json
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/obj/Release/net8.0/SandvikForecast.Infrastructure.csproj.CopyComplete
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/obj/Release/net8.0/SandvikForecast.Infrastructure.dll
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/obj/Release/net8.0/refint/SandvikForecast.Infrastructure.dll
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/obj/Release/net8.0/SandvikForecast.Infrastructure.pdb
+/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/obj/Release/net8.0/ref/SandvikForecast.Infrastructure.dll
