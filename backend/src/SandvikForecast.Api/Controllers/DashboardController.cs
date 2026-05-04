@@ -77,7 +77,7 @@ public class DashboardController : ControllerBase
             var userId = dbUser.Id;
             var userRegion = user.Region ?? "";
 
-            var allPeriods = await _db.ForecastPeriods.Where(p => !p.IsDeleted).ToListAsync();
+            var allPeriods = await _db.ForecastPeriods.ToListAsync();
             var currentPeriod = allPeriods
                 .Where(p => p.Status == "Active")
                 .OrderByDescending(p => int.TryParse(p.PeriodStartYearMonth.Split('-').FirstOrDefault(), out var y) ? y : 0)

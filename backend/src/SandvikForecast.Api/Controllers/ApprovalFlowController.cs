@@ -58,20 +58,26 @@ public class ApprovalFlowController : ControllerBase
         if (string.IsNullOrEmpty(userId))
             return Unauthorized(new { success = false, message = "User not authenticated" });
 
-        var approvals = await _db.ApprovalRequests
-            .Where(a => a.UserId == userId)
-            .OrderByDescending(a => a.CreatedAt)
-            .Select(a => new {
-                a.Id,
-                a.ForecastPeriodId,
-                a.RegionId,
-                a.Status,
-                a.Comments,
-                CreatedAt = a.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
-            })
-            .ToListAsync();
+        try
+        {
+            var approvals = await _db.ApprovalRequests
+                .Where(a => a.UserId == userId)
+                .OrderByDescending(a => a.Id)
+                .Select(a => new {
+                    a.Id,
+                    a.ForecastPeriodId,
+                    a.RegionId,
+                    a.Status,
+                    a.Comments
+                })
+                .ToListAsync();
 
-        return Ok(new { success = true, data = approvals });
+            return Ok(new { success = true, data = approvals });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { success = false, message = ex.Message, type = ex.GetType().Name });
+        }
     }
 
     [HttpGet("{id}")]
@@ -91,7 +97,7 @@ public class ApprovalFlowController : ControllerBase
         return Ok(new { success = true, data = new { approval, histories } });
     }
 
-    [HttpGet("{id}/history")]
+    [HttpGet("history/{id}")]
     public async Task<ActionResult> GetApprovalHistory(int id)
     {
         var histories = await _db.ApprovalHistories
