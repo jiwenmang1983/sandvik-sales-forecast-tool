@@ -28,7 +28,7 @@
 
 | 任务ID | 描述 | 类型 | 委派给 | 委托时间 | 预期结果文件 | 状态 | 备注 |
 |--------|------|------|--------|---------|-------------|------|------|
-| H-024 | SFT剩余端点测试 | 小Q测试 | slh-bot/tmux | 2026-05-04 15:10 | /tmp/xiaoq_sft_test.json | ✅ 完成 | 覆盖10个端点 |
+| H-025 | SFT全面复测（API+E2E，按填报工作流顺序） | 小Q测试 | slh-bot/tmux | 2026-05-04 15:34 | /tmp/xiaoq_result_h025.json | ⏳ 进行中 | xiaoq-h025-05041534 |
 
 ---
 
@@ -36,7 +36,6 @@
 
 | 任务ID | 描述 | 类型 | 优先级 | 依赖 | 创建时间 | 备注 |
 |--------|------|------|--------|------|---------|------|
-| H-025 | SFT全面复测（API+E2E，按填报工作流顺序） | 小Q测试 | P0 | WBS全部完成 | 2026-05-04 15:12 | xiaoq-e2e-05041512，问题统一写入ISSUE_LOG.md（ISS-052起） |
 
 ---
 
@@ -44,6 +43,7 @@
 
 | 任务ID | 描述 | 类型 | 完成时间 | 结果 |
 |--------|------|------|---------|------|
+| H-024 | SFT剩余端点测试 | 小Q测试 | 2026-05-04 15:xx | 部分端点404（salespersons/customers/regions/org-nodes/approval-flow/history）；API运行正常；详见/tmp/xiaoq_sft_test.json |
 | H-021 | T-009 产品5级联动 | CC开发 | 2026-05-04 13:xx | ✅ 完成；API cascade验证通过，L1×4产品，L2 children正常返回，ProductCascade.vue就位 |
 | H-022R | T-016 开票公司特别权限表 | CC | 2026-05-04 12:08 | ✅ 完成；Entity+Migration+PermissionsController+DashboardController全部生成 |
 | H-027 | T-017/T-018 DB Schema修复 | CC | 2026-05-04 10:00 | ✅ 完成；EF Migration已apply，4度量字段已确认存在 |

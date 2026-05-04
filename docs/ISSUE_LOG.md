@@ -112,6 +112,25 @@
 
 ---
 
+## 🆕 API路由问题（H-025测试发现，2026-05-04）
+
+### API路由错误/不存在（6个）
+| ID | 问题 | 修复建议 |
+|----|------|----------|
+| **ISS-052** | `/api/forecast/cycles` → 404 | 正确路由是 `/api/forecast/periods` |
+| **ISS-053** | `/api/customers` → 404 | 正确路由是 `/api/basedata/customers` |
+| **ISS-054** | `/api/salespersons` → 404 | 端点不存在，应用 `/api/org/members` 作为替代 |
+| **ISS-055** | `/api/regions` → 404 | 端点不存在，应用 `/api/org/chart` 作为替代 |
+| **ISS-056** | `/api/org-nodes` → 404 | 正确路由是 `/api/org/nodes`（仅支持POST创建） |
+| **ISS-057** | `/api/approval-flow/history/{id}` → 404 | 正确路由是 `/api/approval-flow/{id}/history` |
+
+### API参数问题（1个）
+| ID | 问题 | 修复建议 |
+|----|------|----------|
+| **ISS-058** | `/api/forecast/submit` 文档参数名错误 | 参数是 `PeriodId` 不是 `forecastRecordId` |
+
+---
+
 ## ✅ 已确认（来自PRD_LOGIC_GAPS.md标注）
 
 | ID | 结论 | 来源 |
