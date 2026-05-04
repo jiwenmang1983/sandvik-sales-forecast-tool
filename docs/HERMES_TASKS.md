@@ -33,6 +33,7 @@
 | H-031 | T-025 Global Query Filter软删除统一拦截 | CC开发 | slh-bot/tmux | 2026-05-04 19:00 | — | ✅ 完成 | EF Core HasQueryFilter，单元测试PASS×4 |
 | H-032 | T-022 审批节点修改权限配置 | CC开发 | slh-bot/tmux | 2026-05-04 19:05 | — | ✅ 完成 | Entity+Migration+Service+Controller+权限检查 |
 | H-033 | T-024 审批链自动推进+退回记录保留 | CC开发 | slh-bot/tmux | 2026-05-04 19:10 | — | ✅ 完成 | Approve自动推进，退回ToLevel字段，写入ApprovalHistory |
+| H-034 | T-023 多设备登录互斥机制 | CC开发 | slh-bot/tmux | 2026-05-04 19:30 | — | ✅ 完成 | Entity+Migration+Service+Controller，多设备互斥，踢出旧设备 |
 
 ---
 
@@ -123,3 +124,4 @@
 | 2026-05-04 19:01 | — | 🚫 阻塞 | 唤醒Mark（H-023待处理+无进行中任务） |
 | 2026-05-05 19:30 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028仍在执行中，跳过唤醒 |
 | 2026-05-05 19:30 | — | 🚫 阻塞 | 唤醒Mark（H-023等Mark回答62个问题） |
+| 2026-05-05 20:00 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028仍在执行中，跳过唤醒 |
