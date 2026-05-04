@@ -35,7 +35,7 @@
 
 | 任务ID | 描述 | 类型 | 委派给 | 委托时间 | 预期结果文件 | 状态 | 备注 |
 |--------|------|------|--------|---------|-------------|------|------|
-| H-027 | T-017/T-018 DB Schema修复（创建EF Migration） | CC | CC (proc_3cac05b976f4) | 2026-05-04 10:00 | Migration文件 | ⏳ 进行中 | P0 critical，session_id=proc_3cac05b976f4 |
+| H-027 | T-017/T-018 DB Schema修复（创建EF Migration） | CC | CC (proc_3cac05b976f4) | 2026-05-04 10:00 | Migration文件 | ⏳ 完成待白板决策 | Migration文件已生成(AddForecastFields_V2)，但有数据破坏风险（Amount→OrderQty重命名等），Mark指示放白板讨论，暂不apply |
 
 ---
 
@@ -77,8 +77,8 @@
 |--------|------|------|---------|---------|
 | H-018 | T-014 邮件通知验收测试 | 小Q测试 | T-014仅部分完成（审批流集成+前端待开发） | T-014开发完成后派 |
 | H-023 | PRD 缺口更新 PRD + 拆解新 WBS | Hermes | 等Mark回答62个问题 | ⭐ 非阻塞（Mark可直接回答，不影响其他任务调度） |
-| H-026 | T-014邮件通知剩余开发（审批流集成+前端） | CC开发 | 等T-017/T-018 DB Schema修复完成 | 必须先完成DB Migration才能开发T-014功能 |
-| H-028 | T-009 ProductCascade（T-017/T-018依赖）| CC开发 | T-017/T-018 DTO已就位但DB无字段，API会500 | 必须先完成EF Migration |
+| H-026 | T-014邮件通知剩余开发（审批流集成+前端） | CC开发 | 等白板决策：H-027 Migration方案确定并apply | 必须先完成DB Migration才能开发T-014功能 |
+| H-028 | T-009 ProductCascade（T-017/T-018依赖）| CC开发 | 等白板决策：H-027 Migration方案确定并apply | 必须先完成EF Migration |
 
 ---
 
