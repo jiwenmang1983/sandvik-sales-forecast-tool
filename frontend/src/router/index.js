@@ -14,6 +14,7 @@ import LoginLog from '../views/LoginLog.vue'
 import ApprovalFlow from '../views/ApprovalFlow.vue'
 import TemplateManagement from '../views/TemplateManagement.vue'
 import ForecastPeriod from '../views/ForecastPeriod.vue'
+import EmailQueue from '../views/EmailQueue.vue'
 
 const routes = [
   {
@@ -54,7 +55,8 @@ const routes = [
       { path: 'system-log', name: 'SystemLog', component: SystemLog },
       { path: 'approval-flow', name: 'ApprovalFlow', component: ApprovalFlow },
       { path: 'template-management', name: 'TemplateManagement', component: TemplateManagement },
-      { path: 'forecast-periods', name: 'ForecastPeriod', component: ForecastPeriod }
+      { path: 'forecast-periods', name: 'ForecastPeriod', component: ForecastPeriod },
+      { path: 'email-queue', name: 'EmailQueue', component: EmailQueue }
     ]
   },
   {

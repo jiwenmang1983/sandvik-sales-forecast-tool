@@ -17,12 +17,14 @@ public class ForecastController : ControllerBase
     private readonly IRepository<ForecastPeriod> _periodRepo;
     private readonly IRepository<ForecastRecord> _recordRepo;
     private readonly SandvikDbContext _db;
+    private readonly IEmailQueueService _emailQueueService;
 
-    public ForecastController(IRepository<ForecastPeriod> periodRepo, IRepository<ForecastRecord> recordRepo, SandvikDbContext db)
+    public ForecastController(IRepository<ForecastPeriod> periodRepo, IRepository<ForecastRecord> recordRepo, SandvikDbContext db, IEmailQueueService emailQueueService)
     {
         _periodRepo = periodRepo;
         _recordRepo = recordRepo;
         _db = db;
+        _emailQueueService = emailQueueService;
     }
 
     [HttpGet("periods")]
@@ -557,6 +559,56 @@ public class ForecastController : ControllerBase
         {
             record.Status = "Submitted";
         }
+        await _db.SaveChangesAsync();
+
+        // Queue email notification to approver
+        var submitter = await _db.Users.FirstOrDefaultAsync(u => u.Id == userIdClaim && u.IsActive);
+        if (submitter != null && !string.IsNullOrEmpty(submitter.Email))
+        {
+            var orgNode = await _db.OrgNodes
+                .Where(o => o.Email == submitter.Email && o.Status == "Active")
+                .FirstOrDefaultAsync();
+
+            if (orgNode != null && orgNode.ParentId.HasValue)
+            {
+                var parentNode = await _db.OrgNodes.FindAsync(orgNode.ParentId.Value);
+                if (parentNode != null && !string.IsNullOrEmpty(parentNode.Email))
+                {
+                    var periodFcName = period?.FcName ?? req.PeriodId;
+                    var submitterName = submitter.DisplayName ?? submitter.UserName ?? userIdClaim;
+                    var submittedDate = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
+
+                    var subject = $"预测提交待审批 - {periodFcName}";
+                    var body = $@"您好，
+
+{submitterName} 已提交预测数据，等待您的审批。
+
+周期：{periodFcName}
+提交人：{submitterName}
+提交时间：{submittedDate}
+
+请登录 Sandvik Forecast Tool 系统查看详情。
+
+此邮件由系统自动发送，请勿回复。";
+
+                    var templateVars = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string>
+                    {
+                        { "ForecastPeriodName", periodFcName },
+                        { "SubmitterName", submitterName },
+                        { "SubmittedDate", submittedDate }
+                    });
+
+                    await _emailQueueService.QueueEmailAsync(
+                        parentNode.Email,
+                        null,
+                        subject,
+                        body,
+                        null,
+                        templateVars);
+                }
+            }
+        }
+
         return Ok(new { success = true, submittedCount = periodRecords.Count });
     }
 }

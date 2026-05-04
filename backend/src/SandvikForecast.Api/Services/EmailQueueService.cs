@@ -33,4 +33,24 @@ public class EmailQueueService : IEmailQueueService
         _db.EmailQueueItems.Add(item);
         await _db.SaveChangesAsync();
     }
+
+    public async Task<List<EmailQueueItem>> GetPendingEmailsAsync(int limit = 100)
+    {
+        return await _db.EmailQueueItems
+            .OrderByDescending(e => e.CreatedAt)
+            .Take(limit)
+            .ToListAsync();
+    }
+
+    public async Task<bool> ResendEmailAsync(int id)
+    {
+        var item = await _db.EmailQueueItems.FindAsync(id);
+        if (item == null) return false;
+
+        item.Status = "Pending";
+        item.RetryCount = 0;
+        item.ErrorMessage = null;
+        await _db.SaveChangesAsync();
+        return true;
+    }
 }

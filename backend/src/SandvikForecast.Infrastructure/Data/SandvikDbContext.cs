@@ -21,6 +21,7 @@ public class SandvikDbContext : DbContext
     public DbSet<OpLog> OpLogs => Set<OpLog>();
     public DbSet<EmailQueueItem> EmailQueueItems => Set<EmailQueueItem>();
     public DbSet<MessageTemplate> MessageTemplates => Set<MessageTemplate>();
+    public DbSet<UserInvoiceCompanyPermission> UserInvoiceCompanyPermissions => Set<UserInvoiceCompanyPermission>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -116,6 +117,28 @@ public class SandvikDbContext : DbContext
             e.Property(m => m.Name).HasMaxLength(100);
             e.Property(m => m.Subject).HasMaxLength(500);
             e.Property(m => m.Placeholders).HasMaxLength(1000);
+        });
+        modelBuilder.Entity<UserInvoiceCompanyPermission>(e =>
+        {
+            e.ToTable("user_invoice_company_permissions");
+            e.Property(p => p.Id).HasColumnType("int");
+            e.Property(p => p.UserId).HasColumnType("varchar(255)");
+            e.Property(p => p.InvoiceCompanyId).HasColumnType("varchar(255)");
+            e.Property(p => p.PermissionType).HasColumnType("int");
+            e.Property(p => p.EffectiveFrom).HasColumnType("datetime(6)");
+            e.Property(p => p.EffectiveTo).HasColumnType("datetime(6)");
+            e.Property(p => p.GrantedBy).HasColumnType("varchar(255)");
+            e.Property(p => p.CreatedAt).HasColumnType("datetime(6)");
+            e.Property(p => p.RevokedAt).HasColumnType("datetime(6)");
+            e.HasOne(p => p.User)
+                .WithMany()
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(p => p.InvoiceCompany)
+                .WithMany()
+                .HasForeignKey(p => p.InvoiceCompanyId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(p => new { p.UserId, p.InvoiceCompanyId }).IsUnique();
         });
     }
 }

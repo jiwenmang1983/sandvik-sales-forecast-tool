@@ -19,24 +19,22 @@ public class DashboardController : ControllerBase
         _db = db;
     }
 
+    private static readonly string[] BypassInvoiceCompanyRoles = { "SYS_ADMIN", "CEO", "VP_SALES", "REGION_DIRECTOR", "MANAGER", "SALES" };
+
     [HttpGet("summary")]
     public async Task<IActionResult> GetSummary()
     {
         try
         {
-            // 1. Get current user ID from JWT NameIdentifier claim
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrEmpty(userIdClaim))
                 return Ok(new { success = true, data = EmptyDashboard() });
 
-            // 2. Look up user by ID
             var dbUser = await _db.Users.FirstOrDefaultAsync(u => u.Id == userIdClaim && u.IsActive);
             if (dbUser == null)
                 return Ok(new { success = true, data = EmptyDashboard() });
 
-            // 3. Look up OrgNode by email — do a targeted select only Email/Role/Name/Region/ParentId
-            // (ParentId is nullable int; we avoid loading full entity to prevent int→string cast crash on .Id)
             OrgNodeInfo? user = null;
             var orgNodeEmail = await _db.OrgNodes
                 .Where(o => o.Email == dbUser.Email && o.Status == "Active")
@@ -45,20 +43,17 @@ public class DashboardController : ControllerBase
 
             if (orgNodeEmail != null)
             {
-                // Re-query with explicit fields (ParentId as int? then convert to string in C#)
                 var orgNodeRaw = await _db.OrgNodes
                     .Where(o => o.Email == dbUser.Email && o.Status == "Active")
                     .Select(o => new { o.Id, o.Email, o.Role, o.Name, o.Region, o.ParentId })
                     .FirstOrDefaultAsync();
                 if (orgNodeRaw != null)
                 {
-                    // NOTE: Use Role from Users table (dbUser.Role), NOT OrgNode.Role,
-                    // because OrgNode.Role may not match the system user role (e.g. OrgNode has "Sales" but User has "MANAGER")
                     user = new OrgNodeInfo
                     {
-                        Id = orgNodeRaw.Id.ToString(), // OrgNode int Id as string (used for subtree traversal in DIRECTOR case)
+                        Id = orgNodeRaw.Id.ToString(),
                         Email = orgNodeRaw.Email,
-                        Role = dbUser.Role, // Always use Users table role for permission logic
+                        Role = dbUser.Role,
                         Name = orgNodeRaw.Name,
                         Region = orgNodeRaw.Region,
                         ParentId = orgNodeRaw.ParentId.HasValue ? orgNodeRaw.ParentId.Value.ToString() : null
@@ -67,7 +62,6 @@ public class DashboardController : ControllerBase
             }
             else
             {
-                // No OrgNode — use User table data directly
                 user = new OrgNodeInfo
                 {
                     Id = dbUser.Id,
@@ -80,12 +74,9 @@ public class DashboardController : ControllerBase
             }
 
             var role = user.Role?.ToUpperInvariant() ?? "";
-            // Use Users table Id (GUID) for record filtering — OrgNode.Id (int) is only for subtree traversal
             var userId = dbUser.Id;
             var userRegion = user.Region ?? "";
 
-            // 3. Get current period info (most recent ForecastPeriod with Status='Active')
-            // Load into memory to parse PeriodStartYearMonth (EF can't translate string parsing to SQL)
             var allPeriods = await _db.ForecastPeriods.Where(p => !p.IsDeleted).ToListAsync();
             var currentPeriod = allPeriods
                 .Where(p => p.Status == "Active")
@@ -104,8 +95,6 @@ public class DashboardController : ControllerBase
                 currentPeriodTime = $"{currentPeriod.FillTimeStart:yyyy-MM-dd} ~ {currentPeriod.FillTimeEnd:yyyy-MM-dd}";
             }
 
-            // 4. Build the filtered forecast record IDs based on role
-            // Load all records into memory first to avoid MySQL EF type-mapping issues
             var allRecords = await _db.ForecastRecords.ToListAsync();
             var allRecordIds = allRecords.Where(r => !r.IsDeleted).Select(r => r.Id).ToList();
             List<string>? allowedRecordIds = null;
@@ -115,13 +104,11 @@ public class DashboardController : ControllerBase
                 case "SYS_ADMIN":
                 case "CEO":
                 case "FINANCE_MANAGER":
-                    // No filter - see all records
-                    allowedRecordIds = null; // null means all
+                    allowedRecordIds = null;
                     break;
 
                 case "VP_SALES":
                 case "REGION_DIRECTOR":
-                    // See only records where Customer.Region matches their region
                     if (!string.IsNullOrEmpty(userRegion))
                     {
                         var customerIds = _db.Customers
@@ -140,7 +127,6 @@ public class DashboardController : ControllerBase
                     break;
 
                 case "DIRECTOR":
-                    // See records from users in their org subtree
                     var subtreeUserIds = await GetOrgSubtreeUserIdsAsync(user.Id);
                     if (subtreeUserIds.Any())
                     {
@@ -160,7 +146,6 @@ public class DashboardController : ControllerBase
 
                 case "MANAGER":
                 case "SALES":
-                    // See only their own records
                     allowedRecordIds = allRecords
                         .Where(r => !r.IsDeleted && r.CreatedByUserId == userId)
                         .Select(r => r.Id)
@@ -168,7 +153,6 @@ public class DashboardController : ControllerBase
                     break;
 
                 default:
-                    // Unknown role - show only their own records as safety
                     allowedRecordIds = allRecords
                         .Where(r => !r.IsDeleted && r.CreatedByUserId == userId)
                         .Select(r => r.Id)
@@ -176,19 +160,20 @@ public class DashboardController : ControllerBase
                     break;
             }
 
-            // Get the filtered records
             var filteredRecords = allowedRecordIds == null
                 ? allRecordIds
                 : allowedRecordIds;
 
-            // Get all forecast records with their related data
+            if (!BypassInvoiceCompanyRoles.Contains(role))
+            {
+                filteredRecords = await FilterByInvoiceCompanyPermissionsAsync(userIdClaim, filteredRecords, allRecords);
+            }
+
             var records = await GetForecastRecordsWithDetailsAsync(filteredRecords, allRecords);
 
-            // 5. Build dashboard data
             var totalAmount = records.Sum(r => r.Amount);
             var recordCount = records.Count;
 
-            // Monthly: sum Amount grouped by ForecastPeriodId (map to period name)
             var monthly = records
                 .GroupBy(r => r.ForecastPeriodId)
                 .Select(g => new
@@ -201,7 +186,6 @@ public class DashboardController : ControllerBase
                 .Take(12)
                 .ToList();
 
-            // Regions: sum Amount grouped by Customer.Region
             var regions = records
                 .Where(r => !string.IsNullOrEmpty(r.CustomerRegion))
                 .GroupBy(r => r.CustomerRegion)
@@ -213,7 +197,6 @@ public class DashboardController : ControllerBase
                 .OrderByDescending(r => r.amount)
                 .ToList();
 
-            // ProductLines: sum Amount grouped by ProductHierarchy (ProductLevel=1 name)
             var productLines = records
                 .Where(r => !string.IsNullOrEmpty(r.ProductLevel1Name))
                 .GroupBy(r => r.ProductLevel1Name)
@@ -225,7 +208,6 @@ public class DashboardController : ControllerBase
                 .OrderByDescending(p => p.amount)
                 .ToList();
 
-            // Industries: since Customer has no Industry field, use Region as fallback
             var industries = records
                 .Where(r => !string.IsNullOrEmpty(r.CustomerRegion))
                 .GroupBy(r => r.CustomerRegion)
@@ -237,7 +219,6 @@ public class DashboardController : ControllerBase
                 .OrderByDescending(i => i.amount)
                 .ToList();
 
-            // Customers: top 5 by total Amount
             var customers = records
                 .Where(r => !string.IsNullOrEmpty(r.CustomerName))
                 .GroupBy(r => r.CustomerId)
@@ -251,7 +232,6 @@ public class DashboardController : ControllerBase
                 .Take(5)
                 .ToList();
 
-            // InvoiceCompanies: top 5 by total Amount
             var invoiceCompanies = records
                 .Where(r => !string.IsNullOrEmpty(r.InvoiceCompanyName))
                 .GroupBy(r => r.InvoiceCompanyId)
@@ -265,10 +245,8 @@ public class DashboardController : ControllerBase
                 .Take(5)
                 .ToList();
 
-            // Pending counts
             var pendingTotal = records.Count(r => r.Status == "Submitted");
 
-            // pendingDirector: for REGION_DIRECTOR - submitted records in their region
             var pendingDirector = 0;
             if (role == "REGION_DIRECTOR" && !string.IsNullOrEmpty(userRegion))
             {
@@ -276,12 +254,10 @@ public class DashboardController : ControllerBase
                     .Count(r => r.Status == "Submitted" && r.CustomerRegion == userRegion);
             }
 
-            // pendingFinance: for FINANCE_MANAGER - all submitted records
             var pendingFinance = 0;
             if (role == "FINANCE_MANAGER")
             {
-                pendingFinance = await _db.ForecastRecords
-                    .CountAsync(r => r.Status == "Submitted" && !r.IsDeleted);
+                pendingFinance = records.Count(r => r.Status == "Submitted");
             }
 
             var dashboardData = new
@@ -305,18 +281,13 @@ public class DashboardController : ControllerBase
         }
         catch (Exception ex)
         {
-            // Return empty dashboard on error (don't expose exception details)
             Console.WriteLine($"Dashboard error: {ex.Message} {ex.StackTrace}");
             return Ok(new { success = true, data = EmptyDashboard() });
         }
     }
 
-    /// <summary>
-    /// Gets forecast records with all related data using in-memory joins on pre-loaded records
-    /// </summary>
     private async Task<List<ForecastRecordDetail>> GetForecastRecordsWithDetailsAsync(List<string> recordIds, List<ForecastRecord> allRecords)
     {
-        // Apply filter in memory
         var filtered = recordIds == null
             ? allRecords
             : allRecords.Where(r => recordIds.Contains(r.Id)).ToList();
@@ -338,7 +309,6 @@ public class DashboardController : ControllerBase
         var result = new List<ForecastRecordDetail>();
         foreach (var r in filtered)
         {
-            // Get product line (level 1 parent name)
             string productL1Name = "";
             if (!string.IsNullOrEmpty(r.ProductId) && products.TryGetValue(r.ProductId, out var product))
             {
@@ -346,7 +316,6 @@ public class DashboardController : ControllerBase
                     productL1Name = parentProduct.ProductName;
             }
 
-            // Get period name
             string periodName = "";
             if (periods.TryGetValue(r.ForecastPeriodId, out var period))
                 periodName = period.PeriodStartYearMonth ?? "";
@@ -354,36 +323,65 @@ public class DashboardController : ControllerBase
             customers.TryGetValue(r.CustomerId, out var customer);
             invoiceCompanies.TryGetValue(r.InvoiceCompanyId, out var invoiceCompany);
 
-                var periodParts = period?.PeriodStartYearMonth?.Split('-') ?? Array.Empty<string>();
-                var pYear = periodParts.Length > 0 && int.TryParse(periodParts[0], out var py2) ? py2 : 0;
-                var pMonth = periodParts.Length > 1 && int.TryParse(periodParts[1], out var pm2) ? pm2 : 0;
-                result.Add(new ForecastRecordDetail
-                {
-                    Id = r.Id,
-                    Amount = r.OrderAmount + r.InvoiceAmount,
-                    Status = r.Status,
-                    ForecastPeriodId = r.ForecastPeriodId,
-                    CustomerId = r.CustomerId,
-                    ProductId = r.ProductId,
-                    InvoiceCompanyId = r.InvoiceCompanyId,
-                    CreatedByUserId = r.CreatedByUserId,
-                    CustomerName = customer?.CustomerName ?? "",
-                    CustomerRegion = customer?.Region ?? "",
-                    PeriodYear = pYear,
-                    PeriodMonth = pMonth,
-                    ForecastPeriodName = periodName,
-                    InvoiceCompanyName = invoiceCompany?.CompanyName ?? "",
-                    ProductLevel1Name = productL1Name
-                });
+            var periodParts = period?.PeriodStartYearMonth?.Split('-') ?? Array.Empty<string>();
+            var pYear = periodParts.Length > 0 && int.TryParse(periodParts[0], out var py2) ? py2 : 0;
+            var pMonth = periodParts.Length > 1 && int.TryParse(periodParts[1], out var pm2) ? pm2 : 0;
+            result.Add(new ForecastRecordDetail
+            {
+                Id = r.Id,
+                Amount = r.OrderAmount + r.InvoiceAmount,
+                Status = r.Status,
+                ForecastPeriodId = r.ForecastPeriodId,
+                CustomerId = r.CustomerId,
+                ProductId = r.ProductId,
+                InvoiceCompanyId = r.InvoiceCompanyId,
+                CreatedByUserId = r.CreatedByUserId,
+                CustomerName = customer?.CustomerName ?? "",
+                CustomerRegion = customer?.Region ?? "",
+                PeriodYear = pYear,
+                PeriodMonth = pMonth,
+                ForecastPeriodName = periodName,
+                InvoiceCompanyName = invoiceCompany?.CompanyName ?? "",
+                ProductLevel1Name = productL1Name
+            });
         }
 
         return result;
     }
 
-    /// <summary>
-    /// Recursively gets all user IDs (from Users table) in the org subtree under the given orgNodeId.
-    /// Returns list of user IDs (CreatedByUserId values) for users under the given org node.
-    /// </summary>
+    private async Task<List<string>> FilterByInvoiceCompanyPermissionsAsync(string userId, List<string> recordIds, List<ForecastRecord> allRecords)
+    {
+        var now = DateTime.UtcNow;
+        var permissions = await _db.UserInvoiceCompanyPermissions
+            .Where(p => p.UserId == userId && p.EffectiveFrom <= now && (p.EffectiveTo == null || p.EffectiveTo >= now) && p.RevokedAt == null)
+            .ToListAsync();
+
+        if (!permissions.Any())
+            return new List<string>();
+
+        var allowedCompanyIds = permissions.Select(p => p.InvoiceCompanyId).ToHashSet();
+        var maxPermissionType = permissions.Max(p => p.PermissionType);
+
+        if (maxPermissionType == InvoiceCompanyPermissionType.NONE)
+            return new List<string>();
+
+        var filteredRecords = allRecords
+            .Where(r => recordIds.Contains(r.Id) && allowedCompanyIds.Contains(r.InvoiceCompanyId))
+            .Select(r => r.Id)
+            .ToList();
+
+        if (maxPermissionType == InvoiceCompanyPermissionType.VIEW_SUBMIT)
+        {
+            var allowedStatuses = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Draft", "Submitted" };
+            filteredRecords = filteredRecords
+                .Join(allRecords.Where(r => allowedStatuses.Contains(r.Status)),
+                      id => id, r => r.Id, (id, _) => id)
+                .ToList();
+        }
+
+        return filteredRecords;
+    }
+
     private async Task<List<string>> GetOrgSubtreeUserIdsAsync(string orgNodeId)
     {
         if (!int.TryParse(orgNodeId, out var orgId))
@@ -401,7 +399,6 @@ public class DashboardController : ControllerBase
                 continue;
             visited.Add(currentId);
 
-            // Find all child org nodes with ParentId = currentId (int)
             var childOrgNodes = await _db.OrgNodes
                 .Where(o => o.ParentId.HasValue && o.ParentId.Value == currentId && o.Status == "Active")
                 .Select(o => new { o.Id, o.Email })
@@ -409,7 +406,6 @@ public class DashboardController : ControllerBase
 
             foreach (var child in childOrgNodes)
             {
-                // Get user ID from Users table using email
                 if (!result.Contains(child.Email))
                 {
                     var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == child.Email);
@@ -417,7 +413,6 @@ public class DashboardController : ControllerBase
                     {
                         result.Add(user.Id);
                     }
-                    // Add child org node to queue to explore its children
                     queue.Enqueue(child.Id);
                 }
             }
@@ -426,9 +421,6 @@ public class DashboardController : ControllerBase
         return result;
     }
 
-    /// <summary>
-    /// Returns empty dashboard structure
-    /// </summary>
     private static object EmptyDashboard()
     {
         return new
@@ -450,9 +442,6 @@ public class DashboardController : ControllerBase
     }
 }
 
-/// <summary>
-/// Internal class for holding forecast record details from joined query
-/// </summary>
 internal class ForecastRecordDetail
 {
     public string Id { get; set; } = "";
@@ -472,9 +461,6 @@ internal class ForecastRecordDetail
     public string ProductLevel1Name { get; set; } = "";
 }
 
-/// <summary>
-/// Internal class for holding OrgNode info
-/// </summary>
 internal class OrgNodeInfo
 {
     public string Id { get; set; } = "";
