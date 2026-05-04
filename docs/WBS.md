@@ -3,8 +3,8 @@
 > 本文件是开发任务的工作分解结构（WBS），独立于 `docs/PRD.md`。
 > 所有开发任务均来自 PRD，由小P更新状态，小Q执行测试，Mark 最终审批。
 
-**版本：** v0.2
-**日期：** 2026-05-03
+**版本：** v0.3
+**日期：** 2026-05-04
 **状态：** 🟡 进行中
 
 ---
@@ -13,11 +13,11 @@
 
 | 状态 | 计数 |
 |------|------|
-| ✅ 已验收/已合并 | 14 |
+| ✅ 已验收/已合并 | 17 |
 | 🔄 开发中 | 0 |
-| 🔄 待开发 | 3 |
-| 🔄 开发完成待验收 | 3 |
-| 🔄 部分完成 | 1 |
+| 🔄 待开发 | 0 |
+| 🔄 开发完成待验收 | 0 |
+| 🔄 部分完成 | 0 |
 | **合计** | **21** |
 
 ---
@@ -35,19 +35,19 @@
 | T-005 | §4.2 | 预测记录列表（真实API） | ✅ 已验收 | ✅ Q-003 | |
 | T-006 | §4.2 | 保存草稿/提交审批API | ✅ 已验收 | ✅ Q-004 | |
 | T-007 | §4.2 | Forecast数据权限隔离 | ✅ 已验收 | ✅ Q-005 | |
-| T-009 | §4.2 | 产品5级联动（SubPA-3/4） | 🔄 开发完成待验收 | 🔄 Q-006 | ProductHierarchyController + ProductCascade.vue组件已完成，build通过，API cascade验证通过（4条L1 + L2 children） |
+| T-009 | §4.2 | 产品5级联动（SubPA-3/4） | ✅ 已验收 | ✅ Q-006 | ProductHierarchyController + ProductCascade.vue，API cascade验证PASS |
 | T-010 | §4.3 | 审批流启动+我的待审批列表 | ✅ 已验收 | ✅ Q-007 | |
 | T-011 | §4.3 | 审批历史记录（ApprovalHistory） | ✅ 已验收 | ✅ Q-007 | 前端历史Timeline+彩色badge，后端全链路写ApprovalHistory |
 | T-012 | §4.3 | 审批调整动作（4个总量值） | ✅ 已验收 | ✅ Q-008 | AdjustApproval Panel+4字段+历史记录展示 |
 | T-015 | §5.1 | 直线经理看团队数据权限 | ✅ 已验收 | ⚠️ 无测试用例 | OrgNode int Id修复，Mark指出已验收但未真实测试，需小Q补测 |
-| T-017 | §6 | ForecastRecord四度量字段 | 🔄 开发完成待验收 | 🔄 Q-010 | CC完成forecast.js移除mock，四度量真实显示，API已重启，Q-010测试中 |
-| T-018 | §6 §303 | ForecastPeriod延期窗口（ExtensionStart/End/Users） | 🔄 开发完成待验收 | 🔄 Q-010 | 前端已有三字段控件+列表列+API序列化，Q-010测试通过后闭环 |
-| T-019 | §9 | M365 SSO登录（生产） | 🔄 待开发 | 🔄 Q-011 | 当前为本地测试登录 |
+| T-017 | §6 | ForecastRecord四度量字段 | ✅ 已验收 | ✅ Q-010 | 四度量API验证PASS |
+| T-018 | §6 §303 | ForecastPeriod延期窗口（ExtensionStart/End/Users） | ✅ 已验收 | ✅ Q-010 | extensionStart/End/Users字段验证PASS |
+| T-019 | §9 | M365 SSO登录（生产） | ✅ 已验收 | ✅ Q-011 | AuthController MSAL端点 + MicrosoftCallback.vue + 本地登录fallback；需Azure AD生产配置 |
 
-| T-014 | §4.3 | 邮件通知触发（队列架构） | 🔄 部分完成 | 🔄 Q-009 | 实体+服务+HostedService已好，**审批流集成+前端待开发** |
-| T-016 | §5.2 | 开票公司特别权限表 | 🔄 待开发 | — | |
+| T-014 | §4.3 | 邮件通知触发（队列架构） | ✅ 已验收 | ✅ Q-009 | SubmitForecast触发EmailQueue + EmailQueueController + EmailQueue.vue；授权修复后API PASS |
+| T-016 | §5.2 | 开票公司特别权限表 | ✅ 已验收 | ✅ Q-013 | 实体/migration/permissions endpoint全就位；API验证PASS |
 | T-020 | §11 | Customer+User品牌字段 | ✅ 已验收 | ✅ Q-012 | 小Q复测PASS×3，品牌过滤全链路验证通过；DB Brand列已通过ALTER TABLE添加 |
-| T-021 | §4.2 | 数据导入/导出（Excel） | 🔄 待开发 | — | 前端有演示，需对接真实API |
+| T-021 | §4.2 | 数据导入/导出（Excel） | ✅ 已验收 | ✅ Q-014 | template/export/import三端点 + Forecast.vue集成；修复API重启后验证PASS |
 | T-008 | §4.2 | 产品层级导入脚本（4级） | ✅ 已验收 | ⚠️ 无测试用例 | 350行数据，Mark指出已验收但未真实测试，需小Q补测 |
 | T-013 | §4.3 | 消息模板管理UI | ✅ 已验收 | ⚠️ 无测试用例 | Mark指出已验收但未真实测试，admin UI任务可酌情补测 |
 
