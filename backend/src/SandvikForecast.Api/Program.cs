@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using SandvikForecast.Api.Middleware;
 using SandvikForecast.Api.Services;
 using SandvikForecast.Core.Entities;
 using SandvikForecast.Core.Interfaces;
@@ -93,6 +94,9 @@ using (var scope = app.Services.CreateScope())
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseCors("AllowVue");
+app.UseRouting();
+// 全局异常中间件 - 必须在 UseAuthentication 之前注册
+app.UseAppExceptionHandler();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

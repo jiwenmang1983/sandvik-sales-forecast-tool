@@ -34,6 +34,7 @@
 | H-032 | T-022 审批节点修改权限配置 | CC开发 | slh-bot/tmux | 2026-05-04 19:05 | — | ✅ 完成 | Entity+Migration+Service+Controller+权限检查 |
 | H-033 | T-024 审批链自动推进+退回记录保留 | CC开发 | slh-bot/tmux | 2026-05-04 19:10 | — | ✅ 完成 | Approve自动推进，退回ToLevel字段，写入ApprovalHistory |
 | H-034 | T-023 多设备登录互斥机制 | CC开发 | slh-bot/tmux | 2026-05-04 19:30 | — | ✅ 完成 | Entity+Migration+Service+Controller，多设备互斥，踢出旧设备 |
+| H-035 | T-026 统一错误码体系 | CC开发 | slh-bot/tmux | 2026-05-04 21:45 | — | ✅ 完成 | ErrorCode枚举+AppException+全局中间件，build通过 |
 
 ---
 
@@ -127,6 +128,7 @@
 | 2026-05-05 20:00 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028仍在执行中，跳过唤醒 |
 | 2026-05-05 20:30 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028仍在执行中，跳过唤醒 |
 
-|| 2026-05-05 21:00 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028仍在执行中，跳过唤醒 |||| 2026-05-05 21:30 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028仍在执行中，跳过唤醒 |
+|| 2026-05-05 21:00 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028仍在执行中，跳过唤醒 |||| 2026-05-05 22:00 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028仍在执行中，跳过唤醒 |
 ||| 2026-05-05 21:30 | /tmp/prd_wbs_analysis.md | ✅ 已完成（5351字节，157行）| H-029已标✅，无需操作 |
 ||| 2026-05-05 21:30 | — | ⏳ 等待中 | H-028（Q-010）仍在执行，有活干，跳过唤醒 |
+| 2026-05-05 00:00 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028仍在执行中，跳过唤醒 |
