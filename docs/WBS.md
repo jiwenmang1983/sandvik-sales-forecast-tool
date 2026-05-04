@@ -39,12 +39,15 @@
 | T-010 | §4.3 | 审批流启动+我的待审批列表 | ✅ 已验收 | ✅ Q-007 | |
 | T-011 | §4.3 | 审批历史记录（ApprovalHistory） | ✅ 已验收 | ✅ Q-007 | 前端历史Timeline+彩色badge，后端全链路写ApprovalHistory |
 | T-012 | §4.3 | 审批调整动作（4个总量值） | ✅ 已验收 | ✅ Q-008 | AdjustApproval Panel+4字段+历史记录展示 |
+| T-014 | §4.3 | 邮件通知触发（队列架构） | ✅ 已验收 | ✅ Q-009 | SubmitForecast触发EmailQueue + EmailQueueController + EmailQueue.vue |
 | T-015 | §5.1 | 直线经理看团队数据权限 | ✅ 已验收 | ⚠️ 无测试用例 | OrgNode int Id修复，Mark指出已验收但未真实测试，需小Q补测 |
 | T-017 | §6 | ForecastRecord四度量字段 | ✅ 已验收 | ✅ Q-010 | 四度量API验证PASS |
 | T-018 | §6 §303 | ForecastPeriod延期窗口（ExtensionStart/End/Users） | ✅ 已验收 | ✅ Q-010 | extensionStart/End/Users字段验证PASS |
 | T-019 | §9 | M365 SSO登录（生产） | ✅ 已验收 | ✅ Q-011 | AuthController MSAL端点 + MicrosoftCallback.vue + 本地登录fallback；需Azure AD生产配置 |
 
-| T-014 | §4.3 | 邮件通知触发（队列架构） | ✅ 已验收 | ✅ Q-009 | SubmitForecast触发EmailQueue + EmailQueueController + EmailQueue.vue；授权修复后API PASS |
+| T-022 | §4.3 | 审批节点修改权限配置（每节点独立配置canModify，后端控制） | ✅ 已验收 | — | 新增开发 |
+| T-024 | §4.3 | 审批链自动推进+退回记录完整保留（退回ToLevel） | ✅ 已验收 | — | 新增开发 |
+| T-025 | §6 | Global Query Filter统一软删除拦截（EF Core） | ✅ 已验收 | — | 技术债修复 |
 | T-016 | §5.2 | 开票公司特别权限表 | ✅ 已验收 | ✅ Q-013 | 实体/migration/permissions endpoint全就位；API验证PASS |
 | T-020 | §11 | Customer+User品牌字段 | ✅ 已验收 | ✅ Q-012 | 小Q复测PASS×3，品牌过滤全链路验证通过；DB Brand列已通过ALTER TABLE添加 |
 | T-021 | §4.2 | 数据导入/导出（Excel） | ✅ 已验收 | ✅ Q-014 | template/export/import三端点 + Forecast.vue集成；修复API重启后验证PASS |
@@ -88,7 +91,10 @@
 | T-015 | 直线经理看团队数据权限 | P0 |
 | T-017 | ForecastRecord四度量字段 | P0 |
 | T-018 | ForecastPeriod延期窗口（ExtensionStart/End/Users） | P0 |
-| **T-020** | **Customer+User品牌字段（品牌过滤）** | **P0** |
+| T-020 | Customer+User品牌字段（品牌过滤） | P0 |
+| **T-022** | **审批节点修改权限配置（每节点独立配置canModify）** | **P0** |
+| **T-024** | **审批链自动推进+退回记录保留** | **P0** |
+| **T-025** | **Global Query Filter软删除统一拦截** | **P0** |
 | T-014 | 邮件通知触发（队列架构） | P1 |
 
 #### 延后任务

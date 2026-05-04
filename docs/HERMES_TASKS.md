@@ -30,7 +30,9 @@
 |--------|------|------|--------|---------|-------------|------|------|
 | H-028 | Q-010 E2E验收：四度量字段+延期窗口 | 小Q测试 | xiaoq | 2026-05-04 16:46 | /tmp/xiaoq_result_q010.json | ⏳ 进行中 | 已委派，等待结果 |
 | H-029 | PRD差距分析+WBS新增任务梳理 | Hermes | — | 2026-05-04 18:30 | /tmp/prd_wbs_analysis.md | ✅ 完成 | 62个逻辑缺口全部确认，T-022~T-026新增 |
-| H-030 | T-022 审批节点修改权限配置开发 | CC开发 | slh-bot/tmux | 2026-05-04 18:45 | — | 🔄 待开发 | 每节点独立配置canModify，后端API控制 |
+| H-031 | T-025 Global Query Filter软删除统一拦截 | CC开发 | slh-bot/tmux | 2026-05-04 19:00 | — | ✅ 完成 | EF Core HasQueryFilter，单元测试PASS×4 |
+| H-032 | T-022 审批节点修改权限配置 | CC开发 | slh-bot/tmux | 2026-05-04 19:05 | — | ✅ 完成 | Entity+Migration+Service+Controller+权限检查 |
+| H-033 | T-024 审批链自动推进+退回记录保留 | CC开发 | slh-bot/tmux | 2026-05-04 19:10 | — | ✅ 完成 | Approve自动推进，退回ToLevel字段，写入ApprovalHistory |
 
 ---
 
@@ -113,9 +115,11 @@
 | 2026-05-04 17:30 | /tmp/xiaoq_result_h025.json | ✅ 已完成（status:completed，4013字节）| 无需更新 |
 | 2026-05-04 17:30 | /mnt/d/Git/SandvikForecastTool/docs/API_DOCUMENTATION.md | ✅ 已完成（37132字节）| 无需更新 |
 | 2026-05-04 17:30 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028仍在执行中，跳过唤醒 |
-|| 2026-05-04 18:00 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028仍在执行中，跳过唤醒 |
-|| 2026-05-04 18:30 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028仍在执行中，跳过唤醒 |
-|| 2026-05-04 19:01 | /tmp/xiaoq_result_h025.json | ✅ 已完成（status:completed，4013字节）| 无需更新（H-025已标✅） |
-|| 2026-05-04 19:01 | /mnt/d/Git/SandvikForecastTool/docs/API_DOCUMENTATION.md | ✅ 已完成（37132字节）| 无需更新（H-026已标✅） |
-|| 2026-05-04 19:01 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028仍在执行中 |
-|| 2026-05-04 19:01 | — | 🚫 阻塞 | 唤醒Mark（H-023待处理+无进行中任务） |
+| 2026-05-04 18:00 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028仍在执行中，跳过唤醒 |
+| 2026-05-04 18:30 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028仍在执行中，跳过唤醒 |
+| 2026-05-04 19:01 | /tmp/xiaoq_result_h025.json | ✅ 已完成（status:completed，4013字节）| 无需更新（H-025已标✅） |
+| 2026-05-04 19:01 | /mnt/d/Git/SandvikForecastTool/docs/API_DOCUMENTATION.md | ✅ 已完成（37132字节）| 无需更新（H-026已标✅） |
+| 2026-05-04 19:01 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028仍在执行中 |
+| 2026-05-04 19:01 | — | 🚫 阻塞 | 唤醒Mark（H-023待处理+无进行中任务） |
+| 2026-05-05 19:30 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028仍在执行中，跳过唤醒 |
+| 2026-05-05 19:30 | — | 🚫 阻塞 | 唤醒Mark（H-023等Mark回答62个问题） |
