@@ -23,9 +23,11 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ProductHierarchyRepository>();
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ILoginSessionService, LoginSessionService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<IEmailQueueService, EmailQueueService>();
 builder.Services.AddScoped<ApprovalEmailService>();
+builder.Services.AddScoped<IApprovalFlowNodeConfigService, ApprovalFlowNodeConfigService>();
 // JWT Auth
 var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "SandvikForecastSecretKey2026VeryLongSecretKey!";
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "SandvikForecast";

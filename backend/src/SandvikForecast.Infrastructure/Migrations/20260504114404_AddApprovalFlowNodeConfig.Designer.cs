@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SandvikForecast.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using SandvikForecast.Infrastructure.Data;
 namespace SandvikForecast.Infrastructure.Migrations
 {
     [DbContext(typeof(SandvikDbContext))]
-    partial class SandvikDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260504114404_AddApprovalFlowNodeConfig")]
+    partial class AddApprovalFlowNodeConfig
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -161,11 +164,6 @@ namespace SandvikForecast.Infrastructure.Migrations
                         .HasColumnType("longtext")
                         .HasColumnName("operator_user_id");
 
-                    b.Property<string>("ToLevel")
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
-                        .HasColumnName("to_level");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime(6)");
 
@@ -188,16 +186,6 @@ namespace SandvikForecast.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<string>("CurrentApproverEmail")
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)")
-                        .HasColumnName("current_approver_email");
-
-                    b.Property<string>("CurrentNodeLevel")
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
-                        .HasColumnName("current_node_level");
-
                     b.Property<string>("ForecastPeriodId")
                         .IsRequired()
                         .HasColumnType("longtext")
@@ -209,11 +197,6 @@ namespace SandvikForecast.Infrastructure.Migrations
                     b.Property<string>("RegionId")
                         .HasColumnType("longtext")
                         .HasColumnName("region_id");
-
-                    b.Property<string>("ReturnedToNodeLevel")
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
-                        .HasColumnName("returned_to_node_level");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -803,51 +786,6 @@ namespace SandvikForecast.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("user_invoice_company_permissions", (string)null);
-                });
-
-            modelBuilder.Entity("SandvikForecast.Core.Entities.UserLoginSession", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("DeviceId")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
-
-                    b.Property<string>("DeviceName")
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<DateTime>("LastActiveAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("RefreshToken")
-                        .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("varchar(512)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("varchar(255)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RefreshToken")
-                        .IsUnique();
-
-                    b.HasIndex("UserId", "IsActive");
-
-                    b.ToTable("user_login_sessions", (string)null);
                 });
 
             modelBuilder.Entity("SandvikForecast.Core.Entities.UserInvoiceCompanyPermission", b =>

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SandvikForecast.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using SandvikForecast.Infrastructure.Data;
 namespace SandvikForecast.Infrastructure.Migrations
 {
     [DbContext(typeof(SandvikDbContext))]
-    partial class SandvikDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260504122306_T023_MultiDeviceLoginMutex")]
+    partial class T023_MultiDeviceLoginMutex
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

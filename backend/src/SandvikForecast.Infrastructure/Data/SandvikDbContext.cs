@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using SandvikForecast.Core.Entities;
 
@@ -22,10 +23,25 @@ public class SandvikDbContext : DbContext
     public DbSet<EmailQueueItem> EmailQueueItems => Set<EmailQueueItem>();
     public DbSet<MessageTemplate> MessageTemplates => Set<MessageTemplate>();
     public DbSet<UserInvoiceCompanyPermission> UserInvoiceCompanyPermissions => Set<UserInvoiceCompanyPermission>();
+    public DbSet<ApprovalFlowNodeConfig> ApprovalFlowNodeConfigs => Set<ApprovalFlowNodeConfig>();
+    public DbSet<UserLoginSession> UserLoginSessions => Set<UserLoginSession>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // T-025: Global Query Filter for soft delete - filter out IsDeleted records by default
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
+            {
+                var parameter = Expression.Parameter(entityType.ClrType, "e");
+                var property = Expression.Property(parameter, "IsDeleted");
+                var condition = Expression.Not(property);
+                var lambda = Expression.Lambda(condition, parameter);
+                modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
+            }
+        }
 
         modelBuilder.Entity<User>(e =>
         {
@@ -56,9 +72,6 @@ public class SandvikDbContext : DbContext
             e.ToTable("ForecastPeriods");
             e.HasKey(f => f.Id);
             e.Property(f => f.Id).HasColumnType("varchar(36)");
-            e.Ignore(f => f.CreatedAt);
-            e.Ignore(f => f.UpdatedAt);
-            e.Ignore(f => f.IsDeleted);
         });
 
         modelBuilder.Entity<ForecastRecord>(e =>
@@ -74,10 +87,6 @@ public class SandvikDbContext : DbContext
             e.HasIndex(o => o.Email).IsUnique();
             // OrgNodes table uses int auto-inc Id, not string — tell EF to avoid string→int cast crash on materialization
             e.Property(o => o.Id).HasColumnType("int");
-            // OrgNodes table uses Status (varchar), not IsActive (bool), and no CreatedAt/UpdatedAt/IsDeleted columns
-            e.Ignore(o => o.CreatedAt);
-            e.Ignore(o => o.UpdatedAt);
-            e.Ignore(o => o.IsDeleted);
             // Map Status column (table has Status, entity has Status as string)
         });
         modelBuilder.Entity<LoginLog>(e => e.ToTable("LoginLogs"));
@@ -89,9 +98,9 @@ public class SandvikDbContext : DbContext
             e.Property(a => a.ForecastPeriodId).HasColumnName("forecast_period_id");
             e.Property(a => a.UserId).HasColumnName("user_id");
             e.Property(a => a.RegionId).HasColumnName("region_id");
-            e.Ignore(a => a.CreatedAt);
-            e.Ignore(a => a.UpdatedAt);
-            e.Ignore(a => a.IsDeleted);
+            e.Property(a => a.CurrentApproverEmail).HasColumnName("current_approver_email").HasMaxLength(255);
+            e.Property(a => a.CurrentNodeLevel).HasColumnName("current_node_level").HasMaxLength(50);
+            e.Property(a => a.ReturnedToNodeLevel).HasColumnName("returned_to_node_level").HasMaxLength(50);
         });
         modelBuilder.Entity<ApprovalHistory>(e =>
         {
@@ -107,8 +116,7 @@ public class SandvikDbContext : DbContext
             e.Property(h => h.AdjustOrderQty).HasColumnName("adjust_order_qty").HasPrecision(18, 2);
             e.Property(h => h.AdjustInvoiceQty).HasColumnName("adjust_invoice_qty").HasPrecision(18, 2);
             e.Property(h => h.CreatedAt).HasColumnName("created_at");
-            e.Ignore(h => h.UpdatedAt);
-            e.Ignore(h => h.IsDeleted);
+            e.Property(h => h.ToLevel).HasColumnName("to_level").HasMaxLength(50);
         });
         modelBuilder.Entity<MessageTemplate>(e =>
         {
@@ -139,6 +147,28 @@ public class SandvikDbContext : DbContext
                 .HasForeignKey(p => p.InvoiceCompanyId)
                 .OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(p => new { p.UserId, p.InvoiceCompanyId }).IsUnique();
+        });
+        modelBuilder.Entity<ApprovalFlowNodeConfig>(e =>
+        {
+            e.ToTable("approval_flow_node_configs");
+            e.Property(c => c.Id).HasColumnType("int").ValueGeneratedOnAdd();
+            e.Property(c => c.ForecastPeriodId).HasColumnType("int");
+            e.Property(c => c.NodeLevel).HasMaxLength(50).IsRequired();
+            e.Property(c => c.CanModifyData).HasDefaultValue(false);
+            e.Property(c => c.Comments).HasMaxLength(500);
+            e.Property(c => c.CreatedAt).HasColumnType("datetime(6)");
+            e.Property(c => c.UpdatedAt).HasColumnType("datetime(6)");
+            // 每个周期+节点级别组合唯一
+            e.HasIndex(c => new { c.ForecastPeriodId, c.NodeLevel }).IsUnique();
+        });
+        modelBuilder.Entity<UserLoginSession>(e =>
+        {
+            e.ToTable("user_login_sessions");
+            e.HasIndex(s => new { s.UserId, s.IsActive });
+            e.HasIndex(s => s.RefreshToken).IsUnique();
+            e.Property(s => s.DeviceId).HasMaxLength(255).IsRequired();
+            e.Property(s => s.DeviceName).HasMaxLength(255);
+            e.Property(s => s.RefreshToken).HasMaxLength(512).IsRequired();
         });
     }
 }

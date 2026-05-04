@@ -13,13 +13,15 @@ namespace SandvikForecast.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly ILoginSessionService _loginSessionService;
     private readonly IUserRepository _userRepo;
     private readonly SandvikDbContext _dbContext;
     private readonly ILogger<AuthController> _logger;
     private readonly IConfiguration _config;
-    public AuthController(IAuthService authService, IUserRepository userRepo, SandvikDbContext dbContext, ILogger<AuthController> logger, IConfiguration config)
+    public AuthController(IAuthService authService, ILoginSessionService loginSessionService, IUserRepository userRepo, SandvikDbContext dbContext, ILogger<AuthController> logger, IConfiguration config)
     {
         _authService = authService;
+        _loginSessionService = loginSessionService;
         _userRepo = userRepo;
         _dbContext = dbContext;
         _logger = logger;
@@ -41,6 +43,61 @@ public class AuthController : ControllerBase
         {
             _logger.LogError(ex, "Login failed for user {Email}", request.Email);
             return StatusCode(500, new { success = false, message = ex.Message, inner = ex.InnerException?.Message });
+        }
+    }
+
+    [HttpPost("logout")]
+    public async Task<ActionResult<ApiResponse<object>>> Logout([FromBody] LogoutRequest? request)
+    {
+        try
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(ApiResponse<object>.Fail("未授权"));
+            }
+
+            var deviceId = request?.DeviceId ?? "unknown";
+
+            // 获取当前用户的当前设备会话
+            var session = await _loginSessionService.GetSessionByUserAndDeviceAsync(userId, deviceId);
+            if (session != null)
+            {
+                // 删除当前设备会话
+                await _loginSessionService.DeleteSessionAsync(session.Id);
+            }
+
+            return Ok(ApiResponse<object>.Ok(null, "登出成功"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Logout failed");
+            return StatusCode(500, new { success = false, message = ex.Message });
+        }
+    }
+
+    [HttpPost("refresh")]
+    public async Task<ActionResult<ApiResponse<LoginResponse>>> RefreshToken([FromBody] RefreshTokenRequest request)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(request.RefreshToken))
+            {
+                return BadRequest(ApiResponse<LoginResponse>.Fail("RefreshToken不能为空"));
+            }
+
+            var result = await _authService.RefreshTokenAsync(request.RefreshToken, request.DeviceId);
+            if (result == null)
+            {
+                return Unauthorized(ApiResponse<LoginResponse>.Fail("RefreshToken无效或已过期"));
+            }
+
+            return Ok(ApiResponse<LoginResponse>.Ok(result, "Token刷新成功"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "RefreshToken failed");
+            return StatusCode(500, new { success = false, message = ex.Message });
         }
     }
 
