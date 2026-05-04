@@ -9,6 +9,7 @@ using SandvikForecast.Core.Interfaces;
 using SandvikForecast.Infrastructure.Data;
 using SandvikForecast.Infrastructure.Repositories;
 using Serilog;
+using Microsoft.AspNetCore.Authentication.Cookies;
 var builder = WebApplication.CreateBuilder(args);
 // MySQL
 var connStr = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -39,6 +40,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = jwtIssuer, ValidAudience = jwtAudience,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
         };
+    })
+    .AddCookie("MsftCookie", options =>
+    {
+        options.Cookie.Name = "MsftAuth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     });
 builder.Services.AddAuthorization();
 // Controllers

@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import Login from '../views/Login.vue'
+import MicrosoftCallback from '../views/MicrosoftCallback.vue'
 import Dashboard from '../views/Dashboard.vue'
 import Layout from '../views/Layout.vue'
 import Forecast from '../views/Forecast.vue'
@@ -63,6 +64,12 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: Login,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/auth/microsoft-callback',
+    name: 'MicrosoftCallback',
+    component: MicrosoftCallback,
     meta: { requiresAuth: false }
   }
 ]

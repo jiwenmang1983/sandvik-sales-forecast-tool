@@ -141,3 +141,9 @@
 /mnt/d/Git/SandvikForecastTool/backend/tests/SandvikForecast.Tests/bin/Debug/net8.0/MailKit.dll
 /mnt/d/Git/SandvikForecastTool/backend/tests/SandvikForecast.Tests/bin/Debug/net8.0/BouncyCastle.Cryptography.dll
 /mnt/d/Git/SandvikForecastTool/backend/tests/SandvikForecast.Tests/obj/Debug/net8.0/SandvikForecast.Tests.sourcelink.json
+/mnt/d/Git/SandvikForecastTool/backend/tests/SandvikForecast.Tests/bin/Debug/net8.0/Microsoft.Extensions.Caching.Memory.dll
+/mnt/d/Git/SandvikForecastTool/backend/tests/SandvikForecast.Tests/bin/Debug/net8.0/Microsoft.Extensions.DependencyInjection.dll
+/mnt/d/Git/SandvikForecastTool/backend/tests/SandvikForecast.Tests/bin/Debug/net8.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll
+/mnt/d/Git/SandvikForecastTool/backend/tests/SandvikForecast.Tests/bin/Debug/net8.0/Microsoft.Extensions.Logging.dll
+/mnt/d/Git/SandvikForecastTool/backend/tests/SandvikForecast.Tests/bin/Debug/net8.0/Microsoft.Extensions.Logging.Abstractions.dll
+/mnt/d/Git/SandvikForecastTool/backend/tests/SandvikForecast.Tests/bin/Debug/net8.0/Microsoft.Extensions.Options.dll

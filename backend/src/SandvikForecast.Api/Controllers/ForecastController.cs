@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using SandvikForecast.Core.Entities;
 using SandvikForecast.Core.Interfaces;
 using SandvikForecast.Infrastructure.Data;
+using ClosedXML.Excel;
 
 namespace SandvikForecast.Api.Controllers;
 
@@ -374,14 +375,266 @@ public class ForecastController : ControllerBase
     }
 
     [HttpGet("template")]
-    public async Task<ActionResult> GetTemplate()
+    public ActionResult GetTemplate()
     {
-        var csv = "Customer,InvoiceCompany,Product,Amount,Notes\n";
-        return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", "forecast_template.csv");
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Forecast Import");
+
+        // Headers matching the import format
+        worksheet.Cell(1, 1).Value = "ForecastPeriodId";
+        worksheet.Cell(1, 2).Value = "CustomerId";
+        worksheet.Cell(1, 3).Value = "InvoiceCompanyId";
+        worksheet.Cell(1, 4).Value = "ProductId";
+        worksheet.Cell(1, 5).Value = "Year";
+        worksheet.Cell(1, 6).Value = "Month";
+        worksheet.Cell(1, 7).Value = "OrderQty";
+        worksheet.Cell(1, 8).Value = "OrderAmount";
+        worksheet.Cell(1, 9).Value = "InvoiceQty";
+        worksheet.Cell(1, 10).Value = "InvoiceAmount";
+        worksheet.Cell(1, 11).Value = "Notes";
+
+        // Sample data row
+        worksheet.Cell(2, 1).Value = "2026FC1";
+        worksheet.Cell(2, 2).Value = "CUST001";
+        worksheet.Cell(2, 3).Value = "INV001";
+        worksheet.Cell(2, 4).Value = "PROD001";
+        worksheet.Cell(2, 5).Value = 2026;
+        worksheet.Cell(2, 6).Value = 1;
+        worksheet.Cell(2, 7).Value = 100;
+        worksheet.Cell(2, 8).Value = 50000;
+        worksheet.Cell(2, 9).Value = 50;
+        worksheet.Cell(2, 10).Value = 25000;
+        worksheet.Cell(2, 11).Value = "Sample notes";
+
+        // Style header row
+        var headerRow = worksheet.Range(1, 1, 1, 11);
+        headerRow.Style.Font.Bold = true;
+        headerRow.Style.Fill.BackgroundColor = XLColor.FromHtml("#0D3D92");
+        headerRow.Style.Font.FontColor = XLColor.White;
+        headerRow.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+        // Auto-fit columns
+        worksheet.Columns().AdjustToContents();
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        stream.Position = 0;
+
+        return File(stream.ToArray(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "forecast_import_template.xlsx");
+    }
+
+    [HttpPost("export")]
+    public async Task<ActionResult> ExportData([FromQuery] string? forecastPeriodId, [FromQuery] int? year, [FromQuery] string? customerId)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userBrand = "Sandvik";
+        if (!string.IsNullOrEmpty(userIdClaim))
+        {
+            var dbUser = await _db.Users.FirstOrDefaultAsync(u => u.Id == userIdClaim && u.IsActive);
+            if (dbUser != null) userBrand = dbUser.Brand ?? "Sandvik";
+        }
+
+        var brandCustomerIds = _db.Customers
+            .Where(c => c.Brand == userBrand)
+            .Select(c => c.Id)
+            .ToHashSet();
+
+        var records = await _recordRepo.GetAllAsync();
+        records = records.Where(r => brandCustomerIds.Contains(r.CustomerId)).ToList();
+
+        if (!string.IsNullOrEmpty(forecastPeriodId))
+            records = records.Where(r => r.ForecastPeriodId == forecastPeriodId).ToList();
+        if (year.HasValue)
+            records = records.Where(r => r.Year == year.Value).ToList();
+        if (!string.IsNullOrEmpty(customerId))
+            records = records.Where(r => r.CustomerId == customerId).ToList();
+
+        // Get customer and period names for display
+        var customerIds = records.Select(r => r.CustomerId).Distinct().ToList();
+        var periodIds = records.Select(r => r.ForecastPeriodId).Distinct().ToList();
+        var customers = _db.Customers.Where(c => customerIds.Contains(c.Id)).ToDictionary(c => c.Id, c => c.CustomerName);
+        var periods = _db.ForecastPeriods.Where(p => periodIds.Contains(p.Id)).ToDictionary(p => p.Id, p => p.FcName);
+
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Forecast Data");
+
+        // Headers: Period, Customer, Year, Month, OrderQty, OrderAmount, InvoiceQty, InvoiceAmount, Status
+        worksheet.Cell(1, 1).Value = "Period";
+        worksheet.Cell(1, 2).Value = "Customer";
+        worksheet.Cell(1, 3).Value = "Year";
+        worksheet.Cell(1, 4).Value = "Month";
+        worksheet.Cell(1, 5).Value = "OrderQty";
+        worksheet.Cell(1, 6).Value = "OrderAmount";
+        worksheet.Cell(1, 7).Value = "InvoiceQty";
+        worksheet.Cell(1, 8).Value = "InvoiceAmount";
+        worksheet.Cell(1, 9).Value = "Status";
+
+        var row = 2;
+        foreach (var record in records)
+        {
+            worksheet.Cell(row, 1).Value = periods.GetValueOrDefault(record.ForecastPeriodId, record.ForecastPeriodId);
+            worksheet.Cell(row, 2).Value = customers.GetValueOrDefault(record.CustomerId, record.CustomerId);
+            worksheet.Cell(row, 3).Value = record.Year;
+            worksheet.Cell(row, 4).Value = record.Month;
+            worksheet.Cell(row, 5).Value = (double)record.OrderQty;
+            worksheet.Cell(row, 6).Value = (double)record.OrderAmount;
+            worksheet.Cell(row, 7).Value = (double)record.InvoiceQty;
+            worksheet.Cell(row, 8).Value = (double)record.InvoiceAmount;
+            worksheet.Cell(row, 9).Value = record.Status;
+            row++;
+        }
+
+        // Style header row
+        var headerRange = worksheet.Range(1, 1, 1, 9);
+        headerRange.Style.Font.Bold = true;
+        headerRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#0D3D92");
+        headerRange.Style.Font.FontColor = XLColor.White;
+        headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+        // Format number columns
+        worksheet.Column(5).Style.NumberFormat.Format = "#,##0";
+        worksheet.Column(6).Style.NumberFormat.Format = "#,##0.00";
+        worksheet.Column(7).Style.NumberFormat.Format = "#,##0";
+        worksheet.Column(8).Style.NumberFormat.Format = "#,##0.00";
+
+        // Auto-fit columns
+        worksheet.Columns().AdjustToContents();
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        stream.Position = 0;
+
+        var fileName = $"forecast_export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+        return File(stream.ToArray(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            fileName);
+    }
+
+    [HttpPost("import")]
+    public async Task<ActionResult> ImportData(IFormFile file)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(new { success = false, message = "User not authenticated" });
+
+        var dbUser = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+        if (dbUser == null)
+            return Unauthorized(new { success = false, message = "User not authenticated" });
+
+        var userBrand = dbUser.Brand ?? "Sandvik";
+        var brandCustomerIds = _db.Customers
+            .Where(c => c.Brand == userBrand)
+            .Select(c => c.Id)
+            .ToHashSet();
+
+        if (file == null || file.Length == 0)
+            return BadRequest(new { success = false, message = "No file uploaded" });
+
+        if (!file.FileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
+            return BadRequest(new { success = false, message = "Only .xlsx files are supported" });
+
+        var errors = new List<string>();
+        var created = 0;
+        var updated = 0;
+
+        try
+        {
+            using var stream = new MemoryStream();
+            await file.CopyToAsync(stream);
+            stream.Position = 0;
+
+            using var workbook = new XLWorkbook(stream);
+            var worksheet = workbook.Worksheet(1);
+            var rows = worksheet.RangeUsed().RowsUsed().Skip(1); // Skip header row
+
+            foreach (var dataRow in rows)
+            {
+                try
+                {
+                    var forecastPeriodId = dataRow.Cell(1).GetString();
+                    var customerId = dataRow.Cell(2).GetString();
+                    var invoiceCompanyId = dataRow.Cell(3).GetString();
+                    var productId = dataRow.Cell(4).GetString();
+                    var year = (int)dataRow.Cell(5).GetDouble();
+                    var month = (int)dataRow.Cell(6).GetDouble();
+                    var orderQty = (decimal)dataRow.Cell(7).GetDouble();
+                    var orderAmount = (decimal)dataRow.Cell(8).GetDouble();
+                    var invoiceQty = (decimal)dataRow.Cell(9).GetDouble();
+                    var invoiceAmount = (decimal)dataRow.Cell(10).GetDouble();
+                    var notes = dataRow.Cell(11).GetString();
+
+                    if (string.IsNullOrEmpty(forecastPeriodId) || string.IsNullOrEmpty(customerId) || string.IsNullOrEmpty(productId))
+                    {
+                        errors.Add($"Row {dataRow.RowNumber()}: Missing required fields (ForecastPeriodId, CustomerId, ProductId)");
+                        continue;
+                    }
+
+                    if (!brandCustomerIds.Contains(customerId))
+                    {
+                        errors.Add($"Row {dataRow.RowNumber()}: Customer not accessible for this brand");
+                        continue;
+                    }
+
+                    // Check for existing record to update
+                    var existing = await _db.ForecastRecords
+                        .FirstOrDefaultAsync(x =>
+                            x.ForecastPeriodId == forecastPeriodId &&
+                            x.CustomerId == customerId &&
+                            x.ProductId == productId &&
+                            x.Year == year &&
+                            x.Month == month &&
+                            !x.IsDeleted);
+
+                    if (existing != null)
+                    {
+                        existing.OrderQty = orderQty;
+                        existing.OrderAmount = orderAmount;
+                        existing.InvoiceQty = invoiceQty;
+                        existing.InvoiceAmount = invoiceAmount;
+                        existing.Notes = notes;
+                        updated++;
+                    }
+                    else
+                    {
+                        var record = new ForecastRecord
+                        {
+                            ForecastPeriodId = forecastPeriodId,
+                            CustomerId = customerId,
+                            InvoiceCompanyId = invoiceCompanyId,
+                            ProductId = productId,
+                            Year = year,
+                            Month = month,
+                            OrderQty = orderQty,
+                            OrderAmount = orderAmount,
+                            InvoiceQty = invoiceQty,
+                            InvoiceAmount = invoiceAmount,
+                            Notes = notes,
+                            CreatedByUserId = userId,
+                            Status = "Draft"
+                        };
+                        _db.ForecastRecords.Add(record);
+                        created++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"Row {dataRow.RowNumber()}: {ex.Message}");
+                }
+            }
+
+            await _db.SaveChangesAsync();
+            return Ok(new { success = true, created, updated, errors });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { success = false, message = "Failed to parse Excel file: " + ex.Message });
+        }
     }
 
     [HttpGet("export")]
-    public async Task<ActionResult> ExportData([FromQuery] string? periodId)
+    public async Task<ActionResult> ExportDataCsv([FromQuery] string? periodId)
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var userBrand = "Sandvik";
@@ -410,8 +663,8 @@ public class ForecastController : ControllerBase
         return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", $"forecast_export_{periodId ?? "all"}.csv");
     }
 
-    [HttpPost("import")]
-    public async Task<ActionResult> ImportData([FromBody] List<ImportRecordRequest> records)
+    [HttpPost("import-json")]
+    public async Task<ActionResult> ImportDataJson([FromBody] List<ImportRecordRequest> records)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userId))

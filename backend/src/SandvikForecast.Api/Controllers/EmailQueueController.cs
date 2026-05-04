@@ -8,7 +8,7 @@ namespace SandvikForecast.Api.Controllers;
 
 [ApiController]
 [Route("api/email-queue")]
-[Authorize(Roles = "SYS_ADMIN")]
+[Authorize(Roles = "Admin,SYS_ADMIN")]
 public class EmailQueueController : ControllerBase
 {
     private readonly SandvikDbContext _db;

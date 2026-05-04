@@ -63,6 +63,21 @@
           >
             使用 SSO 登录（AHNO 域）
           </a-button>
+          <a-divider v-if="azureAdConfigured">或</a-divider>
+          <a-button
+            v-if="azureAdConfigured"
+            type="secondary"
+            size="large"
+            block
+            class="microsoft-btn"
+            :loading="microsoftLoading"
+            @click="handleMicrosoftLogin"
+          >
+            <template #icon>
+              <span class="microsoft-icon">🔹</span>
+            </template>
+            Sign in with Microsoft
+          </a-button>
         </div>
 
         <!-- Dev/Test Local Login Section -->
@@ -118,7 +133,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { useAuthStore } from '../store/auth'
@@ -132,6 +147,25 @@ const authStore = useAuthStore()
 
 const sandvikLoading = ref(false)
 const ahnoLoading = ref(false)
+const microsoftLoading = ref(false)
+
+// Check if Azure AD is configured (i.e., not placeholder values)
+const azureAdConfigured = ref(false)
+
+// Check Azure AD config on mount
+onMounted(async () => {
+  try {
+    // Try to hit the microsoft endpoint - if it returns BadRequest with "not configured", Azure AD is not set up
+    const response = await fetch('/api/auth/microsoft', { method: 'GET' })
+    if (response.ok || response.status === 400) {
+      const data = await response.json().catch(() => ({}))
+      // If response says "not configured", Azure AD is not set up
+      azureAdConfigured.value = !(data.message && data.message.includes('未配置'))
+    }
+  } catch {
+    azureAdConfigured.value = false
+  }
+})
 
 // Dev/Test mode
 const isDevMode = ref(true)
@@ -173,6 +207,17 @@ const handleAhnoLogin = async () => {
     message.error('登录失败，请重试')
   } finally {
     ahnoLoading.value = false
+  }
+}
+
+const handleMicrosoftLogin = async () => {
+  microsoftLoading.value = true
+  try {
+    // Redirect to backend Microsoft SSO endpoint
+    window.location.href = '/api/auth/microsoft'
+  } catch (error) {
+    message.error('登录失败，请重试')
+    microsoftLoading.value = false
   }
 }
 
@@ -349,6 +394,20 @@ const handleDevLogin = async () => {
 .dev-badge {
   margin-left: 8px;
   font-size: 10px;
+}
+
+.microsoft-btn {
+  border-color: #0078D4;
+  color: #0078D4;
+}
+
+.microsoft-btn:hover {
+  border-color: #106EBE;
+  color: #106EBE;
+}
+
+.microsoft-icon {
+  font-size: 16px;
 }
 
 @media (max-width: 768px) {

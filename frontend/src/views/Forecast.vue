@@ -74,7 +74,7 @@
             <a-button @click="downloadTemplate">下载模板</a-button>
             <a-button @click="downloadData">下载数据</a-button>
             <a-button @click="triggerImport">导入</a-button>
-            <input type="file" ref="importFileInput" style="display:none" accept=".csv" @change="handleImport" />
+            <input type="file" ref="importFileInput" style="display:none" accept=".xlsx" @change="handleImport" />
             <a-button @click="copyLastPeriod">复制上期</a-button>
             <a-button class="secondary-btn" @click="addNewRow">新增行</a-button>
             <a-button @click="saveDraft" :loading="saving">保存草稿</a-button>
@@ -385,40 +385,52 @@ const resetFilters = () => { Object.keys(filters).forEach(k => filters[k] = '') 
 const importFileInput = ref(null)
 
 const downloadTemplate = () => {
-  const csv = 'Customer,InvoiceCompany,Product,Amount,Notes\n'
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = 'forecast_template.csv'
-  link.click()
-  URL.revokeObjectURL(url)
-  message.success('模板下载成功')
+  const token = localStorage.getItem('token')
+  fetch('/api/forecast/template', {
+    headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+  })
+    .then(res => res.blob())
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'forecast_import_template.xlsx'
+      link.click()
+      window.URL.revokeObjectURL(url)
+      message.success('模板下载成功')
+    })
+    .catch(err => {
+      console.error('Failed to download template:', err)
+      message.error('模板下载失败')
+    })
 }
 
 const downloadData = () => {
-  const headers = ['Customer', 'InvoiceCompany', 'Performance', 'Region', 'PA', 'SubPA1', 'SubPA2']
-  currentMonths.value.forEach(m => {
-    headers.push(`${m}_OrderQty`, `${m}_OrderAmt`, `${m}_InvQty`, `${m}_InvAmt`)
+  const token = localStorage.getItem('token')
+  const params = new URLSearchParams()
+  if (currentPeriod.id) params.append('forecastPeriodId', currentPeriod.id)
+
+  fetch('/api/forecast/export?' + params.toString(), {
+    method: 'POST',
+    headers: { 'Authorization': token ? `Bearer ${token}` : '' }
   })
-  let csv = headers.join(',') + '\n'
-  filteredRows.value.forEach(row => {
-    const values = [
-      row.customer, row.invoice, row.performance, row.region, row.pa, row.subpa1, row.subpa2
-    ]
-    currentMonths.value.forEach(m => {
-      values.push(row.data[m]?.qty || 0, row.data[m]?.qty * 1000 || 0, row.data[m]?.inv || 0, row.data[m]?.inv * 1000 || 0)
+    .then(res => {
+      if (!res.ok) throw new Error('Export failed')
+      return res.blob()
     })
-    csv += values.join(',') + '\n'
-  })
-  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `forecast_data_${currentPeriod.period}.csv`
-  link.click()
-  URL.revokeObjectURL(url)
-  message.success('数据下载成功')
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `forecast_export_${currentPeriod.period || 'data'}.xlsx`
+      link.click()
+      window.URL.revokeObjectURL(url)
+      message.success('数据下载成功')
+    })
+    .catch(err => {
+      console.error('Failed to download data:', err)
+      message.error('数据下载失败')
+    })
 }
 
 const triggerImport = () => {
@@ -428,50 +440,39 @@ const triggerImport = () => {
 const handleImport = (e) => {
   const file = e.target.files[0]
   if (!file) return
-  const reader = new FileReader()
-  reader.onload = (event) => {
-    try {
-      const text = event.target.result
-      const lines = text.split('\n').filter(l => l.trim())
-      if (lines.length < 2) {
-        message.warning('CSV文件为空或格式不正确')
-        return
-      }
-      // Skip header, parse data rows
-      for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',')
-        if (values.length >= 4) {
-          const newRow = {
-            __id: 'r' + Date.now() + '_' + i,
-            customer: values[0] || '',
-            invoice: values[1] || '',
-            performance: values[2] || '',
-            region: values[3] || '',
-            pa: values[4] || '',
-            subpa1: values[5] || '',
-            subpa2: values[6] || '',
-            data: {}
-          }
-          currentMonths.value.forEach((m, idx) => {
-            const baseIdx = 7 + idx * 4
-            if (values[baseIdx] !== undefined) {
-              newRow.data[m] = {
-                qty: parseFloat(values[baseIdx]) || 0,
-                inv: parseFloat(values[baseIdx + 2]) || 0
-              }
-            }
-          })
-          forecastRows.value.push(newRow)
+
+  const token = localStorage.getItem('token')
+  const formData = new FormData()
+  formData.append('file', file)
+
+  fetch('/api/forecast/import', {
+    method: 'POST',
+    headers: { 'Authorization': token ? `Bearer ${token}` : '' },
+    body: formData
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        message.success(`导入成功：新建 ${data.created} 条，更新 ${data.updated} 条`)
+        if (data.errors && data.errors.length > 0) {
+          message.warning(`有 ${data.errors.length} 条错误`)
         }
+        // Refresh data
+        if (currentPeriod.id) {
+          loadForecastData(currentPeriod.id)
+        }
+      } else {
+        message.error('导入失败：' + (data.message || '未知错误'))
       }
-      message.success(`成功导入 ${lines.length - 1} 条数据`)
-    } catch (err) {
+    })
+    .catch(err => {
+      console.error('Failed to import:', err)
       message.error('导入失败：' + err.message)
-    }
-  }
-  reader.readAsText(file)
-  // Reset input so same file can be imported again
-  e.target.value = ''
+    })
+    .finally(() => {
+      // Reset input so same file can be imported again
+      e.target.value = ''
+    })
 }
 
 const copyLastPeriod = () => {

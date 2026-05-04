@@ -48,6 +48,23 @@ public class AuthService : IAuthService
         if (user == null) return null;
         return new UserDto(user.Id, user.UserName, user.DisplayName, user.Email, user.Role, user.IsActive);
     }
+    public async Task<LoginResponse> GenerateSsoTokenAsync(User user, string ipAddress, string userAgent, string loginMethod)
+    {
+        var loginLog = new LoginLog 
+        { 
+            UserId = user.Id,
+            UserName = user.Email, 
+            IpAddress = ipAddress, 
+            UserAgent = userAgent,
+            Success = true
+        };
+        await _db.LoginLogs.AddAsync(loginLog);
+        await _db.SaveChangesAsync();
+        
+        var token = GenerateJwtToken(user);
+        var expiresAt = DateTime.UtcNow.AddHours(8);
+        return new LoginResponse(token, user.DisplayName, user.Role, expiresAt);
+    }
     private string HashPassword(string password)
     {
         using var sha = SHA256.Create();
