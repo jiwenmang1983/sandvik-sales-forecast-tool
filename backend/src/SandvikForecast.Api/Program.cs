@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SandvikForecast.Api.Services;
+using SandvikForecast.Core.Entities;
 using SandvikForecast.Core.Interfaces;
 using SandvikForecast.Infrastructure.Data;
 using SandvikForecast.Infrastructure.Repositories;
@@ -16,6 +17,7 @@ builder.Services.AddDbContext<SandvikDbContext>(options =>
     options.UseMySql(connStr, new MySqlServerVersion(new Version(8, 0, 45))));
 // Repositories
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+builder.Services.AddScoped<IRepository<ForecastPeriod>, ForecastPeriodRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();

@@ -11,6 +11,7 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
     public Repository(SandvikDbContext context) { _context = context; _dbSet = context.Set<T>(); }
     public virtual async Task<T?> GetByIdAsync(string id) => await _dbSet.FirstOrDefaultAsync(e => e.Id == id && !e.IsDeleted);
     public virtual async Task<IEnumerable<T>> GetAllAsync() => await _dbSet.Where(e => !e.IsDeleted).ToListAsync();
+    public virtual async Task<IEnumerable<T>> GetAllWithDeletedAsync() => await _dbSet.ToListAsync();
     public virtual async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate) => await _dbSet.Where(e => !e.IsDeleted).Where(predicate).ToListAsync();
     public virtual async Task<T> AddAsync(T entity) { entity.CreatedAt = DateTime.UtcNow; entity.UpdatedAt = DateTime.UtcNow; await _dbSet.AddAsync(entity); await _context.SaveChangesAsync(); return entity; }
     public virtual async Task UpdateAsync(T entity) { entity.UpdatedAt = DateTime.UtcNow; _dbSet.Update(entity); await _context.SaveChangesAsync(); }
