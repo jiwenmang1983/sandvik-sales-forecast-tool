@@ -28,7 +28,7 @@
 
 | 任务ID | 描述 | 类型 | 委派给 | 委托时间 | 预期结果文件 | 状态 | 备注 |
 |--------|------|------|--------|---------|-------------|------|------|
-|| H-028 | Q-010 E2E验收：四度量字段+延期窗口 | 小Q测试 | xiaoq | 2026-05-04 16:46 | /tmp/xiaoq_result_q010.json | 🚫 卡死(≈23h) | xiaoq tmux不存在，判定stall；xiaoQ协作方案(agentic)待重建 |
+||| H-028 | Q-010 E2E验收：四度量字段+延期窗口 | 小Q测试 | xiaoq | 2026-05-04 16:46 | /tmp/xiaoq_result_q010.json | ✅ 已取消 | xiaoq tmux不存在，任务从未执行；Q-010待重派 |
 
 ---
 
@@ -162,3 +162,4 @@
 | 2026-05-05 17:00 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在（0字节） | H-028仍stall（≈23.5h）；已唤醒Mark（Feishu DM成功）；无🔬无正常⏳无🔄，H-028 xiaoq tmux缺失导致stall |
 | 2026-05-05 17:30 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028仍stall（≈24h），xiaoq tmux不存在；无🔬无正常⏳无🔄；已唤醒Mark（Feishu DM: om_x100b50afdef13cacc497314166e66d1） |
 | 2026-05-05 18:00 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028仍stall（≈24.5h），xiaoq tmux不存在；无🔬无正常⏳无🔄无🚫；已唤醒Mark（Feishu DM: om_x100b50afb33cc0acc2b944c3cf73791） |
+| 2026-05-05 18:43 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028（Q-010）≈25h仍卡死，xiaoq tmux不存在；无🔬无正常⏳无🔄；已唤醒Mark（Feishu DM: om_x100b50a8d08a1934b253fbc55e18918） |
