@@ -9,6 +9,8 @@ public class OrgNode : BaseEntity
     public string Role { get; set; } = string.Empty; // SYS_ADMIN, CEO, VP_SALES, REGION_DIRECTOR, DIRECTOR, MANAGER, SALES, FINANCE_MANAGER
     public int? ParentId { get; set; }
     public string? Region { get; set; } // e.g., 华东大区, 华南大区
+    public string? SalesRegion { get; set; } // e.g., 华东大区, 华南大区
+    public string? SalesDistrict { get; set; }
     public string? Company { get; set; }
     public string Status { get; set; } = "Active"; // matches table column: Active/Inactive
 }
