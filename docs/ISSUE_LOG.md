@@ -133,7 +133,11 @@
 | ID | 问题 | 修复建议 | 状态 |
 |----|------|---------|------|
 | API-058 | `/api/forecast/submit` 文档参数名错误 | 参数是 `PeriodId` 不是 `forecastRecordId` | ✅ 已修复 |
+| **BUG-022** | **API统一响应格式缺失** | 所有端点返回扁平数组，未按PRD §4.4.3规范返回 `{code,data,message}` 结构。证据：GET /api/forecast-periods → `[{id,fcName...}]` 而非 `{code:0,data:[...]}` | 🔄待修复 |
+| **BUG-023** | **Dashboard API缺失** | GET /api/dashboard → 404 | 🔄待修复 |
+| **BUG-024** | **组织节点API缺失** | GET /api/basedata/org-nodes → 404 | 🔄待修复 |
+| **BUG-025** | **登出API缺失** | POST /api/auth/logout → 404 | 🔄待修复 |
 
 ---
 
-*本文档由 Hermes 小P 维护，最后更新：2026-05-05*
+*本文档由 Hermes 小P 维护，最后更新：2026-05-05 17:51（BUG-022~025新增自Q-FW1探测）*
