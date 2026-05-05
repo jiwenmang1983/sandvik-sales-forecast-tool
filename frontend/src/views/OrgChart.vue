@@ -462,7 +462,7 @@ const editNode = (node) => {
 
 const deleteNode = async (node) => {
   try {
-    const res = await fetch(`/api/org/nodes/${node.key}`, { method: 'DELETE' })
+    const res = await fetch(`/api/org-nodes/${node.key}`, { method: 'DELETE' })
     const data = await res.json()
     if (data.success) {
       message.success('节点已删除')
@@ -482,31 +482,32 @@ const saveNode = async () => {
   }
   try {
     const body = {
-      type: nodeForm.type,
       name: nodeForm.name,
       email: nodeForm.email,
+      role: typeToRole(nodeForm.type),
       region: nodeForm.region,
       company: nodeForm.company,
       parentId: nodeForm.parentId,
-      status: nodeForm.status
+      salesRegion: nodeForm.salesRegion,
+      salesDistrict: nodeForm.salesDistrict
     }
-    
+
     let res, data
     if (editingNode.value) {
-      res = await fetch(`/api/org/nodes/${editingNode.value.id}`, {
+      res = await fetch(`/api/org-nodes/${editingNode.value.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       })
     } else {
-      res = await fetch('/api/org/nodes', {
+      res = await fetch('/api/org-nodes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       })
     }
     data = await res.json()
-    
+
     if (data.success) {
       message.success(editingNode.value ? '节点已更新' : '节点已创建')
       showNodeModal.value = false
