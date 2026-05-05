@@ -483,7 +483,14 @@ TC-07 🧭 布局导航     — 侧边栏折叠/菜单
 [ ] TESTCASE.md 页面测试状态同步更新
 ```
 
-**注意：** slh-bot 当前没有 `browser_*` 工具集，浏览器测试通过 shell `npx playwright` 方式执行。后续若 slh-bot 补充 browser 工具集，可升级为智能体方式。
+**注意：** slh-bot 已集成 `browser` 工具集（toolsets: [hermes-cli, browser]），两种场景互补执行：
+
+| 场景 | 执行方式 | 执行者 | 说明 |
+|------|---------|--------|------|
+| 第一遍UI验证（探索性） | `browser_navigate` + `browser_vision` 截图确认 | Hermes（小P） | 功能首次实现后人肉验收，截图+判断 |
+| 结构化回归测试 | `npx playwright test app.spec.ts` | 小Q（via shell） | TC-01~TC-07 批量跑，结果写文件，解析PASS/FAIL |
+
+两者互补：Browser 解决"功能能不能用"的快速确认，Playwright 解决"功能有没有坏"的可靠回归。
 
 ---
 

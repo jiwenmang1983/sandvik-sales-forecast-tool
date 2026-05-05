@@ -59,7 +59,7 @@
 
 Sandvik Forecast Tool · PRD §3 业务流程 · v0.4
 
-```
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="700" viewBox="0 0 1100 700">
   <!-- ===== LEGEND ===== -->
   <text x="860" y="28" fill="white" font-size="10" font-weight="700">图例</text>
   <rect x="860" y="38" width="14" height="9" rx="2" fill="rgba(8,51,68,0.6)" stroke="#22d3ee" stroke-width="1.2"/>
@@ -214,8 +214,6 @@ Sandvik Forecast Tool · PRD §3 业务流程 · v0.4
   <text x="60" y="650" fill="#94a3b8" font-size="8.5">直线经理审批通过 → 自动推至区域总监 → 继续向上流转。若某级审批人在OrgNode中不存在（人员离职），自动跳过该级继续推进。</text>
 
 </svg>
-```
-
 Sandvik Forecast Tool · PRD §3 业务流程 · 预测流图 · v0.4
 
 
@@ -277,7 +275,7 @@ Sandvik Forecast Tool · PRD §3 业务流程 · 预测流图 · v0.4
 
 Sandvik Forecast Tool · PRD §4 功能模块 · v0.4 · 位于功能模块总览之前
 
-```
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="700" viewBox="0 0 1100 700">
   <!-- ===== 角色纵列 ===== -->
   <!-- 销售 -->
   <rect x="40" y="60" width="80" height="44" rx="6" fill="rgba(8,51,68,0.6)" stroke="#22d3ee" stroke-width="1.5"/>
@@ -514,8 +512,6 @@ Sandvik Forecast Tool · PRD §4 功能模块 · v0.4 · 位于功能模块总�
   <text x="880" y="628" fill="#94a3b8" font-size="8">延期/约束机制</text>
 
 </svg>
-```
-
 Sandvik Forecast Tool · 功能架构图 · PRD §4 功能模块 · v0.4
 
 
@@ -813,7 +809,6 @@ Sandvik Forecast Tool · 功能架构图 · PRD §4 功能模块 · v0.4
 │ 按区域汇总（柱状图）       │ 按产品线汇总（饼图）         │
 └───────────────────────────┴─────────────────────────────┘
 ```
-
 ### F-01.2 数据口径规则
 
 - **只含已审批通过数据**：草稿+审批中数据不计入任何汇总
@@ -867,7 +862,6 @@ Sandvik Forecast Tool · 功能架构图 · PRD §4 功能模块 · v0.4
 │ 周期名称 | 填报窗口 | 延期窗口 | 状态 | 操作            │
 └─────────────────────────────────────────────────────────┘
 ```
-
 **表格列定义**：
 
 
@@ -940,7 +934,6 @@ Sandvik Forecast Tool · 功能架构图 · PRD §4 功能模块 · v0.4
 │ 数据表格（列表）                                        │
 └─────────────────────────────────────────────────────────┘
 ```
-
 **筛选栏规则**：
 
 - **客户**：下拉列表，仅显示品牌匹配的客户（`Customer.Brand = Salesperson.Brand`）
@@ -1024,7 +1017,6 @@ Sandvik Forecast Tool · 功能架构图 · PRD §4 功能模块 · v0.4
 │ [复制上期] [保存草稿] [提交审批]                        │
 └─────────────────────────────────────────────────────────┘
 ```
-
 **月度字段校验规则（Q13）**：
 
 - 订单数量/开票数量：整数，可为0，**不可为负**
@@ -1098,7 +1090,6 @@ Sandvik Forecast Tool · 功能架构图 · PRD §4 功能模块 · v0.4
 │ 审批卡片列表                                            │
 └─────────────────────────────────────────────────────────┘
 ```
-
 **Tab说明**：
 
 - **待我审批**：当前用户是审批节点且status=审批中的记录
@@ -1118,7 +1109,6 @@ Sandvik Forecast Tool · 功能架构图 · PRD §4 功能模块 · v0.4
 │ └─────────────┘  └─────────────┘  └─────────────┘ │
 └─────────────────────────────────────────────────────┘
 ```
-
 **卡片字段**：
 
 
@@ -1171,7 +1161,6 @@ Sandvik Forecast Tool · 功能架构图 · PRD §4 功能模块 · v0.4
 │ [驳回] [调整+提交指导值] [通过]                         │
 └─────────────────────────────────────────────────────────┘
 ```
-
 **审批操作按钮逻辑**：
 
 **[通过]**：
@@ -1234,7 +1223,6 @@ Sandvik Forecast Tool · 功能架构图 · PRD §4 功能模块 · v0.4
 │ 客户表格                                                │
 └─────────────────────────────────────────────────────────┘
 ```
-
 **表格列定义**：
 
 
@@ -1285,7 +1273,6 @@ Sandvik Forecast Tool · 功能架构图 · PRD §4 功能模块 · v0.4
 │ 产品表格                                                │
 └─────────────────────────────────────────────────────────┘
 ```
-
 **表格列定义**：
 
 
@@ -1354,7 +1341,6 @@ Sandvik Forecast Tool · 功能架构图 · PRD §4 功能模块 · v0.4
 │           ├── 李清（销售/SALES）
 │           └── 李思梦（销售/SALES）
 ```
-
 **节点字段**（每个OrgNode）：
 
 
@@ -1611,7 +1597,7 @@ Sandvik Forecast Tool · 功能架构图 · PRD §4 功能模块 · v0.4
 
 Sandvik Forecast Tool · PRD §8 技术架构 · v0.4
 
-```
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="750" viewBox="0 0 1100 750">
   <!-- ===== 浏览器/客户端 ===== -->
   <rect x="380" y="38" width="200" height="54" rx="8" fill="rgba(8,51,68,0.6)" stroke="#22d3ee" stroke-width="1.5"/>
   <text x="480" y="60" fill="white" font-size="11" font-weight="600" text-anchor="middle">🌐 浏览器 / Azure AD</text>
@@ -1826,8 +1812,6 @@ Sandvik Forecast Tool · PRD §8 技术架构 · v0.4
   <text x="560" y="48" fill="#94a3b8" font-size="8">Background Service</text>
 
 </svg>
-```
-
 Sandvik Forecast Tool · 技术架构图 · PRD §8 技术架构 · v0.4
 
 
@@ -1942,7 +1926,6 @@ customers (id, name, brand, contact, phone, is_active, created_at, updated_at)
 -- 用户-开票公司特别权限（跨部门配置表）
 user_invoice_company_permissions (id, user_id, invoice_company_id, created_at)
 ```
-
 **实体通用规则（Q42/Q43/Q44/Q45）：**
 
 - **软删除（Q42）：** 所有基础数据（客户/产品/周期）均采用软删除（`is_deleted`），历史记录保留展示，物理删除仅限系统管理员在极端情况下操作
@@ -2051,7 +2034,6 @@ users (
   created_at, updated_at
 )
 ```
-
 ### 11.3 审批链技术配置
 
 ```sql
@@ -2066,7 +2048,6 @@ approval_flow_node_configs (
   created_at, updated_at
 )
 ```
-
 ---
 
 ## 12. 产品数据管理技术
@@ -2081,7 +2062,6 @@ ProductHierarchy (
   SortOrder, IsActive, IsDeleted, CreatedAt, UpdatedAt
 )
 ```
-
 ### 12.2 8大产品线
 
 
@@ -2116,7 +2096,6 @@ customers (
   is_active, is_deleted, created_at, updated_at
 )
 ```
-
 ### 13.2 品牌过滤技术
 
 - 销售归属单一品牌（`users.brand`）

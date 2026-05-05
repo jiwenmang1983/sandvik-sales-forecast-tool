@@ -109,9 +109,9 @@
 
 || Bug ID | 问题 | API 证据 | 状态 | 备注 |
 |--------|------|---------|------|------|
-|| BUG-019 | `GET /api/invoice-companies` 返回 404，InvoiceCompany 端点缺失 | curl → HTTP 404 | ⏳ 待修复 | 必填字段，前端下拉无法获取 |
-|| BUG-020 | `PUT /api/forecast-periods/{id}` 全字段必填，未实现 PATCH 部分更新 | 字段缺失 → HTTP 400 | ⏳ 待修复 | 应支持只更新部分字段 |
-|| BUG-021 | `GET /api/forecast/records` 不过滤 `isDeleted=true` 的记录 | 查询结果含已删除记录 | ⏳ 待修复 | BaseEntity HasQueryFilter 未生效 |
+|| BUG-019 | `GET /api/invoice-companies` 返回 404，InvoiceCompany 端点缺失 | curl → HTTP 404 | ✅ 已修复（commit 5a82d54）| 新增InvoiceCompanyController，list+detail端点，!IsDeleted+IsActive过滤 |
+|| BUG-020 | `PUT /api/forecast-periods/{id}` 全字段必填，未实现 PATCH 部分更新 | 字段缺失 → HTTP 400 | ✅ 已修复（commit 5a82d54）| PatchPeriodRequest DTO，nullable字段，部分更新 |
+|| BUG-021 | `GET /api/forecast/records` 不过滤 `isDeleted=true` 的记录 | 查询结果含已删除记录 | ✅ 已修复（commit 5a82d54）| SandvikDbContext HasQueryFilter 修复，entityType.ClrType参数 |
 
 ---
 
