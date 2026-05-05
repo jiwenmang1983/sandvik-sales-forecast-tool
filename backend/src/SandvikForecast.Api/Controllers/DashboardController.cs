@@ -95,7 +95,7 @@ public class DashboardController : ControllerBase
                 currentPeriodTime = $"{currentPeriod.FillTimeStart:yyyy-MM-dd} ~ {currentPeriod.FillTimeEnd:yyyy-MM-dd}";
             }
 
-            var allRecords = await _db.ForecastRecords.ToListAsync();
+            var allRecords = await _db.ForecastRecords.Where(r => r.Status == "APPROVED").ToListAsync();
             var allRecordIds = allRecords.Where(r => !r.IsDeleted).Select(r => r.Id).ToList();
             List<string>? allowedRecordIds = null;
 
@@ -313,9 +313,9 @@ public class DashboardController : ControllerBase
 
             var role = dbUser.Role?.ToUpperInvariant() ?? "";
 
-            // 查询当前用户的预测记录
+            // 查询当前用户的预测记录（仅 APPROVED）
             var userRecords = await _db.ForecastRecords
-                .Where(r => !r.IsDeleted && r.CreatedByUserId == userIdClaim)
+                .Where(r => !r.IsDeleted && r.CreatedByUserId == userIdClaim && r.Status == "APPROVED")
                 .ToListAsync();
 
             if (currentPeriod != null)

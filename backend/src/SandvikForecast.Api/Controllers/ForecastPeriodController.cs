@@ -12,10 +12,12 @@ namespace SandvikForecast.Api.Controllers;
 public class ForecastPeriodController : ControllerBase
 {
     private readonly IRepository<ForecastPeriod> _repo;
+    private readonly IRepository<ForecastRecord> _recordRepo;
 
-    public ForecastPeriodController(IRepository<ForecastPeriod> repo)
+    public ForecastPeriodController(IRepository<ForecastPeriod> repo, IRepository<ForecastRecord> recordRepo)
     {
         _repo = repo;
+        _recordRepo = recordRepo;
     }
 
     // GET /api/forecast-periods
@@ -87,6 +89,9 @@ public class ForecastPeriodController : ControllerBase
     {
         var period = await _repo.GetByIdAsync(id);
         if (period == null) return NotFound(new { success = false, message = "Period not found" });
+
+        var hasRecords = await _recordRepo.CountAsync(r => r.ForecastPeriodId == id) > 0;
+        if (hasRecords) return BadRequest(new { code = "PERIOD_HAS_RECORDS", message = "该周期已有填报数据，无法删除" });
 
         period.IsDeleted = true;
         await _repo.UpdateAsync(period);
