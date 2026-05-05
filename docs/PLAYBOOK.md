@@ -405,17 +405,22 @@ Q-021~       回归测试 / Bug 验证
 
 ---
 
-## 八、已知问题
+## 八、已知问题 → 统一归口 ISSUE_LOG.md
 
-### 8.1 当前待修 Bug
+> **已知问题不在 PLAYBOOK 中管理，统一收录在 `docs/ISSUE_LOG.md`。**
+> PLAYBOOK 是团队协作公约规范，已知问题是运营追踪文档。
 
-| Bug ID | 描述 | API 证据 | 状态 |
-|--------|------|---------|------|
-| INV-404 | `GET /api/invoice-companies` 返回 404，InvoiceCompany 端点缺失 | curl → HTTP 404 | ⏳ 待修复 |
-| UPDATE-FULL | `PUT /api/forecast-periods/{id}` 全字段必填，未实现 PATCH 部分更新 | 字段缺失 → HTTP 400 | ⏳ 待修复 |
-| SOFT-DEL | `GET /api/forecast/records` 不过滤 `isDeleted=true` 的记录 | 查询结果含已删除记录 | ⏳ 待修复 |
+**当前待修 Bug（截至 2026-05-05）：**
 
-### 8.2 已验证的 API 路由
+| Bug ID | 问题 | 状态 | 查看位置 |
+|--------|------|------|---------|
+| BUG-019 | `GET /api/invoice-companies` 返回 404 | ⏳ 待修复 | ISSUE_LOG.md |
+| BUG-020 | `PUT /api/forecast-periods/{id}` 全字段必填 | ⏳ 待修复 | ISSUE_LOG.md |
+| BUG-021 | `GET /api/forecast/records` 不过滤软删除 | ⏳ 待修复 | ISSUE_LOG.md |
+
+> 完整 Bug 列表和详情见 `docs/ISSUE_LOG.md`
+
+### 已验证的 API 路由（供参考）
 
 | 方法 | 路径 | 状态 | 备注 |
 |------|------|------|------|
@@ -425,31 +430,15 @@ Q-021~       回归测试 / Bug 验证
 | PUT | /api/forecast-periods/{id} | ✅ 200 | 全字段更新 |
 | DELETE | /api/forecast-periods/{id} | ✅ 200 | |
 | GET | /api/forecast/records | ✅ 200 | ⚠️ 不过滤软删除 |
-| POST | /api/forecast/records | ✅ 201 | 必填字段见4.3 |
+| POST | /api/forecast/records | ✅ 201 | 必填字段：forecastPeriodId / customerId / invoiceCompanyId / productId / year / month / orderQty / orderAmount / invoiceQty / invoiceAmount / status |
 | PUT | /api/forecast/records/{id} | ✅ 200 | 全字段更新 |
 | DELETE | /api/forecast/records/{id} | ✅ 200 | |
 | PATCH | /api/forecast/records/{id} | ⚠️ 存在 | status→Submitted 可触发审批流 |
 | GET | /api/basedata/customers | ✅ 200 | |
-| GET | /api/invoice-companies | ❌ 404 | Bug，见8.1 |
+| GET | /api/invoice-companies | ❌ 404 | Bug BUG-019 |
 | GET | /api/approval-flow/my | ✅ 200 | |
 
-### 8.3 有效测试数据
-
-```
-管理员账号：admin@sandvik.com / Password123
-预测周期ID（2027 FC1）：33b23e63-904b-4f7d-87d4-dced4e68260d
-客户ID（上海机械）：c00001-0000-0000-0000-000000000001
-客户ID（第3个）：c00003-0000-0000-0000-000000000003
-InvoiceCompany ID：i00001-0000-0000-0000-000000000001（只能从已有记录反推）
-Token 有效期：约 2 小时
-```
-
-### 8.4 预测记录必填字段（实测）
-
-```
-forecastPeriodId / customerId / invoiceCompanyId / productId
-year / month / orderQty / orderAmount / invoiceQty / invoiceAmount / status
-```
+> 完整 API 路由验证记录见 `docs/ISSUE_LOG.md`
 
 ---
 
