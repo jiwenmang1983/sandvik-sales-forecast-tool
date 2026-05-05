@@ -18,22 +18,16 @@
 
 ---
 
-## ⏳ 等待中（委派给CC/小Q）
+## ⏳ 等待中（委派给小Q）
 
 | 任务ID | 描述 | 类型 | 优先级 | 依赖 | 委派时间 | 状态 | 备注 |
 |--------|------|------|--------|------|---------|------|------|
-| H-049 | F-07-7: 组织架构管理页面（新增/编辑/停用） | CC | P1 | H-048 ✅ | 2026-05-06 00:20 | ⏳ | CC进行中 |
+| H-052 | F-07-8: E2E 组织节点 CRUD | 小Q | P1 | H-048✅ H-049✅ | 2026-05-06 00:27 | ⏳ | 已DM派发，TC-0701~0707 |
+| H-053 | F-02-8: E2E 周期创建→编辑→删除（有数据时禁止） | 小Q | P1 | H-050 ✅ | 2026-05-06 00:27 | ⏳ | 已DM派发，TC-0204 |
 
 ---
 
 ## 🔄 待处理
-
-### 第1轮：F-07 组织架构 + F-02 周期管理
-
-| 任务ID | 描述 | 类型 | 优先级 | 依赖 | 创建时间 | 状态 | 备注 |
-|--------|------|------|--------|------|---------|------|------|
-| H-052 | F-07-8: E2E 组织节点 CRUD | 小Q | P1 | H-048✅ H-049⏳ | 2026-05-06 | 🔴 | 依赖OrgNode API完成 |
-| H-053 | F-02-8: E2E 周期创建→编辑→删除（有数据时禁止） | 小Q | P1 | H-050 ✅ | 2026-05-06 | 🔴 | 依赖删除校验完成 |
 
 ### 第2轮：F-05 客户管理 + F-06 产品管理 + F-10 开票公司
 
@@ -75,10 +69,11 @@
 
 | 任务ID | 描述 | 类型 | 完成时间 | 结果 |
 |--------|------|------|---------|------|
-| H-050 | F-02-6: 周期删除数据校验（有数据禁止删除） | CC | 2026-05-06 00:02 | commit dbf85d7，ForecastPeriodController加校验 |
-| H-070 | F-01-3: Dashboard修正（只含Approved，排除Draft/Submitted） | CC | 2026-05-06 00:03 | commit dbf85d7，DashboardController两处加过滤 |
+| H-049 | F-07-7: 组织架构管理页面（新增/编辑/停用） | CC | 2026-05-06 00:27 | commit 7c0732b，OrgChart.vue API端点+role映射+salesRegion/salesDistrict |
 | H-048 | F-07-4/5/6: OrgNodes POST/PUT/DELETE API | CC | 2026-05-06 00:20 | commit ac703ed，POST+PUT+DELETE+软删cascade+DTOs |
 | H-047 | F-07-1: OrgNodes加sales_region+sales_district字段（Migration） | CC | 2026-05-06 00:16 | commit 0d6b508，Migration创建+applied+build通过 |
+| H-050 | F-02-6: 周期删除数据校验（有数据禁止删除） | CC | 2026-05-06 00:02 | commit dbf85d7，ForecastPeriodController加校验 |
+| H-070 | F-01-3: Dashboard修正（只含Approved，排除Draft/Submitted） | CC | 2026-05-06 00:03 | commit dbf85d7，DashboardController两处加过滤 |
 | H-036 | BUG-019/020/021修复：InvoiceCompany端点+PATCH+isDeleted过滤 | CC | 2026-05-05 22:00 | commit 5a82d54，BUG全修复验证通过 |
 | H-031 | T-025 Global Query Filter软删除统一拦截 | CC | 2026-05-04 19:00 | EF Core HasQueryFilter，单元测试PASS×4 |
 | H-032 | T-022 审批节点修改权限配置 | CC | 2026-05-04 19:05 | Entity+Migration+Service+Controller+权限检查 |
