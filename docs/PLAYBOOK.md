@@ -81,7 +81,7 @@ CC              → 编码开发，小P委派后执行
 
 ```bash
 cd /mnt/d/Git/SandvikForecastTool
-ANTHROPIC_API_KEY="sk-cp-nCk4W2tbBkgThnsZczkVOVcg4O5x4JCFjI2dv0GC1oBpIoTu534dja9_i3dC-cfHv8PfUHtEfua2IsEyJsP1RBpN_RioiKElZzYJK6t1FkI7Esk3VrGIYSg" \
+ANTHROPIC_API_KEY="sk-cp-AUnpds5ndMyU9JT_zzPyUr81Dg_BFOmzKVHXisUMgvqRE9Zqdb7zFb-elTi9liCZINk0BTEk8Sq9etMkPJgXausjqEOdYwe1VlQIhey2tRROq08nROkSWD8" \
   ANTHROPIC_BASE_URL="https://api.minimaxi.com/anthropic" \
   claude --dangerously-skip-permissions --print \
   -p "任务描述（必须含五段式，见3.2）" \
@@ -143,7 +143,7 @@ DB：appsettings.Development.json
    terminal(background=True,
      command=(
        'cd /mnt/d/Git/SandvikForecastTool && '
-       'ANTHROPIC_API_KEY="sk-cp-nCk4W2tbBkgThnsZczkVOVcg4O5x4JCFjI2dv0GC1oBpIoTu534dja9_i3dC-cfHv8PfUHtEfua2IsEyJsP1RBpN_RioiKElZzYJK6t1FkI7Esk3VrGIYSg" '
+       'ANTHROPIC_API_KEY="sk-cp-AUnpds5ndMyU9JT_zzPyUr81Dg_BFOmzKVHXisUMgvqRE9Zqdb7zFb-elTi9liCZINk0BTEk8Sq9etMkPJgXausjqEOdYwe1VlQIhey2tRROq08nROkSWD8" '
        'ANTHROPIC_BASE_URL="https://api.minimaxi.com/anthropic" '
        '/home/markji/.hermes/node/bin/claude '
        '--dangerously-skip-permissions --print '
@@ -210,7 +210,7 @@ CC 完成任务后必须写入：
 Provider：MiniMax CN
 Base URL：https://api.minimaxi.com/anthropic（⚠️ 不是 /v1）
 Model：MiniMax-M2.7
-Key：sk-cp-nCk4W2tbBkgThnsZczkVOVcg4O5x4JCFjI2dv0GC1oBpIoTu534dja9_i3dC-cfHv8PfUHtEfua2IsEyJsP1RBpN_RioiKElZzYJK6t1FkI7Esk3VrGIYSg
+Key：sk-cp-AUnpds5ndMyU9JT_zzPyUr81Dg_BFOmzKVHXisUMgvqRE9Zqdb7zFb-elTi9liCZINk0BTEk8Sq9etMkPJgXausjqEOdYwe1VlQIhey2tRROq08nROkSWD8
 Token Plan 限额：4500/4500（刷新时间：每5h，当前15:00刷新）
 Rate Limit 处理：429 → 等到下一个整点再试
 ```
