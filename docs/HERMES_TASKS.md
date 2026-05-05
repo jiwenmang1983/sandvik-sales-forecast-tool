@@ -29,12 +29,6 @@
 | 任务ID | 描述 | 类型 | 委派给 | 委托时间 | 预期结果文件 | 状态 | 备注 |
 |--------|------|------|--------|---------|-------------|------|------|
 | H-028 | Q-010 E2E验收：四度量字段+延期窗口 | 小Q测试 | xiaoq | 2026-05-04 16:46 | /tmp/xiaoq_result_q010.json | ⏳ 进行中 | 已委派，等待结果 |
-| H-029 | PRD差距分析+WBS新增任务梳理 | Hermes | — | 2026-05-04 18:30 | /tmp/prd_wbs_analysis.md | ✅ 完成 | 62个逻辑缺口全部确认，T-022~T-026新增 |
-| H-031 | T-025 Global Query Filter软删除统一拦截 | CC开发 | slh-bot/tmux | 2026-05-04 19:00 | — | ✅ 完成 | EF Core HasQueryFilter，单元测试PASS×4 |
-| H-032 | T-022 审批节点修改权限配置 | CC开发 | slh-bot/tmux | 2026-05-04 19:05 | — | ✅ 完成 | Entity+Migration+Service+Controller+权限检查 |
-| H-033 | T-024 审批链自动推进+退回记录保留 | CC开发 | slh-bot/tmux | 2026-05-04 19:10 | — | ✅ 完成 | Approve自动推进，退回ToLevel字段，写入ApprovalHistory |
-| H-034 | T-023 多设备登录互斥机制 | CC开发 | slh-bot/tmux | 2026-05-04 19:30 | — | ✅ 完成 | Entity+Migration+Service+Controller，多设备互斥，踢出旧设备 |
-| H-035 | T-026 统一错误码体系 | CC开发 | slh-bot/tmux | 2026-05-04 21:45 | — | ✅ 完成 | ErrorCode枚举+AppException+全局中间件，build通过 |
 
 ---
 
@@ -49,6 +43,12 @@
 
 | 任务ID | 描述 | 类型 | 完成时间 | 结果 |
 |--------|------|------|---------|------|
+| H-029 | PRD差距分析+WBS新增任务梳理 | Hermes | 2026-05-04 18:30 | 62个逻辑缺口全部确认，T-022~T-026新增 |
+| H-031 | T-025 Global Query Filter软删除统一拦截 | CC | 2026-05-04 19:00 | EF Core HasQueryFilter，单元测试PASS×4 |
+| H-032 | T-022 审批节点修改权限配置 | CC | 2026-05-04 19:05 | Entity+Migration+Service+Controller+权限检查 |
+| H-033 | T-024 审批链自动推进+退回记录保留 | CC | 2026-05-04 19:10 | Approve自动推进，退回ToLevel字段，写入ApprovalHistory |
+| H-034 | T-023 多设备登录互斥机制 | CC | 2026-05-04 19:30 | Entity+Migration+Service+Controller，多设备互斥，踢出旧设备 |
+| H-035 | T-026 统一错误码体系 | CC | 2026-05-04 21:45 | ErrorCode枚举+AppException+全局中间件，build通过 |
 | H-024 | SFT剩余端点测试 | 小Q测试 | 2026-05-04 15:xx | 部分端点404（salespersons/customers/regions/org-nodes/approval-flow/history）；API运行正常；详见/tmp/xiaoq_sft_test.json |
 | H-021 | T-009 产品5级联动 | CC开发 | 2026-05-04 13:xx | ✅ 完成；API cascade验证通过，L1×4产品，L2 children正常返回，ProductCascade.vue就位 |
 | H-022R | T-016 开票公司特别权限表 | CC | 2026-05-04 12:08 | ✅ 完成；Entity+Migration+PermissionsController+DashboardController全部生成 |
@@ -152,3 +152,5 @@
 || 2026-05-05 10:30 | /tmp/prd_wbs_analysis.md | ✅ 已完成（5351字节，H-029已标✅） | 无需操作 ||
 | 2026-05-05 11:31 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028（Q-010）仍在执行，有⏳等待中，跳过唤醒 |
 | 2026-05-05 12:00 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028（Q-010）仍在执行，有⏳等待中，跳过唤醒 |
+| 2026-05-05 12:31 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028（Q-010）仍在执行；H-029/H-031~H-035已从⏳移至✅，有⏳等待中，跳过唤醒 |
+|| 2026-05-05 13:00 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028（Q-010）仍在执行，有⏳等待中，跳过唤醒 |

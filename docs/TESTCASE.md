@@ -39,14 +39,20 @@ UI验收标准  ：页面元素、字段值、颜色标签（引用PRD §15插�
 
 ### 1.3 角色测试账号
 
-| 角色 | 姓名 | 邮箱 | 备注 |
-|------|------|------|------|
-| SYS_ADMIN | — | admin@sandvik.com | 系统管理员 |
-| CEO | Frank Tao | frank.tao@sandvik.com | 最终审批人，Id=1 |
-| VP_SALES | 杨依柱 | (待补充) | 大区负责人（暂缺系统账号） |
-| MANAGER | 李长春 | changchun.li@ahno-tool.com | 直线经理 |
-| SALES-1 | 韩学健 | xuejian.han@ahno-tool.com | 销售（品牌待确认） |
-| SALES-2 | 李清 | qing.li@ahno-tool.com | 销售（品牌待确认） |
+> ⚠️ **实际密码：`Password123`**（所有账号通用，由 SeedController.ResetUsers 设置）
+
+| 角色 | 姓名 | 邮箱 | 密码 | 备注 |
+|------|------|------|------|------|
+| SYS_ADMIN | — | admin@sandvik.com | Password123 | 系统管理员 |
+| CEO | Frank Tao | frank.tao@sandvik.com | Password123 | 最终审批人 |
+| VP_SALES | 杨依柱 | (待补充) | Password123 | 大区负责人（暂缺系统账号） |
+| MANAGER | 李长春 | changchun.li@ahno-tool.com | Password123 | 直线经理 |
+| SALES | 韩学健 | xuejian.han@ahno-tool.com | Password123 | 销售（品牌待确认） |
+| SALES | 李清 | qing.li@ahno-tool.com | Password123 | 销售（品牌待确认） |
+| SALES | 张伟 | zhang.wei@sandvik.com | Password123 | 销售（数据库已有） |
+| DIRECTOR | 李娜 | li.na@sandvik.com | Password123 | 区域总监（数据库已有） |
+
+> **数据库已有账号：** 执行 `POST /api/seed/reset-users` 可重置所有账号密码为 `Password123` |
 
 > **数据前提说明：** 所有测试用例执行前，需确认数据库中上述账号已创建且角色/品牌字段正确。
 
