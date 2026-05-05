@@ -3,11 +3,11 @@
 > 本文件是开发任务的工作分解结构（WBS），独立于 `docs/PRD.md`。
 > 所有开发任务均来自 PRD，由小P更新状态，小Q执行测试，Mark 最终审批。
 
-**版本：** v0.5
+**版本：** v0.6
 **日期：** 2026-05-05
-**状态：** 🔴 发现严重差距
+**状态：** 🟡 PRD v0.4 章节编号已同步
 
-> **§15 规格说明：** PRD v0.3 新增 §15 "功能细化规格"（F-01~F-11 模块详细规格），由 T-027 产出，已完成并入 PRD。
+> **PRD章节引用说明（v0.6）：** PRD v0.4 已重构章节编号，原 v0.3 的 §4.1/§4.2/§4.3/§4.4/§5.1/§5.2/§6/§9/§11 等已重新归属。本文件所有章节引用已同步更新至 PRD v0.4。
 > **文件名变更：** 测试用例文档已从 TEST_SUITE.md 更名为 TESTCASE.md（2026-05-05 v1.0）
 
 ---
@@ -31,32 +31,32 @@
 
 | 任务ID | PRD章节 | 描述 | 开发状态 | 测试 | 备注 |
 |--------|---------|------|---------|------|------|
-| T-001 | §4.1 | 登录模块（JWT认证） | ✅ 已验收 | ✅ Q-001 | |
-| T-002 | §4.1 | 路由守卫（登录保护） | ✅ 已验收 | ✅ Q-001 | |
+| T-001 | §F-11 (§6) | 登录模块（JWT认证） | ✅ 已验收 | ✅ Q-001 | |
+| T-002 | §F-11 (§6) | 路由守卫（登录保护） | ✅ 已验收 | ✅ Q-001 | |
 | T-003 | §4.1 | Dashboard（真实API对接） | ✅ 已验收 | ✅ Q-002 | Auth header修复 |
-| T-004 | §4.2 | 预测周期管理（CRUD） | ✅ 已验收 | ✅ Q-003 | PUT/DELETE已实现 |
-| T-005 | §4.2 | 预测记录列表（真实API） | ✅ 已验收 | ✅ Q-003 | |
-| T-006 | §4.2 | 保存草稿/提交审批API | ✅ 已验收 | ✅ Q-004 | |
-| T-007 | §4.2 | Forecast数据权限隔离 | ✅ 已验收 | ✅ Q-005 | |
-| T-009 | §4.2 | 产品5级联动（SubPA-3/4） | ✅ 已验收 | ✅ Q-006 | ProductHierarchyController + ProductCascade.vue，API cascade验证PASS |
-| T-010 | §4.3 | 审批流启动+我的待审批列表 | ✅ 已验收 | ✅ Q-007 | |
-| T-011 | §4.3 | 审批历史记录（ApprovalHistory） | ✅ 已验收 | ✅ Q-007 | 前端历史Timeline+彩色badge，后端全链路写ApprovalHistory |
-| T-012 | §4.3 | 审批调整动作（4个总量值） | ✅ 已验收 | ✅ Q-008 | AdjustApproval Panel+4字段+历史记录展示 |
-| T-014 | §4.3 | 邮件通知触发（队列架构） | ✅ 已验收 | ✅ Q-009 | SubmitForecast触发EmailQueue + EmailQueueController + EmailQueue.vue |
-| T-015 | §5.1 | 直线经理看团队数据权限 | ✅ 已验收 | ✅ Q-005(Q-017) | OrgNode int Id修复，需补测TC-0504/0508 |
-| T-017 | §6 | ForecastRecord四度量字段 | ✅ 已验收 | ✅ Q-010 | 四度量API验证PASS |
-| T-018 | §6 §3.2 | ForecastPeriod延期窗口（ExtensionStart/End/Users） | ✅ 已验收 | ✅ Q-010 | extensionStart/End/Users字段验证PASS |
-| T-019 | §9 | M365 SSO登录（生产） | ✅ 已验收 | ✅ Q-011 | AuthController MSAL端点 + MicrosoftCallback.vue + 本地登录fallback；需Azure AD生产配置 |
-| T-022 | §4.3 | 审批节点修改权限配置（每节点独立配置canModify，后端控制） | ✅ 已验收 | ✅ Q-017 | 新增开发，需TC-0408验证Frank Tao不可修改明细 |
-| T-024 | §4.3 | 审批链自动推进+退回记录完整保留（退回ToLevel） | ✅ 已验收 | ✅ Q-007+TC-0409 | 需TC-0409验证自动跳过不存在审批人 |
-| T-023 | §9 | 多设备登录互斥机制 | ✅ 已验收 | ✅ Q-015 | 新增开发，TC-0106/0107验证 |
-| T-026 | §9 | 统一错误码体系（ErrorCode+AppException+Middleware） | ✅ 已验收 | ✅ Q-016 | 技术债修复，TC-0108验证 |
-| T-025 | §6 | Global Query Filter统一软删除拦截（EF Core） | ✅ 已验收 | ✅ — | 技术债修复，架构验证 |
-| T-016 | §5.2 | 开票公司特别权限表 | ✅ 已验收 | ✅ Q-013 | 实体/migration/permissions endpoint全就位；TC-0506/0507 |
-| T-020 | §11 | Customer+User品牌字段 | ✅ 已验收 | ✅ Q-012 | 小Q复测PASS×3，品牌过滤全链路验证通过；DB Brand列已通过ALTER TABLE添加 |
-| T-021 | §4.2 | 数据导入/导出（Excel） | ✅ 已验收 | ✅ Q-014 | template/export/import三端点 + Forecast.vue集成；TC-0901~0904 |
-| T-008 | §4.2 | 产品层级导入脚本（4级） | ✅ 已验收 | ✅ Q-006(TC-0901) | 350行数据，TC-0705+TC-0901覆盖 |
-| T-013 | §4.3 | 消息模板管理UI | ✅ 已验收 | ✅ Q-009(TC-0606~0607) | Admin UI任务，TC-0606~0607覆盖 |
+| T-004 | §4.2.1 | 预测周期管理（CRUD） | ✅ 已验收 | ✅ Q-003 | PUT/DELETE已实现 |
+| T-005 | §4.2.2 | 预测记录列表（真实API） | ✅ 已验收 | ✅ Q-003 | |
+| T-006 | §4.2.2 | 保存草稿/提交审批API | ✅ 已验收 | ✅ Q-004 | |
+| T-007 | §4.2.2 | Forecast数据权限隔离 | ✅ 已验收 | ✅ Q-005 | |
+| T-009 | §4.3.2 | 产品5级联动（SubPA-3/4） | ✅ 已验收 | ✅ Q-006 | ProductHierarchyController + ProductCascade.vue，API cascade验证PASS |
+| T-010 | §4.2.3 | 审批流启动+我的待审批列表 | ✅ 已验收 | ✅ Q-007 | |
+| T-011 | §4.2.3 | 审批历史记录（ApprovalHistory） | ✅ 已验收 | ✅ Q-007 | 前端历史Timeline+彩色badge，后端全链路写ApprovalHistory |
+| T-012 | §4.2.3 | 审批调整动作（4个总量值） | ✅ 已验收 | ✅ Q-008 | AdjustApproval Panel+4字段+历史记录展示 |
+| T-014 | §4.4.3 | 邮件通知触发（队列架构） | ✅ 已验收 | ✅ Q-009 | SubmitForecast触发EmailQueue + EmailQueueController + EmailQueue.vue |
+| T-015 | §5 | 直线经理看团队数据权限 | ✅ 已验收 | ✅ Q-005(Q-017) | OrgNode int Id修复，需补测TC-0504/0508 |
+| T-017 | §4.2.2 | ForecastRecord四度量字段 | ✅ 已验收 | ✅ Q-010 | 四度量API验证PASS |
+| T-018 | §4.2.1 | ForecastPeriod延期窗口（ExtensionStart/End/Users） | ✅ 已验收 | ✅ Q-010 | extensionStart/End/Users字段验证PASS |
+| T-019 | §11 | M365 SSO登录（生产） | ✅ 已验收 | ✅ Q-011 | AuthController MSAL端点 + MicrosoftCallback.vue + 本地登录fallback；需Azure AD生产配置 |
+| T-022 | §4.2.3 | 审批节点修改权限配置（每节点独立配置canModify，后端控制） | ✅ 已验收 | ✅ Q-017 | 新增开发，需TC-0408验证Frank Tao不可修改明细 |
+| T-024 | §4.2.3 | 审批链自动推进+退回记录完整保留（退回ToLevel） | ✅ 已验收 | ✅ Q-007+TC-0409 | 需TC-0409验证自动跳过不存在审批人 |
+| T-023 | §11 | 多设备登录互斥机制 | ✅ 已验收 | ✅ Q-015 | 新增开发，TC-0106/0107验证 |
+| T-026 | §11 | 统一错误码体系（ErrorCode+AppException+Middleware） | ✅ 已验收 | ✅ Q-016 | 技术债修复，TC-0108验证 |
+| T-025 | §4.2.2 | Global Query Filter统一软删除拦截（EF Core） | ✅ 已验收 | ✅ — | 技术债修复，架构验证 |
+| T-016 | §5 | 开票公司特别权限表 | ✅ 已验收 | ✅ Q-013 | 实体/migration/permissions endpoint全就位；TC-0506/0507 |
+| T-020 | §4.3.1 | Customer+User品牌字段 | ✅ 已验收 | ✅ Q-012 | 小Q复测PASS×3，品牌过滤全链路验证通过；DB Brand列已通过ALTER TABLE添加 |
+| T-021 | §4.2.2 | 数据导入/导出（Excel） | ✅ 已验收 | ✅ Q-014 | template/export/import三端点 + Forecast.vue集成；TC-0901~0904 |
+| T-008 | §4.3.2 | 产品层级导入脚本（4级） | ✅ 已验收 | ✅ Q-006(TC-0901) | 350行数据，TC-0705+TC-0901覆盖 |
+| T-013 | §4.4.3 | 消息模板管理UI | ✅ 已验收 | ✅ Q-009(TC-0606~0607) | Admin UI任务，TC-0606~0607覆盖 |
 
 > 测试列说明：✅ = 小Q测试通过，🔄 = 待执行/执行中，— = 无独立测试用例；所有测试用例详情见 TESTCASE.md
 
