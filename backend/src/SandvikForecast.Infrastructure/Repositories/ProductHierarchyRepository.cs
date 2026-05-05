@@ -45,4 +45,24 @@ public class ProductHierarchyRepository : Repository<ProductHierarchy>
             .ThenBy(p => p.ProductCode)
             .ToListAsync();
     }
+
+    /// <summary>
+    /// Fuzzy search products by code or name (both left and right fuzzy)
+    /// </summary>
+    public async Task<IEnumerable<ProductHierarchy>> SearchAsync(string keyword)
+    {
+        if (string.IsNullOrWhiteSpace(keyword))
+            return Enumerable.Empty<ProductHierarchy>();
+
+        var all = await _dbSet
+            .Where(p => !p.IsDeleted)
+            .ToListAsync();
+
+        var pattern = keyword.ToLower();
+        return all
+            .Where(p => (p.ProductCode != null && p.ProductCode.ToLower().Contains(pattern))
+                     || (p.ProductName != null && p.ProductName.ToLower().Contains(pattern)))
+            .OrderBy(p => p.SortOrder)
+            .ThenBy(p => p.ProductCode);
+    }
 }

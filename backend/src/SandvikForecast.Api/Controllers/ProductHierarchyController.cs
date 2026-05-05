@@ -76,6 +76,31 @@ public class ProductHierarchyController : ControllerBase
             return StatusCode(500, ApiResponse<IEnumerable<ProductHierarchyDto>>.Fail("获取子产品失败：" + ex.Message));
         }
     }
+/// <summary>
+    /// Fuzzy search products by keyword (matches ProductCode or ProductName, both sides fuzzy)
+    /// GET /api/products/search?keyword=xxx
+    /// </summary>
+    [HttpGet("search")]
+    public async Task<ActionResult<ApiResponse<IEnumerable<ProductHierarchyDto>>>> Search([FromQuery] string keyword)
+    {
+        try
+        {
+            var products = await _repository.SearchAsync(keyword);
+            var dtos = products.Select(p => new ProductHierarchyDto(
+                p.Id,
+                p.ProductCode,
+                p.ProductName,
+                p.ProductLevel,
+                p.ParentId
+            ));
+            return Ok(ApiResponse<IEnumerable<ProductHierarchyDto>>.Ok(dtos));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching products with keyword {Keyword}", keyword);
+            return StatusCode(500, ApiResponse<IEnumerable<ProductHierarchyDto>>.Fail("搜索产品失败：" + ex.Message));
+        }
+    }
 }
 
 /// <summary>
