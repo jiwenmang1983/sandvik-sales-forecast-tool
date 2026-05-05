@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SandvikForecast.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6fd9c4e8794217d64771928d8134259a2b022f61")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d3344da15e386ef7ddead49cf5caf1e8b3257dbe")]
 [assembly: System.Reflection.AssemblyProductAttribute("SandvikForecast.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SandvikForecast.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

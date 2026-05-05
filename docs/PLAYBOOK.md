@@ -85,7 +85,7 @@ ANTHROPIC_API_KEY="sk-cp-nCk4W2tbBkgThnsZczkVOVcg4O5x4JCFjI2dv0GC1oBpIoTu534dja9
   ANTHROPIC_BASE_URL="https://api.minimaxi.com/anthropic" \
   claude --dangerously-skip-permissions --print \
   -p "任务描述（必须含五段式，见3.2）" \
-  --max-turns 15
+  --max-turns 99
 ```
 
 | 参数 | 作用 |
@@ -93,7 +93,14 @@ ANTHROPIC_API_KEY="sk-cp-nCk4W2tbBkgThnsZczkVOVcg4O5x4JCFjI2dv0GC1oBpIoTu534dja9
 | `--dangerously-skip-permissions` | 跳过每次确认提示，自动化必需 |
 | `--print` | 结果输出到 stdout（非交互TTY），小P可捕获 |
 | `-p "..."` | 内联任务描述，不依赖文件 |
-| `--max-turns N` | 防止无限循环 |
+| `--max-turns N` | 防止无限循环，99步适合大多数任务 |
+
+**CC 步数经验值：**
+| 步数 | 适用场景 |
+|------|---------|
+| 35步 | 3-4个文件 |
+| 50步 | 5-6个文件 |
+| 99步 | 7+文件或完整功能（标准值） |
 | `ANTHROPIC_BASE_URL` | 必须 = `https://api.minimaxi.com/anthropic`（不是 /v1） |
 
 ### 3.2 任务委派五段式（每次必须完整）
@@ -128,19 +135,43 @@ DB：appsettings.Development.json
 
 ### 3.3 工作流（探索期：CC 直接写 master）
 
+**⚠️ 重要：CC 委派必须用终端后台，不可用 delegate_task**
+
 ```
-1. 小P 执行 claude --print 命令
-2. CC 在 WSL foreground 执行（--print 模式，无法交互）
-3. CC 输出结果到小P的 terminal stdout
-4. 小P 解析输出判断成功/失败
-5. CC 完成后（自动或小P执行）：
-   a. dotnet ef database update（apply migration）
-   b. Ctrl+C → dotnet run（服务重启）
-   c. curl 验证关键接口
-   d. git add + commit + push（探索期：直接 push master，不走 PR）
-6. 结果写入 /tmp/cc_result_<taskid>.json
+1. 小P 写 prompt 到文件：/tmp/cc_task_<taskid>.txt（五段式，见3.2）
+2. 小P 用 terminal(background=True) 启动 CC：
+   terminal(background=True,
+     command=(
+       'cd /mnt/d/Git/SandvikForecastTool && '
+       'ANTHROPIC_API_KEY="sk-cp-nCk4W2tbBkgThnsZczkVOVcg4O5x4JCFjI2dv0GC1oBpIoTu534dja9_i3dC-cfHv8PfUHtEfua2IsEyJsP1RBpN_RioiKElZzYJK6t1FkI7Esk3VrGIYSg" '
+       'ANTHROPIC_BASE_URL="https://api.minimaxi.com/anthropic" '
+       '/home/markji/.hermes/node/bin/claude '
+       '--dangerously-skip-permissions --print '
+       '-p "$(cat /tmp/cc_task_<taskid>.txt)" '
+       '--max-turns 99 2>&1 | tee /tmp/cc_<taskid>_output.txt'
+     ))
+3. CC 在 WSL 后台执行（--print 模式，不阻塞 Hermes 主会话）
+4. CC 完成后，小P 检查 /tmp/cc_<taskid>_output.txt 验证结果
+5. 小P 执行后续步骤：
+   a. dotnet build（验证编译）
+   b. dotnet ef database update（如有 migration）
+   c. dotnet run（服务重启）
+   d. curl 验证关键接口
+   e. git add + commit + push（探索期：直接 push master，不走 PR）
+6. 结果写入 /tmp/cc_result_<taskid>.json（可选）
 7. 小P 验证，更新文档
 ```
+
+**追踪 CC 进程：**
+```bash
+ps aux | grep claude | grep -v grep
+# 有输出 = 在跑；无输出 = 已完成（检查 output.txt）
+```
+
+**禁止使用的方式：**
+- ❌ `delegate_task(acp_command="claude")` — 会被打断，不可用
+- ❌ foreground 模式 — 阻塞 Hermes 主会话，导致无法响应用户
+- ❌ `cat file | claude -p` — 会产生两个进程
 
 ### 3.4 结果文件格式
 
