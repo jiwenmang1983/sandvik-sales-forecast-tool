@@ -279,6 +279,53 @@ public class BaseDataController : ControllerBase
 
     #endregion
 
+    #region OrgNodes (层级结构)
+
+    [HttpGet("org-nodes")]
+    public async Task<ActionResult> GetOrgNodes([FromQuery] string? region, [FromQuery] string? keyword)
+    {
+        try
+        {
+            var query = _db.OrgNodes.Where(o => o.Status == "Active");
+
+            if (!string.IsNullOrEmpty(region))
+            {
+                query = query.Where(o => o.Region == region);
+            }
+
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                var k = keyword.ToLower();
+                query = query.Where(o => (o.Name != null && o.Name.ToLower().Contains(k)) ||
+                                          (o.Email != null && o.Email.ToLower().Contains(k)));
+            }
+
+            var nodes = await query
+                .OrderBy(o => o.Region)
+                .ThenBy(o => o.Name)
+                .Select(o => new
+                {
+                    id = o.Id.ToString(),
+                    o.Name,
+                    o.Email,
+                    o.Role,
+                    o.Region,
+                    o.Company,
+                    parentId = o.ParentId.HasValue ? o.ParentId.Value.ToString() : null,
+                    status = o.Status.ToLower()
+                })
+                .ToListAsync();
+
+            return Ok(new { success = true, data = nodes });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { success = false, message = ex.Message });
+        }
+    }
+
+    #endregion
+
     #region Products
 
     [HttpGet("products")]

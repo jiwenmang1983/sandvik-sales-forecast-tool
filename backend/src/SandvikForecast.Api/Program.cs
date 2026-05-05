@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using SandvikForecast.Api.Filters;
 using SandvikForecast.Api.Middleware;
 using SandvikForecast.Api.Services;
 using SandvikForecast.Core.Entities;
@@ -52,7 +53,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 // Controllers
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddMvcOptions(options =>
+    {
+        options.Filters.Add<ApiStandardResponseFilter>();
+    });
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

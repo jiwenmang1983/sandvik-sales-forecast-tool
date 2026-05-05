@@ -286,6 +286,78 @@ public class DashboardController : ControllerBase
         }
     }
 
+    // GET /api/dashboard — BUG-023 轻量摘要（供前端首页）
+    [HttpGet]
+    public async Task<IActionResult> GetDashboard()
+    {
+        try
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Ok(new { success = true, data = EmptyDashboard() });
+
+            var dbUser = await _db.Users.FirstOrDefaultAsync(u => u.Id == userIdClaim && u.IsActive);
+            if (dbUser == null)
+                return Ok(new { success = true, data = EmptyDashboard() });
+
+            var allPeriods = await _db.ForecastPeriods.ToListAsync();
+            var currentPeriod = allPeriods
+                .Where(p => p.Status == "Active")
+                .OrderByDescending(p => int.TryParse(p.PeriodStartYearMonth.Split('-').FirstOrDefault(), out var y) ? y : 0)
+                .ThenByDescending(p => int.TryParse(p.PeriodStartYearMonth.Split('-').Skip(1).FirstOrDefault(), out var m) ? m : 0)
+                .FirstOrDefault();
+
+            decimal totalForecastAmount = 0;
+            int pendingApprovals = 0;
+            int myDrafts = 0;
+
+            var role = dbUser.Role?.ToUpperInvariant() ?? "";
+
+            // 查询当前用户的预测记录
+            var userRecords = await _db.ForecastRecords
+                .Where(r => !r.IsDeleted && r.CreatedByUserId == userIdClaim)
+                .ToListAsync();
+
+            if (currentPeriod != null)
+            {
+                var currentPeriodRecords = userRecords.Where(r => r.ForecastPeriodId == currentPeriod.Id).ToList();
+                totalForecastAmount = currentPeriodRecords.Sum(r => r.OrderAmount + r.InvoiceAmount);
+                pendingApprovals = currentPeriodRecords.Count(r => r.Status == "Submitted");
+                myDrafts = currentPeriodRecords.Count(r => r.Status == "Draft");
+            }
+
+            // 最近的预测活动（最近10条）
+            var recentActivity = userRecords
+                .OrderByDescending(r => r.CreatedAt)
+                .Take(10)
+                .Select(r => new
+                {
+                    id = r.Id,
+                    customerId = r.CustomerId,
+                    periodId = r.ForecastPeriodId,
+                    amount = r.OrderAmount + r.InvoiceAmount,
+                    status = r.Status,
+                    createdAt = r.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
+                })
+                .ToList();
+
+            var dashboardData = new
+            {
+                totalForecastAmount,
+                pendingApprovals,
+                myDrafts,
+                recentActivity
+            };
+
+            return Ok(new { success = true, data = dashboardData });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Dashboard GetDashboard error: {ex.Message}");
+            return Ok(new { success = true, data = EmptyDashboard() });
+        }
+    }
+
     private async Task<List<ForecastRecordDetail>> GetForecastRecordsWithDetailsAsync(List<string> recordIds, List<ForecastRecord> allRecords)
     {
         var filtered = recordIds == null
@@ -425,19 +497,10 @@ public class DashboardController : ControllerBase
     {
         return new
         {
-            currentPeriodName = "",
-            currentPeriodTime = "",
-            monthly = new List<object>(),
-            regions = new List<object>(),
-            productLines = new List<object>(),
-            industries = new List<object>(),
-            customers = new List<object>(),
-            invoiceCompanies = new List<object>(),
-            totalAmount = 0m,
-            recordCount = 0,
-            pendingTotal = 0,
-            pendingDirector = 0,
-            pendingFinance = 0
+            totalForecastAmount = 0,
+            pendingApprovals = 0,
+            myDrafts = 0,
+            recentActivity = new List<object>()
         };
     }
 }
