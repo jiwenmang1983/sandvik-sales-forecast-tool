@@ -194,16 +194,16 @@ UI验收标准  ：页面元素、字段值、颜色标签（引用PRD §15插�
 - **数据前提：** SYS_ADMIN账号登录
 - **API端点：**
   ```
-  POST /api/forecast/periods
+  POST /api/forecast-periods
   Body: {
     "fcName": "2026 FC2",
-    "fillTimeStart": "2026-04-01T00:00:00Z",
-    "fillTimeEnd": "2026-04-30T23:59:59Z",
+    "fillTimeStart": "2026-04-01T00:00:00",
+    "fillTimeEnd": "2026-04-30T23:59:59",
     "periodStartYearMonth": "2026-07",
     "periodEndYearMonth": "2027-03",
-    "extensionStart": "2026-05-01T00:00:00Z",
-    "extensionEnd": "2026-05-07T23:59:59Z",
-    "extensionUsers": ["user-id-1", "user-id-2"]
+    "extensionStart": null,
+    "extensionEnd": null,
+    "extensionUsers": "[]"
   }
   ```
 - **UI验收标准（F-02.2）：**
@@ -239,7 +239,7 @@ UI验收标准  ：页面元素、字段值、颜色标签（引用PRD §15插�
 - **数据前提：** 存在一个空预测周期
 - **API端点：**
   ```
-  PUT /api/forecast/periods/{id}
+  PUT /api/forecast-periods/{id}
   Body: { "fcName": "2026 FC2 Updated", ... }
   ```
 - **UI验收标准：** 编辑弹窗中所有字段预填充，保存后列表刷新
@@ -627,7 +627,7 @@ UI验收标准  ：页面元素、字段值、颜色标签（引用PRD §15插�
 - **数据前提：** 系统有多个品牌的客户数据（品牌A/品牌B）
 - **API端点：**
   ```
-  GET /api/customers
+  GET /api/basedata/customers
   GET /api/forecast/form?customerId=xxx
   （以销售A，品牌=品牌A）
   ```
@@ -693,7 +693,7 @@ UI验收标准  ：页面元素、字段值、颜色标签（引用PRD §15插�
   ```
   GET /api/dashboard/summary
   GET /api/forecast/records
-  GET /api/customers
+  GET /api/basedata/customers
   （以Frank Tao身份）
   ```
 - **预期结果：** 全量数据，无品牌过滤，无团队过滤
@@ -814,9 +814,9 @@ UI验收标准  ：页面元素、字段值、颜色标签（引用PRD §15插�
 - **数据前提：** SYS_ADMIN账号登录
 - **API端点：**
   ```
-  GET /api/customers?page=1&pageSize=20
-  GET /api/customers?brand=品牌A
-  GET /api/customers?keyword=关键词
+  GET /api/basedata/customers?page=1&pageSize=20
+  GET /api/basedata/customers?brand=品牌A
+  GET /api/basedata/customers?keyword=关键词
   ```
 - **UI验收标准（F-05.1）：**
   - 表格列：客户名称 | 品牌（颜色标签）| 联系人 | 联系电话 | 状态 | 创建时间 | 操作
@@ -833,7 +833,7 @@ UI验收标准  ：页面元素、字段值、颜色标签（引用PRD §15插�
 - **数据前提：** SYS_ADMIN账号
 - **API端点：**
   ```
-  POST /api/customers
+  POST /api/basedata/customers
   Body: { "name": "测试客户A", "brand": "品牌A", "contact": "张三", "phone": "13800000000", "isActive": true }
   ```
 - **UI验收标准（F-05.2）：** 客户名称必填，Brand必填（下拉选择）
@@ -849,7 +849,7 @@ UI验收标准  ：页面元素、字段值、颜色标签（引用PRD §15插�
 - **数据前提：** 存在一个客户
 - **API端点：**
   ```
-  PUT /api/customers/{id}
+  PUT /api/basedata/customers/{id}
   Body: { "brand": "品牌B" }
   ```
 - **预期结果：** HTTP 200，brand字段更新为品牌B
@@ -879,9 +879,9 @@ UI验收标准  ：页面元素、字段值、颜色标签（引用PRD §15插�
 - **数据前提：** 产品表有L1~L5数据
 - **API端点：**
   ```
-  GET /api/products
-  GET /api/products?level=1
-  GET /api/products?parentId=xxx
+  GET /api/basedata/products
+  GET /api/basedata/products?level=1
+  GET /api/basedata/products?parentId=xxx
   ```
 - **UI验收标准（F-06.1）：**
   - 表格列：产品编码（14位）| PA | SubPA1 | SubPA2 | SubPA3 | SubPA4 | 状态 | 操作
@@ -973,7 +973,7 @@ UI验收标准  ：页面元素、字段值、颜色标签（引用PRD §15插�
 - **数据前提：** SYS_ADMIN账号，标准格式Excel文件（PA/SubPA1/SubPA2/SubPA3/SubPA4列）
 - **API端点：**
   ```
-  POST /api/products/import
+  POST /api/basedata/products/import
   Content-Type: multipart/form-data
   Body: file=@product_template.xlsx
   ```
