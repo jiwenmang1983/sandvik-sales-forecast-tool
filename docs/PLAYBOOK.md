@@ -313,6 +313,7 @@ hermes -p slh-bot chat -q "执行测试脚本 /tmp/qNNN_test.py，只回复Pytho
 |---------|------|---------|---------|
 | **Q-FW（框架探测）** | `Q-FW1`/`Q-FW2`/`Q-FW3` | 功能测试前必须先跑框架探测 | 所有端点 200/201，无 404/500 |
 | **Q-XXX（功能 E2E）** | `Q-001`~`Q-999` | 框架稳定后执行 | 所有 TC PASS，响应格式符合 API 规范 |
+| **Q-UI（页面交互 E2E）** | `Q-UI1` 等 | 每次前端构建或路由变更后 | Playwright TC-01~TC-07 全部 PASS，无 console.error |
 | **Q-E2E（完整链路）** | `Q-E2E1` 等 | Phase 3 多轮测试 | 端到端业务场景全覆盖 |
 | **性能压测** | `Q-PB1` 等 | 大版本发布前 | 响应时间 P95 < Xms，并发 Y |
 | **证据收集** | `Q-EV1` 等 | 验收节点 | 证据链完整，可供 Mark 审批 |
@@ -344,6 +345,7 @@ Q-FW 必须先于 Q-XXX 执行：
 **测试执行顺序原则：**
 ```
 Q-FW1（路由探测）→ Q-FW2（DB写入）→ Q-FW3（软删除）→ Q-001~Q-E2E1
+前端变更后 → Q-UI1（Playwright TC-01~TC-07）→ Q-XXX（如有 API 联动变更）
 ```
 
 ### 4.4 标准脚本模板
@@ -444,6 +446,44 @@ print('Q-NNN COMPLETE')
 > 正确密码（所有账号通用）：`Password123`
 > 来源：`SeedController.cs` 的 `ResetUsers()` 方法
 > 当认证失败时，调用 `GET /api/seed/reset-users` 重置密码
+
+### 4.7 浏览器页面交互测试（E2E）
+
+> 前端 Playwright E2E 测试是独立体系，与小Q的 API 测试互补。页面测试验证 UI 行为（表单提交、路由跳转、组件状态），API 测试验证数据层。两者都必须通过。
+
+**Playwright E2E 测试现状：**
+
+| 文件 | 覆盖范围 |
+|------|---------|
+| `frontend/app.spec.ts` | TC-01~TC-07：登录/仪表盘/预测/审批/基础数据/系统管理/导航 |
+
+**Playwright 已有测试套件（TC-01~TC-07）：**
+```
+TC-01 🔐 登录模块     — 页面渲染/SSO跳转/未授权拦截
+TC-02 📊 仪表盘       — KPI卡片/图表/指标切换
+TC-03 📝 销售预测     — 表格/筛选/提交保存
+TC-04 ✅ 审批         — 列表/筛选/详情Tab
+TC-05 🗃️ 基础数据     — 组织/客户/产品
+TC-06 ⚙️ 系统管理     — 用户/权限/版本/日志
+TC-07 🧭 布局导航     — 侧边栏折叠/菜单
+```
+
+**浏览器测试执行方式（两种场景）：**
+
+| 场景 | 执行方式 | 执行者 |
+|------|---------|--------|
+| 前端开发过程中 | `cd frontend && npx playwright test`（需 dev server 在 3002） | 开发/小A |
+| 独立 E2E 轮次 | `npx playwright test --reporter=list`（通过 cronjob 定时跑） | 小Q（via shell） |
+
+**浏览器测试完成标准：**
+```
+[ ] npx playwright test → 0 failures（TC-01~TC-07 全部 PASS）
+[ ] 无 console.error（JS 异常）
+[ ] 截图已保存（如有失败，test-results/ 有截图）
+[ ] TESTCASE.md 页面测试状态同步更新
+```
+
+**注意：** slh-bot 当前没有 `browser_*` 工具集，浏览器测试通过 shell `npx playwright` 方式执行。后续若 slh-bot 补充 browser 工具集，可升级为智能体方式。
 
 ---
 
