@@ -37,6 +37,8 @@ public class OrgNodesController : ControllerBase
                 o.Role,
                 o.Region,
                 o.Company,
+                o.SalesRegion,
+                o.SalesDistrict,
                 parentId = o.ParentId.HasValue ? o.ParentId.Value.ToString() : null,
                 status = o.Status.ToLower()
             }).ToListAsync();

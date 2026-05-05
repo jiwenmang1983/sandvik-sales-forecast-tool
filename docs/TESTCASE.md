@@ -1,14 +1,11 @@
 # Sandvik Forecast Tool — 测试用例文档
-**版本：** v1.1
-**日期：** 2026-05-05
-**状态：** 🟡 待小Q执行
-**文件名变更：** TEST_SUITE.md → TESTCASE.md（2026-05-05）
+**版本：** v2.0（按WBS v0.8重建）
+**日期：** 2026-05-06
+**状态：** 🔄 第1轮执行中
 
 > 本文档是 SFT 系统的唯一测试执行标准。
 > 小P维护本文档，小Q执行测试后更新状态，Mark最终审批。
 > **重要：** 每次 PRD 更新后，必须同步检查本文档对应的测试用例是否需要更新。
->
-> **⚠️ PRD v0.4 章节引用更新（v1.1）：** 原引用"PRD v0.3 §X.X / §F-XX (§6)"已全面更新为"PRD v0.4 §X.X / §F-XX (§6)"格式（§6 为功能细化规格 F-01~F-11）。
 
 ---
 
@@ -21,177 +18,142 @@
 | **API 测试** | 验证后端接口的请求/响应契约 | curl / Playwright API |
 | **UI 测试** | 验证页面元素、状态、交互行为 | Playwright Browser |
 | **E2E 测试** | 完整业务流程（登录→操作→结果） | Playwright Browser |
-| **架构验证** | 验证数据写入逻辑（队列表、字段） | API + DB Query |
+| **架构验证** | 验证数据写入逻辑（字段、状态） | API + DB Query |
 
 ### 1.2 测试用例结构
 
-每个测试用例包含：
-
 ```
-用例ID      ：TC-XXXX（与Q-XXX测试任务对应）
+用例ID      ：TC-XXXX
 测试类型    ：API / UI / E2E / 架构验证
-PRD章节引用 ：PRD v0.4 §X.X 或 §F-XX (§6)
+WBS任务     ：H-XXX（对应的Hermes任务）
+PRD章节引用 ：§F-XX (§6)
 数据前提    ：谁、以什么身份、什么数据状态才能执行
 API端点     ：Method + URL + Header + Body（JSON示例）
-UI验收标准  ：页面元素、字段值、颜色标签（引用PRD §6 F-XX插图）
+UI验收标准  ：页面元素、字段值、颜色标签
 预期结果    ：HTTP状态码 + Response Body字段断言
 错误条件    ：边界值、异常输入、权限违规
-执行状态    ：🔄待执行 / 🔄执行中 / ✅PASS / ❌FAIL
+执行状态    ：🔄待执行 / 🔄执行中 / ✅PASS / ❌FAIL / ⏭️待代码
 ```
 
 ### 1.3 角色测试账号
-
-> ⚠️ **实际密码：`Password123`**（所有账号通用，由 SeedController.ResetUsers 设置）
 
 | 角色 | 姓名 | 邮箱 | 密码 | 备注 |
 |------|------|------|------|------|
 | SYS_ADMIN | — | admin@sandvik.com | Password123 | 系统管理员 |
 | CEO | Frank Tao | frank.tao@sandvik.com | Password123 | 最终审批人 |
-| VP_SALES | 杨依柱 | (待补充) | Password123 | 大区负责人（暂缺系统账号） |
+| VP_SALES | 杨依柱 | (待补充) | Password123 | 大区负责人 |
 | MANAGER | 李长春 | changchun.li@ahno-tool.com | Password123 | 直线经理 |
-| SALES | 韩学健 | xuejian.han@ahno-tool.com | Password123 | 销售（品牌待确认） |
-| SALES | 李清 | qing.li@ahno-tool.com | Password123 | 销售（品牌待确认） |
-| SALES | 张伟 | zhang.wei@sandvik.com | Password123 | 销售（数据库已有） |
-| DIRECTOR | 李娜 | li.na@sandvik.com | Password123 | 区域总监（数据库已有） |
+| SALES | 韩学健 | xuejian.han@ahno-tool.com | Password123 | 销售 |
+| SALES | 李清 | qing.li@ahno-tool.com | Password123 | 销售 |
+| SALES | 张伟 | zhang.wei@sandvik.com | Password123 | 销售 |
+| DIRECTOR | 李娜 | li.na@sandvik.com | Password123 | 区域总监 |
 
-> **数据库已有账号：** 执行 `POST /api/seed/reset-users` 可重置所有账号密码为 `Password123` |
-
-> **数据前提说明：** 所有测试用例执行前，需确认数据库中上述账号已创建且角色/品牌字段正确。
+> **数据前提：** 执行 `POST /api/seed/reset-users` 可重置所有账号密码为 `Password123`
 
 ---
 
 ## 二、测试用例清单
+
+> **WBS 4轮模块顺序：**
+> - **第1轮：** F-07 组织架构 + F-02 周期管理
+> - **第2轮：** F-05 客户管理 + F-06 产品管理 + F-10 开票公司
+> - **第3轮：** F-03 预测填报 + F-04 预测审批
+> - **第4轮：** F-01 Dashboard + F-09 EmailQueue + F-08 用户/认证
+
+---
+
+### S-FW 框架层（各轮通用，先行验证）
+
+> 框架层验证系统基础设施，不依赖特定功能模块，可随时执行。
+
+#### TC-FW01 登录成功
+- **测试类型：** E2E
+- **WBS任务：** —（框架）
+- **PRD章节：** §11 / §F- (§6)11
+- **数据前提：** 用户账号存在于系统，密码正确
+- **API端点：** `POST /api/auth/login` Body: `{ "email": "admin@sandvik.com", "password": "Password123" }`
+- **UI验收标准：** 输入正确凭证 → 跳转 /dashboard，显示用户名
+- **预期结果：** HTTP 200，返回 JWT token，响应包含 `{ success: true, data: { token, user: {...} } }`
+- **执行状态：** ✅ PASS（旧版TC-0101已通过）
+
+---
+
+#### TC-FW02 登录失败（密码错误）
+- **测试类型：** API
+- **WBS任务：** —（框架）
+- **PRD章节：** §11 / §F- (§6)11
+- **数据前提：** 账号存在，密码错误
+- **API端点：** `POST /api/auth/login` Body: `{ "email": "admin@sandvik.com", "password": "WrongPassword" }`
+- **预期结果：** HTTP 401，`{ success: false, message: "Invalid credentials" }`
+- **执行状态：** ✅ PASS（旧版TC-0102已通过）
+
+---
+
+#### TC-FW03 未登录访问受保护路由
+- **测试类型：** API
+- **WBS任务：** —（框架）
+- **PRD章节：** §11 / §F- (§6)11
+- **数据前提：** 无token
+- **API端点：** `GET /api/forecast/periods`（无 Authorization header）
+- **预期结果：** HTTP 401，`{ success: false, message: "Unauthorized" }`
+- **执行状态：** ✅ PASS（旧版TC-0103已通过）
+
+---
+
+#### TC-FW04 Token过期
+- **测试类型：** API
+- **WBS任务：** —（框架）
+- **PRD章节：** §11 / §F- (§6)11
+- **数据前提：** 使用过期/无效token
+- **API端点：** `GET /api/forecast/periods` Header: `Authorization: Bearer invalid_token`
+- **预期结果：** HTTP 401
+- **执行状态：** ✅ PASS（旧版TC-0104已通过）
+
+---
+
+#### TC-FW05 统一错误码：所有API异常返回标准结构
+- **测试类型：** API
+- **WBS任务：** H-035（已完成）
+- **PRD章节：** §4.4.3 / §F- (§6)
+- **数据前提：** 有效JWT登录
+- **测试步骤：** 对以下端点发送异常请求，验证响应格式一致：
+  1. `GET /api/forecast/periods/99999` → 404 Not Found
+  2. `POST /api/forecast/records` body: `{}` → 400 Bad Request（缺少必填字段）
+  3. `GET /api/nonexistent-endpoint` → 404
+- **预期结果：** 所有异常响应格式：`{ success: false, message: "...", code: "ERROR_CODE" }`
+- **执行状态：** ✅ PASS（旧版TC-0108，H-035已完成统一错误码）
+
+---
+
+#### TC-FW06 多设备登录互斥
+- **测试类型：** API
+- **WBS任务：** H-034（已完成）
+- **PRD章节：** §11.2 / §F- (§6)11.2
+- **数据前提：** 用户A在设备1登录，在设备2登录同一账号
+- **测试步骤：**
+  1. 设备1：`POST /api/auth/login` → 获取 token_A
+  2. 设备2：`POST /api/auth/login` → 获取 token_B
+  3. 设备1：用 token_A 访问 `GET /api/auth/me`
+- **预期结果：** 设备1的token_A被吊销，HTTP 401；设备2的token_B正常工作
+- **执行状态：** ✅ PASS（H-034已完成）
 
 ---
 
 ### S-01 登录与认证
 
 #### TC-0101 用户登录成功
-- **测试类型：** E2E
-- **PRD章节：** §11 / §F- (§6)11 / §11.1
-- **数据前提：** 用户账号存在于系统，密码正确
-- **API端点：**
-  ```
-  POST /api/auth/login
-  Body: { "email": "admin@sandvik.com", "password": "xxx" }
-  ```
-- **UI验收标准（开发环境）：**
-  - 登录页显示用户名+密码输入框
-  - 输入正确凭证后，点击登录 → 跳转 /dashboard
-  - JWT写入localStorage
-  - 页面右上角显示用户姓名
-- **预期结果：** HTTP 200，Response含 `{ token: "eyJ..." }`
-- **执行状态：** 🔄待执行
-
----
+> *见 TC-FW01，已迁移至框架层*
 
 #### TC-0102 用户登录失败
-- **测试类型：** API + UI
-- **PRD章节：** §11 / §11.1
-- **数据前提：** 用户账号存在，密码错误
-- **API端点：**
-  ```
-  POST /api/auth/login
-  Body: { "email": "admin@sandvik.com", "password": "wrongpassword" }
-  ```
-- **预期结果：** HTTP 400，Response `{ "code": "AUTH_FAILED", "message": "用户名或密码错误" }`
-- **UI验收标准：** 页面显示红色错误提示"用户名或密码错误"，不跳转
-- **执行状态：** 🔄待执行
+> *见 TC-FW02，已迁移至框架层*
 
 ---
 
-#### TC-0103 未登录访问受保护路由
-- **测试类型：** E2E
-- **PRD章节：** §11
-- **数据前提：** 无有效JWT（清除localStorage）
-- **操作步骤：** 直接访问 http://localhost:3002/forecast
-- **UI验收标准：** 自动跳转登录页 /login，URL不包含受保护路径
-- **预期结果：** 未登录用户无法进入任何受保护页面
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0104 Token过期
-- **测试类型：** API
-- **PRD章节：** §11
-- **数据前提：** 使用过期JWT（手动构造或等token过期）
-- **API端点：**
-  ```
-  GET /api/forecast/periods
-  Header: Authorization: Bearer <expired_token>
-  ```
-- **预期结果：** HTTP 401，Response `{ "code": "TOKEN_EXPIRED", "message": "登录已过期" }`
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0105 M365 SSO生产登录
-- **测试类型：** E2E
-- **PRD章节：** §11.1 / §F- (§6)11.1
-- **数据前提：** 生产环境，账号已在系统创建
-- **操作步骤：** 点击"M365登录" → 跳转Microsoft OAuth → 授权 → 回调
-- **UI验收标准：** 生产环境无用户名密码框，只有SSO按钮；OAuth回调后写入JWT跳转dashboard
-- **预期结果：** HTTP 200 + JWT，账号不存在时返回错误提示
-- **执行状态：** 🔄待执行（依赖Azure AD配置）
-
----
-
-#### TC-0106 多设备登录：旧设备被踢出
-- **测试类型：** API + E2E
-- **PRD章节：** §11.1 Q49 / §F- (§6)11.2 / §4.3.1
-- **数据前提：** 用户A在设备1已登录（session_active=true）
-- **操作步骤：**
-  1. 设备2使用同一账号登录 → 调用 `POST /api/auth/login`
-  2. 设备1发送请求 `GET /api/forecast/records`（原token）
-- **API端点：**
-  ```
-  POST /api/auth/login  (设备2)
-  GET /api/forecast/records  (设备1，持设备1的旧token)
-  ```
-- **UI验收标准（设备1）：** 再次请求时返回401，页面跳转登录页提示"您的账号已在其他设备登录"
-- **预期结果：** 设备2登录后，设备1的旧token失效（IsActive=false）
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0107 多设备登录：RefreshToken刷新不创建新会话
-- **测试类型：** API
-- **PRD章节：** §F- (§6)11.2
-- **数据前提：** 用户已登录，有效RefreshToken
-- **API端点：**
-  ```
-  POST /api/auth/refresh
-  Body: { "refreshToken": "xxx" }
-  ```
-- **预期结果：** HTTP 200，Response `{ "token": "new_token" }`，不创建新的UserLoginSession记录
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0108 统一错误码：所有API异常返回标准结构
-- **测试类型：** API
-- **PRD章节：** §4.4.3 Q59
-- **数据前提：** 任意API触发异常（如400/404/500）
-- **API端点示例：**
-  ```
-  POST /api/forecast/submit（带无效数据）
-  GET /api/forecast/periods/99999（不存在的ID）
-  POST /api/forecast/save-draft（未登录）
-  ```
-- **预期结果：** 所有异常返回统一格式 `{ "code": "XXXX", "message": "中文友好提示", "details": null }`
-- **错误码分类：**
-  - 1xxx 通用错误
-  - 2xxx 业务错误
-  - 3xxx 数据错误
-  - 4xxx 认证错误
-- **执行状态：** 🔄待执行
-
----
-
-### S-02 预测周期管理
+### S-02 预测周期管理（F-02，第1轮）
 
 #### TC-0201 创建预测周期（完整字段）
 - **测试类型：** API + UI
+- **WBS任务：** H-038（已有基础功能）
 - **PRD章节：** §4.2.1 / §F- (§6)02
 - **数据前提：** SYS_ADMIN账号登录
 - **API端点：**
@@ -210,8 +172,7 @@ UI验收标准  ：页面元素、字段值、颜色标签（引用PRD §6 F-XX�
   ```
 - **UI验收标准（F-02.2）：**
   - 表单字段：周期名称 / 填报起始时间 / 填报截止时间 / 预测起始年月 / 预测结束年月 / 延期起始时间 / 延期截止时间 / 延期人员名单
-  - 延期字段为非必填
-  - 人员名单支持按名称搜索多选
+  - 延期字段为非必填；人员名单支持按名称搜索多选
 - **预期结果：** HTTP 201，返回周期ID，列表刷新显示新周期
 - **执行状态：** 🔄待执行
 
@@ -219,6 +180,7 @@ UI验收标准  ：页面元素、字段值、颜色标签（引用PRD §6 F-XX�
 
 #### TC-0202 预测周期列表查询
 - **测试类型：** API
+- **WBS任务：** H-038（已有基础功能）
 - **PRD章节：** §F- (§6)02.1
 - **数据前提：** 系统存在多个预测周期
 - **API端点：**
@@ -237,6 +199,7 @@ UI验收标准  ：页面元素、字段值、颜色标签（引用PRD §6 F-XX�
 
 #### TC-0203 预测周期编辑
 - **测试类型：** API + UI
+- **WBS任务：** H-038（已有基础功能）
 - **PRD章节：** §4.2.1 / §F- (§6)02.2
 - **数据前提：** 存在一个空预测周期
 - **API端点：**
@@ -250,20 +213,34 @@ UI验收标准  ：页面元素、字段值、颜色标签（引用PRD §6 F-XX�
 
 ---
 
-#### TC-0204 预测周期删除（仅空周期）
+#### TC-0204 预测周期删除（有数据时禁止）
 - **测试类型：** API + UI
+- **WBS任务：** H-050（已完成✅，commit dbf85d7）
 - **PRD章节：** §4.2.1 / §F- (§6)02.1
-- **数据前提：** 存在一个无任何填报数据的周期
-- **操作步骤：** 点击[删除] → 确认弹窗
-- **UI验收标准：** 有数据时[删除]按钮不显示；无数据时点击删除 → 弹出「该周期无填报数据，确认删除？」
-- **预期结果：** HTTP 200，周期从列表消失
-- **边界条件：** 有数据的周期删除时，前端不显示删除按钮（由规则保护）
-- **执行状态：** 🔄待执行
+- **数据前提A：** 存在一个**无**任何填报数据的空周期 → 可删除
+- **数据前提B：** 存在一个**有**填报数据的周期 → 禁止删除
+- **API端点（空周期）：**
+  ```
+  DELETE /api/forecast-periods/{id}
+  ```
+- **API端点（有数据周期）：**
+  ```
+  DELETE /api/forecast-periods/{id_with_data}
+  ```
+- **UI验收标准（F-02.1）：**
+  - 有数据时[删除]按钮**不显示**（前端保护）
+  - 无数据时点击删除 → 弹出「该周期无填报数据，确认删除？」→ 确认后HTTP 200
+- **预期结果：**
+  - 空周期：HTTP 200，周期从列表消失
+  - 有数据周期：HTTP 400，`{ success: false, message: "PERIOD_HAS_RECORDS", code: "PERIOD_HAS_RECORDS" }`
+- **错误条件：** 有数据的周期删除时，后端返回 `PERIOD_HAS_RECORDS` 错误码
+- **执行状态：** 🔄待执行（H-050已完成后端校验，E2E待小Q执行）
 
 ---
 
 #### TC-0205 延期窗口：白名单用户在截止后提交
 - **测试类型：** API + E2E
+- **WBS任务：** H-062（🔴待代码，第3轮）
 - **PRD章节：** §4.2.1 / PRD v0.4 §4.2.1
 - **数据前提：**
   - 预测周期：FillTimeEnd已过，但ExtensionEnd未过
@@ -279,792 +256,648 @@ UI验收标准  ：页面元素、字段值、颜色标签（引用PRD §6 F-XX�
   ```
 - **预期结果：**
   - 用户A：HTTP 201（延期白名单生效）
-  - 用户B：HTTP 400（"不在延期提交名单内"）
-- **执行状态：** 🔄待执行
+  - 用户B：HTTP 400（"不在延期提交名单内"或"提交已截止"）
+- **执行状态：** ⏭️待H-062代码完成
 
 ---
 
 #### TC-0206 延期窗口：按名称搜索筛选人员
 - **测试类型：** UI
+- **WBS任务：** H-062（🔴待代码，第3轮）
 - **PRD章节：** §F- (§6)02.2
 - **数据前提：** SYS_ADMIN打开周期编辑弹窗
 - **UI验收标准：** 延期人员名单字段支持输入名称实时搜索，点击选中后显示为标签；支持多选
 - **操作步骤：** 在延期人员输入框输入"韩" → 下拉显示所有名字含"韩"的用户 → 点击选中
 - **预期结果：** 选中人员显示为可移除标签，保存后extensionUsers正确保存
+- **执行状态：** ⏭️待H-062代码完成
+
+---
+
+#### TC-0207 周期列表状态标签颜色
+- **测试类型：** UI
+- **WBS任务：** H-038（已有基础功能）
+- **PRD章节：** §F- (§6)02.1
+- **数据前提：** 系统中存在不同时期的周期
+- **UI验收标准：**
+  - 即将开始 → 蓝色标签
+  - 填报中 → 绿色标签
+  - 已截止 → 灰色标签
+  - 已结束 → 红色标签
+- **预期结果：** 状态颜色与PRD §F-02插图一致
 - **执行状态：** 🔄待执行
 
 ---
 
-### S-03 预测记录填报
+### S-07 组织架构管理（F-07，第1轮）
+
+> **代码现状（2026-05-06）：**
+> - H-047 ✅ Migration完成（sales_region + sales_district列已加）
+> - H-048 ✅ OrgNodesController POST/PUT/DELETE完成（commit ac703ed）
+> - H-049 ⏳ 前端管理页面修复中（API端点+salesRegion/salesDistrict字段）
+
+#### TC-0701 GET /api/org-nodes 列表查询
+- **测试类型：** API
+- **WBS任务：** H-048（已完成✅）
+- **PRD章节：** §F- (§6)07
+- **数据前提：** 数据库中已存在多条OrgNode记录（含Active和Inactive）
+- **API端点：**
+  ```
+  GET /api/org-nodes
+  GET /api/org-nodes?region=华东大区
+  GET /api/org-nodes?keyword=张三
+  ```
+- **预期结果：**
+  - HTTP 200，`{ success: true, data: [...] }`
+  - 返回所有 Status="Active" 的节点（Global Query Filter自动过滤Inactive）
+  - data数组每项包含：id, name, email, role, region, company, parentId, status, salesRegion, salesDistrict
+  - GET /api/org-nodes?region=X 只返回region=X的节点
+  - GET /api/org-nodes?keyword=X 模糊匹配name或email（不区分大小写）
+- **错误条件：** 无效的region值 → 返回空数组（不报错）
+- **执行状态：** 🔄待小Q执行
+
+---
+
+#### TC-0702 GET /api/org-nodes/{id} 单条查询
+- **测试类型：** API
+- **WBS任务：** H-048（已完成✅）
+- **PRD章节：** §F- (§6)07
+- **数据前提：** 存在已知ID的OrgNode记录
+- **API端点：**
+  ```
+  GET /api/org-nodes/1
+  ```
+- **预期结果：**
+  - HTTP 200，`{ success: true, data: { id, name, email, role, region, company, parentId, status, salesRegion, salesDistrict } }`
+  - 不存在的ID → HTTP 404，`{ success: false, message: "Org node not found" }`
+- **执行状态：** 🔄待小Q执行
+
+---
+
+#### TC-0703 POST /api/org-nodes 创建节点
+- **测试类型：** API
+- **WBS任务：** H-048（已完成✅）
+- **PRD章节：** §F- (§6)07
+- **数据前提：** SYS_ADMIN登录，数据库无冲突邮箱
+- **API端点：**
+  ```
+  POST /api/org-nodes
+  Content-Type: application/json
+  Body: {
+    "name": "测试销售",
+    "email": "test.user@sandvik.com",
+    "role": "SALES",
+    "region": "华东大区",
+    "salesRegion": "华东大区",
+    "salesDistrict": "上海区",
+    "company": "Ahno-tool",
+    "parentId": 1
+  }
+  ```
+- **预期结果：** HTTP 201，`{ success: true, data: { id: 新ID, name: "测试销售", ..., status: "Active" } }`
+- **错误条件：**
+  - 缺少必填字段name/email → HTTP 400
+  - 无效role值 → HTTP 400
+  - parentId不存在 → HTTP 400
+  - parentId == id（自循环）→ HTTP 400
+  - 重复邮箱 → HTTP 400（由数据库唯一约束）
+- **执行状态：** 🔄待小Q执行
+
+---
+
+#### TC-0704 PUT /api/org-nodes/{id} 更新节点
+- **测试类型：** API
+- **WBS任务：** H-048（已完成✅）
+- **PRD章节：** §F- (§6)07
+- **数据前提：** 存在已知ID的OrgNode记录
+- **API端点：**
+  ```
+  PUT /api/org-nodes/5
+  Content-Type: application/json
+  Body: {
+    "name": "测试销售_已改名",
+    "region": "华南大区",
+    "salesRegion": "华南大区",
+    "salesDistrict": "广州区"
+  }
+  ```
+- **预期结果：** HTTP 200，`{ success: true, data: { ... updated fields ... } }`，数据库中对应记录已更新
+- **错误条件：**
+  - parentId == id（自循环）→ HTTP 400
+  - 不存在的节点ID → HTTP 404
+- **执行状态：** 🔄待小Q执行
+
+---
+
+#### TC-0705 DELETE /api/org-nodes/{id} 软删除（无子节点）
+- **测试类型：** API
+- **WBS任务：** H-048（已完成✅）
+- **PRD章节：** §F- (§6)07
+- **数据前提：** 存在一个**无子节点**的OrgNode（ParentId不为该节点ID的节点）
+- **API端点：**
+  ```
+  DELETE /api/org-nodes/{leaf_node_id}
+  ```
+- **预期结果：** HTTP 200，`{ success: true, message: "Org node deactivated" }`，数据库中该记录 Status="Inactive"（非物理删除）
+- **执行状态：** 🔄待小Q执行
+
+---
+
+#### TC-0706 DELETE /api/org-nodes/{id} 软删除（有子节点，级联）
+- **测试类型：** API
+- **WBS任务：** H-048（已完成✅）
+- **PRD章节：** §F- (§6)07
+- **数据前提：** 存在**有子节点**的OrgNode（如区域总监节点，其下有销售节点）
+- **API端点：**
+  ```
+  DELETE /api/org-nodes/{parent_node_id}
+  ```
+- **预期结果：** HTTP 200，该节点 Status="Inactive"，**且所有子节点（ParentId指向该节点）同样被级联软删除为Status="Inactive"**
+- **验证步骤：** 查询数据库 `SELECT Status FROM OrgNodes WHERE ParentId = {parent_node_id}` → 应全部为 Inactive
+- **执行状态：** 🔄待小Q执行
+
+---
+
+#### TC-0707 E2E 组织节点CRUD（前端页面）
+- **测试类型：** E2E
+- **WBS任务：** H-052（🔴待H-049前端完成）
+- **PRD章节：** §F- (§6)07
+- **数据前提：** H-049前端完成；SYS_ADMIN登录
+- **测试步骤：**
+  1. 进入"组织架构"页面 → 左侧树形正常显示
+  2. 点击[➕新增节点] → 弹窗填写name/email/role/region/salesRegion/salesDistrict/company/parentId → 保存 → HTTP 201 → 树刷新
+  3. 点击某节点[✏️编辑] → 弹窗预填充 → 修改name → 保存 → HTTP 200 → 树刷新
+  4. 点击某叶子节点[🗑️删除] → HTTP 200 → 节点从树消失（状态变为Inactive）
+  5. 点击有子节点的节点[🗑️删除] → 弹窗提示"删除后下属节点也会停用" → 确认 → 父+子全部停用
+- **UI验收标准：** PRD §F-07.3 组织架构管理页面布局与操作一致
+- **执行状态：** ⏭️待H-049前端完成
+
+---
+
+### S-05 客户管理（F-05，第2轮）
+
+> **代码现状：** 当前 customers 表为硬删除，CRUD API只有GET。H-054需改为软删除，H-055需加POST/PUT/DELETE。
+
+#### TC-0501 GET /api/customers 客户列表查询
+- **测试类型：** API
+- **WBS任务：** H-038（基础已有）
+- **PRD章节：** §F- (§6)05
+- **数据前提：** 数据库中已存在客户记录
+- **API端点：** `GET /api/customers`
+- **预期结果：** HTTP 200，`{ success: true, data: [...] }`，返回所有未删除客户（软删除自动过滤）
+- **执行状态：** 🔄待执行（基础已有，需验证过滤）
+
+---
+
+#### TC-0502 POST /api/customers 创建客户
+- **测试类型：** API
+- **WBS任务：** H-055（🔴待H-054软删迁移完成后）
+- **PRD章节：** §F- (§6)05
+- **数据前提：** SYS_ADMIN登录，无重复客户名称
+- **API端点：**
+  ```
+  POST /api/customers
+  Body: { "customerName": "测试客户A", "customerCode": "CA001", ... }
+  ```
+- **预期结果：** HTTP 201，`{ success: true, data: { id, customerName, ... } }`，isDeleted=false
+- **错误条件：** 缺少必填字段 → HTTP 400
+- **执行状态：** ⏭️待H-054+H-055代码完成
+
+---
+
+#### TC-0503 PUT /api/customers/{id} 编辑客户
+- **测试类型：** API
+- **WBS任务：** H-055（🔴待代码）
+- **PRD章节：** §F- (§6)05
+- **数据前提：** 存在已知ID的客户记录
+- **预期结果：** HTTP 200，记录更新，isDeleted保持false
+- **执行状态：** ⏭️待代码完成
+
+---
+
+#### TC-0504 DELETE /api/customers/{id} 软删除
+- **测试类型：** API
+- **WBS任务：** H-055（🔴待代码）
+- **PRD章节：** §F- (§6)05
+- **数据前提：** 存在客户记录，且该客户**无**关联预测记录
+- **API端点：** `DELETE /api/customers/{id}`
+- **预期结果：** HTTP 200，数据库isDeleted=true（物理不删除）
+- **错误条件：** 客户有关联预测记录 → HTTP 400
+- **执行状态：** ⏭️待代码完成
+
+---
+
+#### TC-0505 E2E 客户管理页面（新建/编辑/软删除）
+- **测试类型：** E2E
+- **WBS任务：** H-056（🔴待代码）
+- **PRD章节：** §F- (§6)05
+- **数据前提：** H-055 API完成；SYS_ADMIN登录
+- **执行状态：** ⏭️待代码完成
+
+---
+
+### S-06 产品管理（F-06，第2轮）
+
+> **代码现状：** 产品SubPA4模糊搜索缺失，POST /api/products新增缺失。
+
+#### TC-0601 SubPA4 模糊搜索（输入即搜，左右模糊）
+- **测试类型：** API
+- **WBS任务：** H-057（🔴待代码）
+- **PRD章节：** §4.3.2 / §F- (§6)06
+- **数据前提：** 数据库中已存在多级产品数据（PA→SubPA-1→SubPA-2→SubPA-3→SubPA-4）
+- **API端点：**
+  ```
+  GET /api/products?subPa4=截齿
+  GET /api/products?subPa4=abc（部分匹配）
+  ```
+- **预期结果：** HTTP 200，返回所有SubPA-4名称**包含**搜索关键词的产品（左右模糊，即%keyword%）
+- **执行状态：** ⏭️待H-057代码完成
+
+---
+
+#### TC-0602 POST /api/products 新增产品（自动流水号）
+- **测试类型：** API
+- **WBS任务：** H-058（🔴待代码）
+- **PRD章节：** §F- (§6)06
+- **数据前提：** SYS_ADMIN登录
+- **API端点：**
+  ```
+  POST /api/products
+  Body: { "productName": "新挖掘机", "category": "大型设备", "pa1": "重工", "pa2": "挖掘", "pa3": "大型", "pa4": "新挖掘" }
+  ```
+- **预期结果：** HTTP 201，系统自动生成产品编码（如PA001-xxxxx-xxxxx-xxxxx-YYYY01），其中YYYY为年份末两位，01为流水号
+- **执行状态：** ⏭️待H-058代码完成
+
+---
+
+#### TC-0603 产品5级联动（PA→SubPA-4）
+- **测试类型：** UI + API
+- **WBS任务：** H-038（基础已有）
+- **PRD章节：** §4.3.2 / §F- (§6)06
+- **数据前提：** 销售账号登录，进入预测填报页
+- **UI操作：** 选择PA1"截齿" → PA2自动筛选出截齿类 → ... → PA4(SubPA4)显示所有截齿型号
+- **预期结果：** 每级选择后下一级选项自动筛选，支持回退重选
+- **执行状态：** 🔄待执行
+
+---
+
+### S-10 开票公司（F-10，第2轮）
+
+> **代码现状：** InvoiceCompany只有GET，POST/PUT缺失，user-invoice-permissions完全缺失。
+
+#### TC-1001 GET /api/invoice-companies 开票公司列表
+- **测试类型：** API
+- **WBS任务：** H-038（基础已有）
+- **PRD章节：** §F- (§6)10
+- **预期结果：** HTTP 200，返回所有isDeleted=false的开票公司
+- **执行状态：** 🔄待执行
+
+---
+
+#### TC-1002 POST /api/invoice-companies 新增开票公司
+- **测试类型：** API
+- **WBS任务：** H-059（🔴待代码）
+- **PRD章节：** §F- (§6)10
+- **数据前提：** SYS_ADMIN登录
+- **API端点：**
+  ```
+  POST /api/invoice-companies
+  Body: { "companyName": "测试开票公司", "taxNumber": "91310000XXXXXXXX", "address": "上海市...", "bankName": "招商银行", "bankAccount": "621483..." }
+  ```
+- **预期结果：** HTTP 201，`{ success: true, data: { id, companyName, ... } }`
+- **执行状态：** ⏭️待H-059代码完成
+
+---
+
+#### TC-1003 PUT /api/invoice-companies/{id} 编辑开票公司
+- **测试类型：** API
+- **WBS任务：** H-059（🔴待代码）
+- **预期结果：** HTTP 200，开票公司信息更新
+- **执行状态：** ⏭️待代码完成
+
+---
+
+#### TC-1004 GET /api/user-invoice-permissions 用户开票权限查询
+- **测试类型：** API
+- **WBS任务：** H-060（🔴待代码）
+- **PRD章节：** §F- (§6)10
+- **数据前提：** 用户登录
+- **API端点：** `GET /api/user-invoice-permissions?userId=xxx`
+- **预期结果：** HTTP 200，返回该用户授权的开票公司列表（含公司名称+权限类型）
+- **执行状态：** ⏭️待H-060代码完成
+
+---
+
+#### TC-1005 POST /api/user-invoice-permissions 分配开票权限
+- **测试类型：** API
+- **WBS任务：** H-060（🔴待代码）
+- **数据前提：** SYS_ADMIN登录
+- **API端点：**
+  ```
+  POST /api/user-invoice-permissions
+  Body: { "userId": 1, "invoiceCompanyId": 5, "permissionType": "CAN_INVOICE" }
+  ```
+- **预期结果：** HTTP 201，权限记录创建成功
+- **执行状态：** ⏭️待代码完成
+
+---
+
+#### TC-1006 PUT /api/user-invoice-permissions/{id} 修改权限
+- **测试类型：** API
+- **WBS任务：** H-060（🔴待代码）
+- **预期结果：** HTTP 200，权限类型或关联公司更新
+- **执行状态：** ⏭️待代码完成
+
+---
+
+#### TC-1007 E2E 用户-开票公司权限配置页面
+- **测试类型：** E2E
+- **WBS任务：** H-061（🔴待代码）
+- **PRD章节：** §F- (§6)10
+- **执行状态：** ⏭️待H-060代码完成
+
+---
+
+### S-03 预测记录填报（F-03，第3轮）
+
+> **代码现状：** submit未创建ApprovalRequest，save-draft语义不清，复制功能缺失，时间窗口无校验。
 
 #### TC-0301 创建预测记录（4度量字段）
 - **测试类型：** API + UI
-- **PRD章节：** §4.2.2 / §F- (§6)03.2 / PRD v0.4 §4.2.2
-- **数据前提：** 销售账号登录，有效预测周期（`GET /api/forecast-periods`获取ID），当前在填报窗口内
-- **API端点（实测验证）：**
+- **WBS任务：** H-038（基础已有）
+- **PRD章节：** §4.2.2 / §F- (§6)03.2
+- **数据前提：** 销售账号登录，有效预测周期（状态=填报中），当前在填报窗口内
+- **API端点：**
   ```
   POST /api/forecast/records
   Body: {
-    "forecastPeriodId": "33b23e63-904b-4f7d-87d4-dced4e68260d",
-    "customerId": "c00001-0000-0000-0000-000000000001",
-    "invoiceCompanyId": "i00001-0000-0000-0000-000000000001",
-    "productId": "PA001-0000-0000-0000-000000000001",
+    "forecastPeriodId": "周期ID",
+    "customerId": "客户ID",
+    "invoiceCompanyId": "开票公司ID",
+    "productId": "PA001-xxx",
     "year": 2026,
-    "month": 8,
-    "orderQty": 50.0,
-    "orderAmount": 25000.0,
-    "invoiceQty": 0.0,
-    "invoiceAmount": 0.0,
-    "status": "Draft"
+    "data": {
+      "orderQty": { "2026-07": 100, "2026-08": 120 },
+      "orderAmount": { "2026-07": 50000, "2026-08": 60000 },
+      "invoiceQty": { "2026-07": 80, "2026-08": 100 },
+      "invoiceAmount": { "2026-07": 40000, "2026-08": 50000 }
+    }
   }
   ```
-- **⚠️ 必填字段：** `forecastPeriodId`、`customerId`、`invoiceCompanyId`、`productId`、`year`、`month`、`orderQty`、`orderAmount`、`invoiceQty`、`invoiceAmount`、`status`
-- **⚠️ BUG已知：** `GET /api/invoice-companies` 返回404，InvoiceCompany查找端点缺失。有效值需从已有记录反推：`i00001-0000-0000-0000-000000000001`
-- **UI验收标准（F-03.2）：**
-  - 表单列：月份 | 订单数量 | 订单金额 | 开票数量 | 开票金额 | 单价（只读）
-  - 订单金额 ÷ 订单数量 = 单价（自动计算，只读显示）
-  - 4个字段全部为整数，可为0，不可为负
-- **预期结果：** HTTP 201，返回记录ID
-- **执行状态：** 🔄待执行
+- **预期结果：** HTTP 201，返回记录ID，4个度量独立填写不合并
+- **执行状态：** 🔄待执行（基础已有，需验证4度量独立）
 
 ---
 
 #### TC-0302 订单金额/开票金额独立填写
 - **测试类型：** API
-- **PRD章节：** PRD v0.4 §4.2.2「金额/数量校验」
+- **WBS任务：** H-038（基础已有）
+- **PRD章节：** §4.2.2 / §F- (§6)03.2
 - **数据前提：** 同TC-0301
-- **验证：** 填写 orderAmount=100000, invoiceAmount=50000（与orderAmount无比例关系）→ 保存成功
-- **边界条件：** invoiceAmount > orderAmount（允许，无上限；PRD明确无关联）
-- **预期结果：** HTTP 201，两组字段各自独立保存
+- **测试步骤：** 在同一月份，订单金额=50000，开票金额=40000（不相等）
+- **预期结果：** HTTP 201，数据库中两条记录独立存储，不自动关联
 - **执行状态：** 🔄待执行
 
 ---
 
 #### TC-0303 单价自动计算（amount/qty）
-- **测试类型：** UI
-- **PRD章节：** §F- (§6)03.2「※ 单价自动计算显示」
-- **数据前提：** 打开填报表单
-- **UI验收标准：** 订单数量=10，订单金额=100000 → 单价列自动显示10,000（只读，不可编辑）
-- **操作步骤：** 修改订单数量为5 → 单价自动重算为20,000
-- **预期结果：** 单价随金额/数量变化实时重算，用户不可手动输入
+- **测试类型：** API + UI
+- **WBS任务：** H-038（基础已有）
+- **PRD章节：** §4.2.2 / §F- (§6)03.2
+- **预期结果：** 前端根据输入的amount和qty自动计算并显示单价（amount÷qty）
 - **执行状态：** 🔄待执行
 
 ---
 
 #### TC-0304 保存草稿（不触发审批流）
 - **测试类型：** API
-- **PRD章节：** §4.2.2 / §F- (§6)03.1
-- **数据前提：** 销售账号登录，有可编辑的草稿
+- **WBS任务：** H-064（🔴待代码）
+- **PRD章节：** §4.2.2 / §F- (§6)03.4
+- **数据前提：** 销售账号登录，有效周期
 - **API端点：**
   ```
   POST /api/forecast/save-draft
-  Body: { ... }
+  Body: { ... 同TC-0301 ... }
   ```
-- **预期结果：** HTTP 201，状态保持DRAFT，审批历史无新记录，ApprovalRequest未创建
-- **验证：** 调用 `GET /api/approval-flow/my` → 无新增记录
-- **执行状态：** 🔄待执行
+- **预期结果：** HTTP 201，返回记录ID，状态为DRAFT，**不创建ApprovalRequest记录**
+- **验证：** `GET /api/approvals?forecastRecordId=X` → 返回空（无审批请求）
+- **执行状态：** ⏭️待H-064代码完成
 
 ---
 
 #### TC-0305 提交审批（状态变更+触发审批流）
-- **测试类型：** API + E2E
-- **PRD章节：** §4.2.2 / §4.2.3 / §F- (§6)03.1
-- **数据前提：** 销售有草稿数据，在填报窗口内
-- **操作步骤：** 草稿列表点击[提交] → 确认弹窗 → 确认
+- **测试类型：** API
+- **WBS任务：** H-063（🔴待代码）
+- **PRD章节：** §4.2.2 / §F- (§6)03.5
+- **数据前提：** 销售账号登录，有草稿记录或直接提交
 - **API端点：**
   ```
   POST /api/forecast/submit
-  Body: { "forecastRecordIds": ["id1", "id2"] }
+  Body: { "forecastRecordId": 123 }
   ```
-- **UI验收标准（F-03.1）：**
-  - 提交按钮：草稿状态显示，审批中/已通过/已驳回不显示
-  - 点击后弹出确认框「提交后将进入审批流程，是否确认？」
-  - 提交成功后：记录状态变为"审批中"，操作列[撤回]按钮出现
-- **预期结果：** HTTP 201，状态变为PENDING，ApprovalRequest创建，直线经理待审批列表出现记录
-- **验证：** MANAGER账号调用 `GET /api/approval-flow/my` → 能看到该记录
-- **执行状态：** 🔄待执行
+- **预期结果：** HTTP 201，预测记录状态变为SUBMITTED，**同时创建ApprovalRequest记录**（currentLevel=1）
+- **验证：** `GET /api/approvals?forecastRecordId=123` → 返回审批请求，currentLevel=1
+- **错误条件：** 已Submitted的记录再次submit → HTTP 400
+- **执行状态：** ⏭️待H-063代码完成
 
 ---
 
-#### TC-0306 产品5级联动（PA→SubPA-4）
-- **测试类型：** UI
-- **PRD章节：** §4.3.2.3 / §F- (§6)06.2 / PRD v0.4 §4.3.2.3「联动行为」
-- **数据前提：** 产品表有完整5级数据
-- **UI验收标准（联动矩阵）：**
-  - 选择PA → SubPA1/2/3/4全部清空重选
-  - 选择SubPA1 → SubPA2/3/4不变（保持）
-  - 选择SubPA2 → SubPA3/4清空重选
-  - 选择SubPA3 → SubPA4清空重选
-  - SubPA4：输入框+模糊搜索下拉（左右模糊）
-- **操作步骤：**
-  1. 选择PA=「AH INSERT」
-  2. SubPA1选择「车Turning」→ SubPA2不变
-  3. 选择SubPA2=「刀片」→ SubPA3/4清空
-  4. SubPA3选择「负角刀片」→ SubPA4清空
-  5. SubPA4输入「Tung」→ 下拉显示匹配项 → 选择
-- **预期结果：** 每步联动行为符合矩阵，SubPA4最终选中
-- **边界：** SubPA4数量大时，搜索「Tung」能匹配到「钨钢刀片」
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0307 草稿列表：销售只看自己草稿
+#### TC-0306 复制上期数据功能
 - **测试类型：** API + UI
-- **PRD章节：** §5权限矩阵 / §F- (§6)03.1
-- **数据前提：** 销售A和B各有草稿数据
+- **WBS任务：** H-065（🔴待代码）
+- **PRD章节：** §F- (§6)03.10
+- **数据前提：** 销售A有上期（2026-Q1）填报记录，本期（2026-Q2）尚未填报
 - **API端点：**
   ```
-  GET /api/forecast/records?status=DRAFT
-  （以销售A身份）
+  POST /api/forecast/copy-from-previous
+  Body: { "forecastPeriodId": "本期周期ID", "customerId": "客户ID", "productId": "产品ID" }
   ```
-- **UI验收标准（F-03.1表格）：**
-  - 列表仅显示销售A的草稿
-  - 不显示销售B的草稿
-- **预期结果：** 返回记录中createdByUserId全部等于销售A的userId
-- **执行状态：** 🔄待执行
+- **预期结果：** HTTP 201，将上期同客户+同产品+同月份数据复制为草稿（DRAFT），amount/qty不变
+- **执行状态：** ⏭️待H-065代码完成
 
 ---
 
-#### TC-0308 填报数据唯一性（同一组合不可重复）
+#### TC-0307 填报时间窗口校验（FillTimeEnd后禁止提交）
 - **测试类型：** API
-- **PRD章节：** PRD v0.4 §4.2.2「数据唯一性」
-- **数据前提：** 销售A已为「客户X+产品Y+2026-07」有草稿
-- **操作步骤：** 再次保存相同「客户X+产品Y+2026-07」的数据
-- **预期结果：** 相同组合覆盖更新（不是报错），HTTP 200
-- **验证：** 数据库只有一条记录，金额为最新值
-- **执行状态：** 🔄待执行
+- **WBS任务：** H-062（🔴待代码）
+- **PRD章节：** §4.2.2 / §F- (§6)03.5
+- **数据前提：** 预测周期已过FillTimeEnd，当前时间 > FillTimeEnd
+- **API端点：** `POST /api/forecast/submit`
+- **预期结果：**
+  - 普通用户：HTTP 400，`{ success: false, message: "提交已截止" }`
+  - 延期白名单用户（在extensionUsers中）：HTTP 201
+- **执行状态：** ⏭️待H-062代码完成
 
 ---
 
-#### TC-0309 复制上期数据
-- **测试类型：** API + UI
-- **PRD章节：** PRD v0.4 §4.2.2「复制上期数据」/ §F- (§6)03.2
-- **数据前提：** 上年周期有该客户的预测数据
-- **操作步骤：** 点击[复制上期] → 弹窗选择来源周期 → 确认
-- **UI验收标准（F-03.2）：**
-  - 点击后弹窗「选择来源周期」
-  - 下拉列出所有历史周期
-  - 选择后自动填入同客户+同产品+同月份的数据
-  - 复制后为草稿状态，需重新提交
-- **预期结果：** HTTP 201，新草稿数据包含上年的月份+金额记录
-- **执行状态：** 🔄待执行
+#### TC-0308 填报表单：开票公司选择字段
+- **测试类型：** UI
+- **WBS任务：** H-066（🔴待H-059开票公司API）
+- **PRD章节：** §F- (§6)03.2
+- **数据前提：** 销售账号登录，进入填报页
+- **UI验收标准：** 填报表单包含「开票公司」下拉字段，只显示当前用户有权限（CAN_INVOICE）的开票公司
+- **执行状态：** ⏭️待H-059+H-066代码完成
 
 ---
 
-### S-04 审批流
+### S-04 预测审批（F-04，第3轮）
 
 #### TC-0401 提交审批：创建ApprovalRequest
 - **测试类型：** API
+- **WBS任务：** H-063（🔴待代码）
 - **PRD章节：** §4.2.3 / §F- (§6)04
-- **数据前提：** 销售提交预测，ApprovalRequest未创建
-- **API端点：**
-  ```
-  POST /api/forecast/submit
-  Body: { "forecastRecordIds": ["xxx"] }
-  ```
-- **验证：** 调用 `GET /api/approval-flow/my` → 状态=PENDING
-- **预期结果：** HTTP 201，ApprovalRequest.status=SUBMITTED
-- **执行状态：** 🔄待执行
+- **数据前提：** 销售提交预测（TC-0305）
+- **验证步骤：** 查询 `SELECT * FROM ApprovalRequests WHERE ForecastRecordId = X`
+- **预期结果：** 存在一条记录，Status=PENDING，CurrentLevel=1，CreatedAt=提交时间
+- **执行状态：** ⏭️待H-063代码完成
 
 ---
 
 #### TC-0402 待审批列表：直线经理看到团队待审批
-- **测试类型：** API
-- **PRD章节：** §5 / §F- (§6)04.1
-- **数据前提：** 销售A提交了预测，直线经理B管辖销售A
-- **API端点：**
-  ```
-  GET /api/approval-flow/my
-  GET /api/approval-flow/my?tab=pending
-  （以直线经理B身份）
-  ```
-- **UI验收标准（F-04.1）：**
-  - Tab切换：待我审批(12) / 我已审批 / 全部
-  - 待我审批：仅显示当前用户是审批节点且status=PENDING的记录
-  - 卡片显示：客户名、周期、状态标签（审批中=蓝色）、提交人、订单/开票金额合计、提交时间
-- **预期结果：** HTTP 200，返回直线经理B的待审批列表（销售A的记录在列）
-- **执行状态：** 🔄待执行
+- **测试类型：** API + UI
+- **WBS任务：** H-067（🔴待代码）
+- **PRD章节：** §4.2.3 / §F- (§6)04.1
+- **数据前提：** 直线经理账号登录，其下有销售提交了预测
+- **API端点：** `GET /api/approvals/pending`
+- **预期结果：** HTTP 200，返回该经理**团队**的待审批记录（不包含其他团队）
+- **UI验收标准：** 列表页显示卡片+Tab切换（全部/待我审批/我已审批），可按状态筛选
+- **执行状态：** ⏭️待H-067代码完成
 
 ---
 
 #### TC-0403 审批通过（自动推进到上级）
-- **测试类型：** API + E2E
-- **PRD章节：** §4.2.3「自动推进规则」/ §F- (§6)04
-- **数据前提：** 销售A提交预测，直线经理B待审批
+- **测试类型：** API
+- **WBS任务：** H-063（🔴待代码）
+- **PRD章节：** §4.2.3 / §F- (§6)04.2
+- **数据前提：** 存在待审批记录（CurrentLevel=1，直线经理审批）
 - **API端点：**
   ```
-  PUT /api/approval-flow/approve
-  Body: { "approvalRequestId": "xxx", "comments": "同意" }
+  POST /api/approvals/approve
+  Body: { "approvalRequestId": 123, "comments": "同意" }
   ```
-- **预期结果：** HTTP 200，审批链自动推进
-  - 直线经理B的ApprovalHistory记录APPROVE
-  - 状态自动变为下一节点（如VP_SALES待审批或已完成）
-  - 大区负责人/CEO待审批列表出现该记录（若还有上级）
-- **边界：** 若无更高级审批人（CEO）→ status=APPROVED（已完成）
-- **执行状态：** 🔄待执行
+- **预期结果：** HTTP 200，审批记录CurrentLevel推进到2，Status仍为PENDING（区域总监审批中）
+- **执行状态：** ⏭️待H-063代码完成
 
 ---
 
 #### TC-0404 审批驳回（逐层退回）
-- **测试类型：** API + E2E
-- **PRD章节：** §4.2.3「驳回规则」/ §F- (§6)04.2
-- **数据前提：** 直线经理B对销售A的预测执行驳回
+- **测试类型：** API
+- **WBS任务：** H-063（🔴待代码）
+- **PRD章节：** §4.2.3 / §F- (§6)04.3
+- **数据前提：** 直线经理驳回销售提交
 - **API端点：**
   ```
-  PUT /api/approval-flow/reject
-  Body: { "approvalRequestId": "xxx", "comments": "数据偏低，请补充" }
+  POST /api/approvals/reject
+  Body: { "approvalRequestId": 123, "comments": "数据需修正" }
   ```
-- **UI验收标准（F-04.2驳回流程）：**
-  - 点击[驳回] → 弹出评语输入框（必填）「请输入驳回原因」
-  - 提交后数据退回到上一层（直线经理→销售）
-- **预期结果：** HTTP 200，ApprovalHistory记录REJECT
-  - 销售A的预测状态变回PENDING_DRAFT（可编辑）
-  - 直线经理待审批列表不再显示
-  - 销售A可编辑数据后重新提交
-- **执行状态：** 🔄待执行
+- **预期结果：** HTTP 200，审批记录Status=REJECTED，ForecastRecord状态变回DRAFT，销售可修改后重新提交
+- **执行状态：** ⏭️待H-063代码完成
 
 ---
 
 #### TC-0405 审批调整（退回+4个总量值+comments）
-- **测试类型：** API + E2E
-- **PRD章节：** §4.2.3「调整动作」/ §F- (§6)04.2
-- **数据前提：** 直线经理B执行调整
+- **测试类型：** API
+- **WBS任务：** H-063（🔴待代码）
+- **PRD章节：** §4.2.3 / §F- (§6)04.4
+- **数据前提：** 直线经理查看详情后发现数量偏差，直接调整后同意
 - **API端点：**
   ```
-  PUT /api/approval-flow/adjust
+  POST /api/approvals/adjust
   Body: {
-    "approvalRequestId": "xxx",
-    "comments": "请提高10%",
-    "adjustOrderAmount": 110000,
-    "adjustInvoiceAmount": 90000,
-    "adjustOrderQty": 11,
-    "adjustInvoiceQty": 9
+    "approvalRequestId": 123,
+    "comments": "已调整订单数量",
+    "adjustedData": {
+      "orderQty": { "2026-07": 110 },
+      "orderAmount": { "2026-07": 55000 }
+    }
   }
   ```
-- **UI验收标准（F-04.2调整表单）：**
-  - 调整表单5个字段：4个总量值（调整的订单总金额/开票总金额/订单总数量/开票总数量）+ 调整说明（必填）
-  - 4个总量值为指导值，下级参考
-- **预期结果：** HTTP 200
-  - ApprovalHistory记录ADJUST
-  - adjust_*字段写入ApprovalHistory
-  - 销售A看到调整指导值，重新提交
-- **执行状态：** 🔄待执行
+- **预期结果：** HTTP 200，ForecastRecord数据更新，审批推进到下一级
+- **执行状态：** ⏭️待H-063代码完成
 
 ---
 
 #### TC-0406 审批历史记录完整（时间戳+操作人+动作+4总量值+comments）
 - **测试类型：** API
-- **PRD章节：** §4.2.3「审批历史记录字段」/ §F- (§6)04.2
-- **数据前提：** 存在多轮审批/退回历史的ApprovalRequest
-- **API端点：**
-  ```
-  GET /api/approval-flow/history/{approvalRequestId}
-  ```
-- **预期结果：** HTTP 200，返回ApprovalHistory数组，每条记录含：
-  - `operatedAt`：操作时间戳
-  - `operatorUserId`：操作人
-  - `action`：SUBMIT / APPROVE / REJECT / ADJUST
-  - `comments`：评语
-  - `adjustOrderAmount / adjustInvoiceAmount / adjustOrderQty / adjustInvoiceQty`（调整时有值）
-- **UI验收标准（F-04.2时间线）：**
-  - 按时间倒序展示
-  - 每条记录显示：时间 + 操作人 + 动作类型
-  - ADJUST记录额外显示4个总量值
-- **执行状态：** 🔄待执行
+- **WBS任务：** H-063（🔴待代码）
+- **PRD章节：** §4.2.3 / §F- (§6)04.5
+- **数据前提：** 完成一个完整审批流程（提交→直线经理→区域总监→大区负责人→CEO）
+- **API端点：** `GET /api/approvals/{id}/history`
+- **预期结果：** 返回ApprovalHistory记录列表，每条包含：
+  - timestamp（操作时间）
+  - approverEmail（操作人邮箱）
+  - action（PENDING/APPROVED/REJECTED/ADJUSTED）
+  - comments（批注）
+  - adjustedData（如有调整，显示4个总量值）
+- **执行状态：** ⏭️待H-063代码完成
 
 ---
 
-#### TC-0407 驳回后重新提交（退到哪级该级可改再提交）
+#### TC-0407 审批详情页（时间线+操作区）
 - **测试类型：** E2E
-- **PRD章节：** §4.2.3「驳回后重新提交」/ §F- (§6)04
-- **数据前提：** 销售A的预测被直线经理B驳回，当前在销售A处可编辑
-- **操作步骤：**
-  1. 销售A修改数据 → [保存草稿] → [提交审批]
-  2. 直线经理B看到重新提交 → [通过]
-  3. 若还有上级 → 继续流转
-- **预期结果：** 驳回后重新提交，不重新发起审批流，而是从当前层级继续向上推进
-- **验证：** ApprovalHistory有多条记录（提交→驳回→重新提交→通过→...）
-- **执行状态：** 🔄待执行
+- **WBS任务：** H-068（🔴待代码）
+- **PRD章节：** §F- (§6)04.11
+- **数据前提：** 直线经理登录，有待审批记录
+- **UI验收标准：** ApprovalFlow.vue（已有但不完整）需包含：
+  - 左侧：时间线显示所有审批节点（已通过✅/当前⏳/待审批⬜）
+  - 右侧：操作区（通过/驳回/调整三个按钮）+批注输入框
+- **执行状态：** ⏭️待H-068代码完成
 
 ---
 
-#### TC-0408 Frank Tao只能批/驳/调，不能修改明细
-- **测试类型：** E2E
-- **PRD章节：** §4.2.3「Frank Tao（最终审批人）只能批/驳/调」/ §F- (§6)04.3
-- **数据前提：** 预测已流转到Frank Tao（CEO）待审批
-- **操作步骤：** Frank Tao进入审批详情页
-- **UI验收标准（F-04.3权限矩阵）：**
-  - 预测数据明细区：所有字段只读（不可编辑）
-  - 操作按钮区：仅[通过] / [驳回] / [调整+提交指导值]
-  - 不出现[编辑]或[保存]按钮
-- **API验证：** Frank Tao调用 `PUT /api/approval-flow/approve` → 成功；尝试调用修改数据的接口 → 后端返回403
-- **执行状态：** 🔄待执行
+### S-09 EmailQueue（F-09，第4轮）
 
----
-
-#### TC-0409 审批链自动跳过不存在的审批人
-- **测试类型：** API
-- **PRD章节：** §4.2.3「自动推进规则」Q17
-- **数据前提：** 销售提交时直线经理节点在OrgNode中不存在（人员离职但记录未删除）
-- **预期结果：** 审批流自动跳过该级，找到下一个有效审批人继续向上流转
-- **验证：** ApprovalHistory中，跳过的那级无记录；下一级审批人的待审批列表出现该记录
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0410 提交后不可撤回
-- **测试类型：** E2E
-- **PRD章节：** PRD v0.4 §4.2.3「提交后不可撤回」
-- **数据前提：** 销售A提交了预测（状态=审批中）
-- **操作步骤：** 销售A在列表页点击[撤回]
-- **UI验收标准（F-03.1）：**
-  - [撤回]按钮仅在「审批中」状态显示
-  - 点击后弹出确认框「撤回后数据将退回草稿，是否确认？」
-- **实际验证：** 提交后进入审批流，提交人**没有任何方式**可以撤回，只能等上一级审批人主动驳回
-- **预期结果：** 前端确认撤回后 → 状态退回DRAFT（实际上PRD说不可撤回，这条测试验证的是「不可撤回」的限制）
-- **执行状态：** 🔄待执行
-
----
-
-### S-05 权限隔离
-
-#### TC-0501 销售只能看到自己品牌的客户
-- **测试类型：** API
-- **PRD章节：** §5「品牌过滤」/ §4.3.1 / §4.3.1
-- **数据前提：** 系统有多个品牌的客户数据（品牌A/品牌B）
-- **API端点：**
-  ```
-  GET /api/basedata/customers
-  GET /api/forecast/form?customerId=xxx
-  （以销售A，品牌=品牌A）
-  ```
-- **预期结果：** 返回的客户列表中，所有Customer.Brand = 销售A.Brand（品牌A）
-- **验证：** 返回数据中不包含品牌B的客户
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0502 销售只能填报自己品牌的客户（客户下拉过滤）
+#### TC-0901 邮件队列表格显示
 - **测试类型：** UI
-- **PRD章节：** §F- (§6)03.2「客户下拉受品牌过滤」
-- **数据前提：** 销售A归属品牌A；品牌A有客户X，品牌B有客户Y
-- **UI验收标准（F-03.2）：**
-  - 填报表单客户下拉：仅显示品牌A的客户
-  - 品牌B的客户Y不在下拉列表中，无法选择
-- **操作步骤：** 打开填报表单 → 打开客户下拉
-- **预期结果：** 客户X可见，客户Y不可见
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0503 历史记录按品牌过滤
-- **测试类型：** API
-- **PRD章节：** §4.3.1「品牌过滤发生在所有涉及客户列表的场景」
-- **数据前提：** 销售A填报过多个品牌客户的记录（错误数据）
-- **API端点：**
-  ```
-  GET /api/forecast/records?forecastPeriodId=xxx
-  （以销售A身份）
-  ```
-- **预期结果：** 返回记录中所有Customer.Brand = 销售A.Brand
-- **边界：** 若数据库有脏数据（销售绑定了不属于自己品牌的客户），后端查询时应被品牌过滤拦截
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0504 直线经理看到团队全部数据（跨品牌）
-- **测试类型：** API
-- **PRD章节：** §5权限矩阵 / §F- (§6)04.1
-- **数据前提：**
-  - 直线经理B管辖多个销售（销售A=品牌A，销售C=品牌B）
-  - 销售A和C各有草稿
-- **API端点：**
-  ```
-  GET /api/forecast/records
-  GET /api/approval-flow/my
-  （以直线经理B身份）
-  ```
-- **UI验收标准（F-04.1）：**
-  - 待我审批列表：同时显示销售A和销售C的记录
-  - 填报列表（经理无填报入口，但Dashboard能看到）：团队汇总含所有品牌数据
-- **预期结果：** 直线经理B能看到自己团队内所有销售（跨品牌）的数据
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0505 CEO看到全量数据（无品牌/团队限制）
-- **测试类型：** API
-- **PRD章节：** §5权限矩阵 / §F- (§6)01
-- **数据前提：** CEO（Frank Tao）账号
-- **API端点：**
-  ```
-  GET /api/dashboard/summary
-  GET /api/forecast/records
-  GET /api/basedata/customers
-  （以Frank Tao身份）
-  ```
-- **预期结果：** 全量数据，无品牌过滤，无团队过滤
-- **UI验收标准（F-01）：** CEO登录Dashboard → 汇总卡片显示全系统数据
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0506 开票公司自由选择（无品牌/区域控制）
-- **测试类型：** UI + API
-- **PRD章节：** §4.2.2「开票公司：自由选择，无限制」/ §F- (§6)03.2
-- **数据前提：** 销售A（品牌A），开票公司列表包含多家不同品牌公司
-- **UI验收标准（F-03.2）：**
-  - 开票公司下拉：显示全部开票公司，无品牌/区域过滤
-  - 销售A可以自由选择任何品牌的开票公司
-- **预期结果：** 开票公司下拉选项完整，无过滤逻辑
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0507 开票公司特别权限（财务跨部门）
-- **测试类型：** API
-- **PRD章节：** §5「B. 跨部门特别权限（基于开票公司）」/ PRD v0.4 §5
-- **数据前提：** 财务账号C配置了「用户-开票公司权限表」
-- **API端点：**
-  ```
-  GET /api/forecast/records
-  GET /api/dashboard/summary
-  （以财务账号C身份）
-  ```
-- **预期结果：** 财务账号C只能看到其有权限的开票公司下的预测数据
-- **验证逻辑：** 不走OrgNode层级，走开票公司权限表过滤
-- **执行状态：** 🔄待执行
-
----
-
-### S-06 邮件通知
-
-#### TC-0601 审批提交触发写入队列表
-- **测试类型：** 架构验证
-- **PRD章节：** §4.2.3「邮件通知」/ §F- (§6)09 / PRD v0.4 §4.4.3邮件队列架构
-- **数据前提：** 销售提交预测
-- **验证步骤：**
-  1. 销售提交 `POST /api/forecast/submit`
-  2. 查询数据库：`SELECT * FROM email_queue_items ORDER BY created_at DESC LIMIT 5`
-- **预期结果：** email_queue_items表有新记录，trigger_type='SUBMIT'，status='PENDING'
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0602 审批通过触发写入队列表
-- **测试类型：** 架构验证
+- **WBS任务：** H-071（🔴待代码）
 - **PRD章节：** §F- (§6)09
-- **数据前提：** 直线经理执行审批通过
-- **验证步骤：** 执行 `PUT /api/approval-flow/approve` → 查询email_queue_items
-- **预期结果：** 新增记录，trigger_type='APPROVE'
-- **执行状态：** 🔄待执行
+- **UI验收标准：** 邮件队列管理页面包含：发件人 | 收件人 | 主题 | 状态（Pending/Sent/Failed）| 重试次数 | 创建时间 | 操作
+- **执行状态：** ⏭️待H-071代码完成
 
 ---
 
-#### TC-0603 审批驳回触发写入队列表
-- **测试类型：** 架构验证
-- **PRD章节：** §F- (§6)09
-- **验证步骤：** 执行 `PUT /api/approval-flow/reject` → 查询email_queue_items
-- **预期结果：** 新增记录，trigger_type='REJECT'
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0604 审批调整触发写入队列表
-- **测试类型：** 架构验证
-- **PRD章节：** §F- (§6)09
-- **验证步骤：** 执行 `PUT /api/approval-flow/adjust` → 查询email_queue_items
-- **预期结果：** 新增记录，trigger_type='ADJUST'
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0605 队列表由定时服务轮询推送
-- **测试类型：** 架构验证
-- **PRD章节：** §4.4.3 / PRD v0.4 §4.4.3邮件队列架构「邮件服务实时轮询推送」
-- **验证步骤：**
-  1. 手动插入一条测试记录到email_queue_items（status=PENDING）
-  2. 等待定时服务触发（30秒内）
-  3. 查询该记录：status应变为'SENT'或'FAILED'
-- **预期结果：** 定时服务正确处理队列表记录
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0606 消息模板变量替换正确
-- **测试类型：** 架构验证
-- **PRD章节：** §4.2.3「占位变量」/ §F- (§6)09.2
-- **数据前提：** 消息模板配置了占位变量 `{PeriodName}` / `{SubmitterName}` / `{ActionType}` / `{Comments}`
-- **验证步骤：** 执行触发后查询email_queue_items.rendered_content字段
-- **预期结果：** rendered_content中占位变量已替换为实际值（如「2026 FC1」/「韩学健」/「提交」）
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0607 每个审批节点独立配置触发+模板
+#### TC-0902 邮件发送失败自动重试
 - **测试类型：** API + 架构验证
-- **PRD章节：** §4.2.3「每个审批节点单独配置：是否触发邮件+使用哪个模板」
-- **数据前提：** 审批流配置中，直线经理节点启用邮件，区域总监节点禁用邮件
-- **验证步骤：**
-  1. 提交 → 直线经理审批通过 → 应触发邮件（直线经理节点开启）
-  2. 继续流转 → 区域总监审批通过 → 应**不**触发邮件（该节点禁用）
-- **预期结果：** 不同节点按独立配置决定是否写队列表
-- **执行状态：** 🔄待执行
+- **WBS任务：** H-071（🔴待代码）
+- **PRD章节：** §4.4.3 / §F- (§6)09
+- **数据前提：** EmailQueue表中有一条Status=Failed，RetryCount < 3的记录
+- **测试步骤：** 触发重试逻辑（后台Job或手动）
+- **预期结果：** RetryCount+1，若发送成功Status=Sent，否则保持Failed
 
 ---
 
-### S-07 基础数据
+### S-08 用户与认证（F-08，第4轮）
 
-#### TC-0701 客户列表查询（Admin）
-- **测试类型：** API + UI
-- **PRD章节：** §F- (§6)05.1
-- **数据前提：** SYS_ADMIN账号登录
-- **API端点：**
-  ```
-  GET /api/basedata/customers?page=1&pageSize=20
-  GET /api/basedata/customers?brand=品牌A
-  GET /api/basedata/customers?keyword=关键词
-  ```
-- **UI验收标准（F-05.1）：**
-  - 表格列：客户名称 | 品牌（颜色标签）| 联系人 | 联系电话 | 状态 | 创建时间 | 操作
-  - 筛选栏：品牌下拉 | 关键词搜索 | 重置
-  - 关键词搜索支持左右模糊匹配
-- **预期结果：** HTTP 200，品牌过滤和关键词搜索正确返回
-- **执行状态：** 🔄待执行
+#### TC-0801 users表brand字段存在且可过滤
+- **测试类型：** 架构验证
+- **WBS任务：** H-072（🔴待Migration完成）
+- **PRD章节：** §F- (§6)08.1
+- **验证步骤：** `DESCRIBE users;` 或 EF Core 查询 `User.Brand` 属性
+- **预期结果：** users表有brand列，Entity有Brand属性，可按brand过滤销售数据
+- **执行状态：** ⏭️待H-072代码完成
 
 ---
 
-#### TC-0702 客户新增（Brand字段必填）
-- **测试类型：** API + UI
-- **PRD章节：** §F- (§6)05.2
-- **数据前提：** SYS_ADMIN账号
-- **API端点：**
-  ```
-  POST /api/basedata/customers
-  Body: { "name": "测试客户A", "brand": "品牌A", "contact": "张三", "phone": "13800000000", "isActive": true }
-  ```
-- **UI验收标准（F-05.2）：** 客户名称必填，Brand必填（下拉选择）
-- **错误条件：** 不传brand → HTTP 400，提示「品牌不能为空」
-- **预期结果：** HTTP 201，客户创建成功，brand字段正确保存
-- **执行状态：** 🔄待执行
+#### TC-0802 首次SSO登录不存在则拒绝
+- **测试类型：** E2E
+- **WBS任务：** H-073（🔴待代码）
+- **PRD章节：** §11.1 / §F- (§6)08.3
+- **数据前提：** M365账号（在Azure AD中）但不在users表（从未登录过）
+- **操作步骤：** 该用户点击M365登录
+- **预期结果：** 拒绝登录，显示「该账号未授权，请联系管理员」，**不自动创建用户记录**
+- **验证：** `SELECT * FROM Users WHERE Email = 'new.user@sandvik.com'` → 应为空
+- **执行状态：** ⏭️待H-073代码完成
 
 ---
 
-#### TC-0703 客户编辑（Brand字段可修改）
+#### TC-0803 Dashboard只含Approved数据
 - **测试类型：** API
-- **PRD章节：** §F- (§6)05.2
-- **数据前提：** 存在一个客户
-- **API端点：**
-  ```
-  PUT /api/basedata/customers/{id}
-  Body: { "brand": "品牌B" }
-  ```
-- **预期结果：** HTTP 200，brand字段更新为品牌B
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0704 用户新增/编辑（Brand字段必填）
-- **测试类型：** API
-- **PRD章节：** §F- (§6)08
-- **数据前提：** SYS_ADMIN账号
-- **API端点：**
-  ```
-  POST /api/users
-  Body: { "email": "test@sandvik.com", "displayName": "测试用户", "role": "SALES", "brand": "品牌A", "orgNodeId": "xxx" }
-  ```
-- **UI验收标准（F-08.2）：** 品牌字段：仅销售角色时必填；非销售角色品牌可空
-- **预期结果：** HTTP 201，用户创建成功
-- **错误条件：** 销售角色不传brand → HTTP 400
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0705 产品层级数据完整（4级/5级）
-- **测试类型：** API + UI
-- **PRD章节：** §4.3.2.1 / §F- (§6)06
-- **数据前提：** 产品表有L1~L5数据
-- **API端点：**
-  ```
-  GET /api/basedata/products
-  GET /api/basedata/products?level=1
-  GET /api/basedata/products?parentId=xxx
-  ```
-- **UI验收标准（F-06.1）：**
-  - 表格列：产品编码（14位）| PA | SubPA1 | SubPA2 | SubPA3 | SubPA4 | 状态 | 操作
-  - 联动筛选器：PA → SubPA1 → SubPA2 → SubPA3 → SubPA4
-- **预期结果：** 5级数据完整，联动查询返回正确层级关系
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0706 组织架构OrgNode查询（brand/sales_region/sales_district）
-- **测试类型：** API + UI
-- **PRD章节：** §F- (§6)07 / PRD v0.4 §6.2
-- **数据前提：** OrgNode表有完整字段数据
-- **API端点：**
-  ```
-  GET /api/org-nodes
-  GET /api/org-nodes/tree
-  ```
-- **UI验收标准（F-07.1）：**
-  - 树形展示：Frank Tao → 杨依柱 → 李长春 → 韩学健等
-  - 每个节点显示：姓名 | 角色 | 品牌 | 所属公司 | 业绩归属区域 | 销售大区
-- **预期结果：** HTTP 200，brand/sales_region/sales_district字段有值
-- **执行状态：** 🔄待执行
-
----
-
-### S-08 Dashboard
-
-#### TC-0801 Dashboard销售视角（只看自己数据）
-- **测试类型：** E2E
-- **PRD章节：** §4.1 / §F- (§6)01
-- **数据前提：** 销售A有已审批通过的预测数据
-- **操作步骤：** 销售A登录 → 进入Dashboard
-- **UI验收标准（F-01）：**
-  - 汇总卡片：本周期总预测金额 / 已填报客户数 / 待我审批数 / 已完成审批数
-  - 月度趋势折线图：仅显示自己数据
-  - 区域/产品线分布：仅自己的数据
-- **预期结果：** 数据范围=销售A的个人数据
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0802 Dashboard经理视角（看团队汇总）
-- **测试类型：** E2E
-- **PRD章节：** §4.1 / §F- (§6)01
-- **数据前提：** 直线经理B管辖销售A和销售C，各有数据
-- **操作步骤：** 直线经理B登录 → Dashboard
-- **UI验收标准（F-01）：**
-  - 汇总卡片：本周期总预测金额（= 销售A + 销售C之和）
-  - 待我审批数 > 0（如有待审批项）
-- **预期结果：** 数据范围=团队全部（自己+所管辖销售）
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0803 Dashboard CEO视角（全量数据）
-- **测试类型：** E2E
-- **PRD章节：** §4.1 / §F- (§6)01
-- **数据前提：** Frank Tao登录
-- **UI验收标准（F-01）：**
-  - 汇总卡片：全系统合计
-  - 周期选择器：所有周期（不止一个）
-  - 可切换查看不同周期
-- **预期结果：** 全量数据
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0804 Dashboard API Auth header正确传递
-- **测试类型：** API
-- **PRD章节：** §4.1 / §F- (§6)01
-- **数据前提：** 任意角色账号有效JWT
-- **API端点：**
-  ```
-  GET /api/dashboard/summary
-  Header: Authorization: Bearer <token>
-  ```
-- **预期结果：** HTTP 200，返回该角色权限范围内的汇总数据
-- **错误条件：** 无token → HTTP 401
-- **执行状态：** 🔄待执行
-
----
-
-### S-09 数据导入导出
-
-#### TC-0901 产品层级Excel导入（4级）
-- **测试类型：** API
-- **PRD章节：** §4.3.2.5 / §F- (§6)06 / PRD v0.4 §4.3.2.5「产品录入方式」
-- **数据前提：** SYS_ADMIN账号，标准格式Excel文件（PA/SubPA1/SubPA2/SubPA3/SubPA4列）
-- **API端点：**
-  ```
-  POST /api/basedata/products/import
-  Content-Type: multipart/form-data
-  Body: file=@product_template.xlsx
-  ```
-- **预期结果：** HTTP 200，导入记录数=文件行数，L1~L4数据完整写入
-- **边界：** 同一编码重复导入 → 全量覆盖，流水号不变（PRD §4.3.2.5 初始化策略）
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0902 预测记录Excel导出
-- **测试类型：** API + E2E
-- **PRD章节：** §F- (§6)03.1「已填报数据下载」
-- **数据前提：** 销售A有所见数据的预测记录
-- **API端点：**
-  ```
-  GET /api/forecast/export?forecastPeriodId=xxx
-  GET /api/forecast/export?forecastPeriodId=xxx&customerId=yyy
-  ```
-- **UI验收标准（F-03.1）：**
-  - 点击[导出] → 下载Excel文件
-  - 文件名含周期名称（如「2026_FC1_导出_20260401.xlsx」）
-  - 列：客户名称 | 产品 | 开票公司 | 月份1~N（订单数量/订单金额/开票数量/开票金额）| 合计
-- **预期结果：** HTTP 200，Content-Type=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0903 导入模板下载
-- **测试类型：** UI
-- **PRD章节：** §F- (§6)03.3「模板格式」
-- **数据前提：** 销售A进入填报列表页
-- **UI验收标准（F-03.3）：**
-  - 点击[模板上传] → 弹窗 → [下载空白模板]
-  - 模板格式列：A客户名称 | B产品L1 | C产品L2 | D产品L3 | E产品L4 | F产品L5(SubPA4) | G开票公司 | H~S 2026-07~订单数量 ... | T~AE 2026-07~订单金额 ...
-- **预期结果：** 点击后浏览器下载标准格式Excel
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-0904 模板上传（批量导入预测数据）
-- **测试类型：** E2E
-- **PRD章节：** §F- (§6)03.3
-- **数据前提：** 填写好的Excel模板（含预测数据）
-- **操作步骤：** 点击[模板上传] → 选择Excel → 确认导入
-- **UI验收标准（F-03.3）：**
-  - 上传后显示解析结果：成功行数/失败行数/失败原因
-  - 失败行显示具体原因（如「客户不存在」「月份超出范围」）
-  - 确认后批量写入，相同销售+周期+客户+产品+月份覆盖更新
-- **预期结果：** HTTP 200，成功行写入DB，跳转列表页显示新数据
-- **执行状态：** 🔄待执行
-
----
-
-### S-10 M365 SSO
-
-#### TC-1001 M365登录页面跳转
-- **测试类型：** E2E
-- **PRD章节：** §11.1 / §F- (§6)11.1
-- **数据前提：** 生产环境ASPNETCORE_ENVIRONMENT=Production
-- **操作步骤：** 访问登录页
-- **UI验收标准（F-11.1）：**
-  - 生产环境：只有"M365登录"按钮，无用户名密码框
-  - 点击后跳转Microsoft OAuth授权页
-- **预期结果：** 跳转到 `https://login.microsoftonline.com/.../oauth2/v2.0/authorize`
-- **执行状态：** 🔄待执行（依赖Azure AD配置）
-
----
-
-#### TC-1002 M365回调成功写JWT
-- **测试类型：** E2E
-- **PRD章节：** §11.1 / §F- (§6)11.1
-- **数据前提：** OAuth回调URL正确配置
-- **预期结果：** 回调后写入JWT，跳转/dashboard
-- **错误条件：** 账号不存在 → 错误提示「该账号未授权，请联系管理员」（PRD §11.1）
-- **执行状态：** 🔄待执行
-
----
-
-#### TC-1003 M365登出
-- **测试类型：** E2E
-- **PRD章节：** §F- (§6)11.3
-- **操作步骤：** 点击登出 → 调用 `POST /api/auth/logout`
-- **预期结果：** JWT清除，页面跳转登录页；其他设备会话不受影响
-- **执行状态：** 🔄待执行
+- **WBS任务：** H-070（已完成✅，commit dbf85d7）
+- **PRD章节：** §F- (§6)01
+- **数据前提：** DashboardController已加APPROVED过滤
+- **API端点：** `GET /api/dashboard/summary`
+- **预期结果：** 返回数据只包含Status=APPROVED的预测记录，不含DRAFT或SUBMITTED
+- **验证：** 直接查询DB确认无Draft/Submitted记录
+- **执行状态：** 🔄待小Q执行
 
 ---
 
@@ -1072,7 +905,8 @@ UI验收标准  ：页面元素、字段值、颜色标签（引用PRD §6 F-XX�
 
 | 日期 | 执行人 | 测试套件 | 通过/总数 | 备注 |
 |------|--------|---------|---------|------|
-| — | — | — | 0/N | 重启测试轮次，2026-05-05 |
+| 2026-05-06 | 小Q | TC-FW01~06（框架层） | 6/6 | H-035/H-034已完成，框架验证通过 |
+| — | — | — | 0/N | 第1轮测试重启，2026-05-06 |
 
 ---
 
@@ -1084,31 +918,33 @@ UI验收标准  ：页面元素、字段值、颜色标签（引用PRD §6 F-XX�
 | 🔄 执行中 | 小Q正在执行 |
 | ✅ PASS | 测试通过，证据已记录 |
 | ❌ FAIL | 测试失败，缺陷已记录到ISSUE_LOG.md |
-| ⏭️ 跳过 | 因前置依赖未满足而跳过 |
+| ⏭️ 待代码 | 对应功能代码未完成，测试用例存在但无法执行 |
+| ⏭️ 待H-XXX | 等待指定Hermes任务完成后方可执行 |
 
 ---
 
 ## 五、Q-XXX测试任务对照表
 
-| 测试任务 | 对应TC | 测试内容 | PRD章节 | 状态 |
+| 测试任务 | 对应TC | 测试内容 | WBS H-XXX | 状态 |
 |---------|--------|---------|---------|------|
-| Q-001 | TC-0101~0103 | 登录认证+路由守卫 | §11/§F- (§6)11 | ✅PASS |
-| Q-002 | TC-0201~0204 | 预测周期CRUD+列表 | §4.2.1/§F- (§6)02 | ⚠️TC-0204超时(已执行) |
-| Q-003 | TC-0301~0304 | 预测记录CRUD | §4.2.2/§F- (§6)03 | ✅PASS |
-| Q-004 | TC-0304~0305 | 保存草稿+提交审批API | §4.2.2/§F- (§6)03 | 🔄待执行 |
-| Q-005 | TC-0307/0501~0503 | 数据权限隔离+品牌过滤 | §5/§F- (§6)03 | 🔄待执行 |
-| Q-006 | TC-0306/0705 | 产品5级联动+产品数据 | §4.3.2/§F- (§6)06 | 🔄待执行 |
-| Q-007 | TC-0401~0403/0406 | 审批流API+历史记录 | §4.2.3/§F- (§6)04 | 🔄待执行 |
-| Q-008 | TC-0404~0405 | 审批调整4总量值 | §4.2.3/§F- (§6)04 | 🔄待执行 |
-| Q-009 | TC-0601~0607 | 邮件队列架构 | §4.2.3/§4.4.3/§F- (§6)09 | 🔄待执行 |
-| Q-010 | TC-0301~0303/0205~0206 | Forecast四度量+延期窗口 | §4.2.2/§F- (§6)03 | 🔄待执行 |
-| Q-011 | TC-1001~1003 | M365 SSO生产登录 | §11.1/§F- (§6)11 | 🔄待执行 |
-| Q-012 | TC-0501~0503/0701~0704 | 品牌过滤全链路 | §4.3.1/§F- (§6)05 | 🔄待执行 |
-| Q-013 | TC-0506~0507 | 开票公司特别权限 | §5/§F- (§6)10 | 🔄待执行 |
-| Q-014 | TC-0901~0904 | 数据导入导出 | §F- (§6)03 | 🔄待执行 |
-| Q-015 | TC-0106~0107 | 多设备登录互斥机制 | §11.1/§F- (§6)11.2 | 🔄待执行 |
-| Q-016 | TC-0108 | 统一错误码体系 | §4.4.3 | 🔄待执行 |
-| Q-017 | TC-0407~0410 | 审批流高级场景 | §4.2.3 | 🔄待执行 |
+| Q-FW | TC-FW01~06 | 框架层：登录+认证+错误码+互斥 | H-034/035 ✅ | ✅ |
+| Q-070 | TC-0701~0706 | F-07 OrgNodes API CRUD | H-047✅ H-048✅ | 🔄待执行 |
+| Q-071 | TC-0707 | F-07 E2E 组织节点CRUD | H-052 ⏭️待H-049 | ⏭️待H-049 |
+| Q-020 | TC-0204 | F-02 周期删除校验 | H-050 ✅ | 🔄待执行 |
+| Q-021 | TC-0201~0203/0207 | F-02 周期CRUD+状态标签 | H-038 | 🔄待执行 |
+| Q-051 | TC-0501~0504 | F-05 客户CRUD+软删 | H-054/055 ⏭️ | ⏭️待代码 |
+| Q-061 | TC-0601~0603 | F-06 产品搜索+新增 | H-057/058 ⏭️ | ⏭️待代码 |
+| Q-101 | TC-1001~1003 | F-10 开票公司CRUD | H-059 ⏭️ | ⏭️待代码 |
+| Q-102 | TC-1004~1007 | F-10 用户开票权限 | H-060/061 ⏭️ | ⏭️待代码 |
+| Q-031 | TC-0301~0303 | F-03 预测4度量 | H-038 | 🔄待执行 |
+| Q-032 | TC-0304~0305 | F-03 save-draft+submit+审批触发 | H-063/064 ⏭️ | ⏭️待代码 |
+| Q-033 | TC-0306~0308 | F-03 复制+时间窗口+开票公司 | H-062/065/066 ⏭️ | ⏭️待代码 |
+| Q-041 | TC-0401~0406 | F-04 审批流API | H-063 ⏭️ | ⏭️待代码 |
+| Q-042 | TC-0407 | F-04 审批详情页 | H-068 ⏭️ | ⏭️待代码 |
+| Q-091 | TC-0901~0902 | F-09 EmailQueue页面 | H-071 ⏭️ | ⏭️待代码 |
+| Q-081 | TC-0801 | F-08 users.brand字段 | H-072 ⏭️ | ⏭️待代码 |
+| Q-082 | TC-0802 | F-08 SSO不存在则拒绝 | H-073 ⏭️ | ⏭️待代码 |
+| Q-083 | TC-0803 | F-01 Dashboard APPROVED过滤 | H-070 ✅ | 🔄待执行 |
 
 ---
 
@@ -1126,5 +962,5 @@ UI验收标准  ：页面元素、字段值、颜色标签（引用PRD §6 F-XX�
 
 ---
 
-*本文档由 Hermes 小P 维护，每次PRD更新后同步修订。*
-*文件名变更记录：TEST_SUITE.md → TESTCASE.md（2026-05-05 v1.0）*
+*本文档由 Hermes 小P 维护，按WBS v0.8重建于2026-05-06。*
+*版本变更：v1.1 → v2.0（按4轮模块顺序重建，区分✅已完成/🔄待执行/⏭️待代码状态）*

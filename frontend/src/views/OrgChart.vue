@@ -164,6 +164,16 @@
           </a-select>
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">销售大区</label>
+          <a-input v-model:value="nodeForm.salesRegion" placeholder="销售大区" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">销售区域</label>
+          <a-input v-model:value="nodeForm.salesDistrict" placeholder="销售区域" />
+        </div>
+      </div>
       <div class="form-row-full">
         <div class="form-group">
           <label class="form-label">状态</label>
@@ -319,7 +329,9 @@ const nodeForm = reactive({
   region: '',
   company: '',
   parentId: null,
-  status: 'active'
+  status: 'active',
+  salesRegion: '',
+  salesDistrict: ''
 })
 
 // ==================== Chain Form ====================
@@ -338,17 +350,49 @@ const avatarColor = (name) => {
   return colors[idx]
 }
 
+// ==================== Role / Type Mapping ====================
+// Backend role → frontend type
+const roleToType = (role) => {
+  const map = {
+    SYS_ADMIN: 'sales',
+    CEO: 'finalApprover',
+    VP_SALES: 'regionOwner',
+    REGION_DIRECTOR: 'regionOwner',
+    DIRECTOR: 'director',
+    MANAGER: 'manager',
+    SALES: 'sales',
+    FINANCE_MANAGER: 'manager'
+  }
+  return map[role?.toUpperCase()] || 'sales'
+}
+
+// Frontend type → backend role
+const typeToRole = (type) => {
+  const map = {
+    sales: 'SALES',
+    manager: 'MANAGER',
+    director: 'DIRECTOR',
+    regionOwner: 'VP_SALES',
+    finalApprover: 'CEO'
+  }
+  return map[type] || 'SALES'
+}
+
 const fetchOrgData = async () => {
   try {
     loading.value = true
     const params = new URLSearchParams()
     if (filterRegion.value) params.append('region', filterRegion.value)
     if (keyword.value) params.append('keyword', keyword.value)
-    
-    const res = await fetch(`/api/org/chart?${params.toString()}`)
+
+    const res = await fetch(`/api/org-nodes?${params.toString()}`)
     const data = await res.json()
     if (data.success) {
-      orgData.value = data.data || []
+      // Map backend role → frontend type for tree display
+      orgData.value = (data.data || []).map(n => ({
+        ...n,
+        type: roleToType(n.role)
+      }))
     }
   } catch (e) {
     message.error('获取组织架构数据失败')
@@ -394,7 +438,7 @@ const findNode = (id, nodes) => {
 
 const openAddDialog = () => {
   editingNode.value = null
-  Object.assign(nodeForm, { type: 'sales', name: '', email: '', region: '', company: '', parentId: null, status: 'active' })
+  Object.assign(nodeForm, { type: 'sales', name: '', email: '', region: '', company: '', parentId: null, status: 'active', salesRegion: '', salesDistrict: '' })
   showNodeModal.value = true
 }
 
@@ -402,7 +446,17 @@ const editNode = (node) => {
   const orig = findNode(node.key, orgData.value)
   if (!orig) return
   editingNode.value = orig
-  Object.assign(nodeForm, { type: orig.type, name: orig.name, email: orig.email, region: orig.region || '', company: orig.company || '', parentId: orig.parentId, status: orig.status })
+  Object.assign(nodeForm, {
+    type: orig.type || orig.role ? roleToType(orig.role) : 'sales',
+    name: orig.name || orig.Name,
+    email: orig.email || orig.Email,
+    region: orig.region || orig.Region || '',
+    company: orig.company || orig.Company || '',
+    parentId: orig.parentId || orig.ParentId,
+    status: orig.status || orig.Status || 'active',
+    salesRegion: orig.salesRegion || orig.SalesRegion || '',
+    salesDistrict: orig.salesDistrict || orig.SalesDistrict || ''
+  })
   showNodeModal.value = true
 }
 
