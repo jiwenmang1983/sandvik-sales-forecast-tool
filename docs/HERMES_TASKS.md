@@ -158,4 +158,7 @@
 | 2026-05-05 14:01 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028（Q-010）仍在执行，有⏳等待中，跳过唤醒 |
 | 2026-05-05 14:30 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028（Q-010）仍在执行（≈22小时），有⏳等待中，跳过唤醒 |
 | 2026-05-05 15:00 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028（Q-010）仍在执行，有⏳等待中，跳过唤醒 |
-| 2026-05-05 16:00 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028（Q-010）已等待≈23小时，xiaoq tmux不存在，结果文件未产生，判定为stall；无🔬无正常⏳无🔄无🚫，唤醒Mark |
+|| 2026-05-05 16:00 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028（Q-010）已等待≈23小时，xiaoq tmux不存在，结果文件未产生，判定为stall；无🔬无正常⏳无🔄无🚫，唤醒Mark ||
+| 2026-05-05 17:00 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在（0字节） | H-028仍stall（≈23.5h）；已唤醒Mark（Feishu DM成功）；无🔬无正常⏳无🔄，H-028 xiaoq tmux缺失导致stall |
+| 2026-05-05 17:30 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028仍stall（≈24h），xiaoq tmux不存在；无🔬无正常⏳无🔄；已唤醒Mark（Feishu DM: om_x100b50afdef13cacc497314166e66d1） |
+| 2026-05-05 18:00 | /tmp/xiaoq_result_q010.json | ❌ 文件不存在 | H-028仍stall（≈24.5h），xiaoq tmux不存在；无🔬无正常⏳无🔄无🚫；已唤醒Mark（Feishu DM: om_x100b50afb33cc0acc2b944c3cf73791） |
