@@ -126,20 +126,19 @@ DB：appsettings.Development.json
 认证：Bearer Token（开发环境）
 ```
 
-### 3.3 工作流
+### 3.3 工作流（探索期：CC 直接写 master）
 
 ```
-1. 小P 写任务单（可选 /tmp/cc_<taskid>.md，五段式已在命令中）
-2. 小P 执行 claude --print 命令
-3. CC 在 WSL foreground 执行（--print 模式，无法交互）
-4. CC 输出结果到小P的 terminal stdout
-5. 小P 解析输出判断成功/失败
-6. CC 完成后（自动或小P执行）：
+1. 小P 执行 claude --print 命令
+2. CC 在 WSL foreground 执行（--print 模式，无法交互）
+3. CC 输出结果到小P的 terminal stdout
+4. 小P 解析输出判断成功/失败
+5. CC 完成后（自动或小P执行）：
    a. dotnet ef database update（apply migration）
    b. Ctrl+C → dotnet run（服务重启）
    c. curl 验证关键接口
-   d. git add + commit + push
-   e. 结果写入 /tmp/cc_result_<taskid>.json
+   d. git add + commit + push（探索期：直接 push master，不走 PR）
+6. 结果写入 /tmp/cc_result_<taskid>.json
 7. 小P 验证，更新文档
 ```
 
@@ -290,19 +289,59 @@ Profile：slh-bot
 
 ## 五、代码提交规范
 
-### 5.1 Git 规范
+### 5.1 分支策略
+
+**当前阶段（探索期）：**
+> CC 探索式开发，代码直接写入 master 分支，不走 PR 流程。
+
+**远期阶段（规范期）：**
+> CC 流程稳定、代码质量有保证后，切换标准 PR 流程。所有开发走 feature branch，Mark 审阅后 approve → 合并到 master。切换时机由 Mark 决定。
+
+### 5.2 当前 Git 规范
 
 ```
-分支策略：main 保护，所有开发在 feature/xxx 分支
-Commit 格式：feat | fix | docs | test: 简短描述
-  示例：feat: add InvoiceCompanyController route
-        fix: resolve PUT /forecast-periods partial update
-        docs: update TESTCASE.md with verified API routes
-Push：普通 push，不 force-push
-Force-push：必须 Mark 审批
+【探索期 — CC 直接写 master】
+CC 开发的代码 → 直接 commit 到 master → 普通 git push
+Mark 说"推送 master"时 → 直接 push master，不走 PR 流程
+
+【规范期 — 标准 PR 流程】
+feat/<功能简述> 分支开发 → commit → push → 创建 PR → Mark Review → 合并到 master
+每日 23:00 自动创建 PR（小A组/小P组分别创建）
+Force-push 仍须 Mark 审批
 ```
 
-### 5.2 Sandbox 项目自动提交
+### 5.3 Push 规则
+
+```
+默认：普通 git push（不用 force-push）
+Force-push（如清理垃圾 commit）：必须先发飞书 DM 给 Mark 审批，拿到确认后才能执行
+Push 失败（远程有新 commit）：发飞书通知 Mark，不自动 merge
+每日 23:00 cron：检查 master 有未 push 的 commit → 自动 push；Build 失败则通知 Mark，不 push
+```
+
+### 5.4 Commit 规范
+
+```
+格式：<type>: <简短描述>
+type：feat | fix | docs | refactor | test | chore
+示例：
+  feat: add InvoiceCompanyController route
+  fix: resolve PUT /forecast-periods partial update
+  docs: update TESTCASE.md with verified API routes
+禁止：空 commit / 无意义的 WIP commit
+```
+
+### 5.5 Review 分组
+
+| 代码分组 | 开发负责人 | Review 责任人 |
+|---------|---------|-------------|
+| 小A组 | 小A | 吉文（Mark） |
+| 小P组 | 小P | 吉文（Mark） |
+
+> 各组完成开发与内部 Review 后提交 PR，通知 Mark 进行最终 Approve 并合并。
+> 合并规则：至少 1 人 approve 方可合并。
+
+### 5.6 Sandbox 自动提交
 
 ```
 路径：/mnt/d/Git/Sandvik Sales Forecast Tool
@@ -310,6 +349,8 @@ Force-push：必须 Mark 审批
 格式：feat/fix/docs: 简短描述
 实现：cronjob 定时任务
 ```
+
+> ⚠️ 注意：每日 23:00 的 master push 检查是项目主仓库（jiwenmang1983/sandvik-sales-forecast-tool），不是 Sandbox。
 
 ---
 
