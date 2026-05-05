@@ -35,6 +35,7 @@ public class SandvikDbContext : DbContext
         {
             if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
             {
+                // Use the concrete CLR type as the parameter type to avoid interface property access issues in EF Core
                 var parameter = Expression.Parameter(entityType.ClrType, "e");
                 var property = Expression.Property(parameter, "IsDeleted");
                 var condition = Expression.Not(property);

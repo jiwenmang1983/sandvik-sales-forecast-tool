@@ -93,6 +93,27 @@ public class ForecastPeriodController : ControllerBase
         return Ok(new { success = true, message = "Period deleted" });
     }
 
+    // PATCH /api/forecast-periods/{id} — partial update, only provided fields are updated
+    [HttpPatch("{id}")]
+    public async Task<ActionResult> Patch(string id, [FromBody] PatchPeriodRequest req)
+    {
+        var period = await _repo.GetByIdAsync(id);
+        if (period == null) return NotFound(new { success = false, message = "Period not found" });
+
+        if (!string.IsNullOrWhiteSpace(req.FcName)) period.FcName = req.FcName;
+        if (req.FillTimeStart.HasValue) period.FillTimeStart = req.FillTimeStart.Value;
+        if (req.FillTimeEnd.HasValue) period.FillTimeEnd = req.FillTimeEnd.Value;
+        if (!string.IsNullOrWhiteSpace(req.PeriodStartYearMonth)) period.PeriodStartYearMonth = req.PeriodStartYearMonth;
+        if (!string.IsNullOrWhiteSpace(req.PeriodEndYearMonth)) period.PeriodEndYearMonth = req.PeriodEndYearMonth;
+        if (req.ExtensionStart.HasValue) period.ExtensionStart = req.ExtensionStart;
+        if (req.ExtensionEnd.HasValue) period.ExtensionEnd = req.ExtensionEnd;
+        if (req.ExtensionUsers != null) period.ExtensionUsers = req.ExtensionUsers;
+        if (!string.IsNullOrWhiteSpace(req.Status)) period.Status = req.Status;
+
+        await _repo.UpdateAsync(period);
+        return Ok(new { success = true, data = MapToDto(period) });
+    }
+
     private static object MapToDto(ForecastPeriod p) => new
     {
         p.Id,
@@ -127,6 +148,17 @@ public record UpdatePeriodRequest(
     DateTime FillTimeEnd,
     string PeriodStartYearMonth,
     string PeriodEndYearMonth,
+    DateTime? ExtensionStart,
+    DateTime? ExtensionEnd,
+    string? ExtensionUsers,
+    string? Status);
+
+public record PatchPeriodRequest(
+    string? FcName,
+    DateTime? FillTimeStart,
+    DateTime? FillTimeEnd,
+    string? PeriodStartYearMonth,
+    string? PeriodEndYearMonth,
     DateTime? ExtensionStart,
     DateTime? ExtensionEnd,
     string? ExtensionUsers,
