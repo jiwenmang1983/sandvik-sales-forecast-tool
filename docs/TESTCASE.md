@@ -298,21 +298,26 @@ UI验收标准  ：页面元素、字段值、颜色标签（引用PRD §15插�
 #### TC-0301 创建预测记录（4度量字段）
 - **测试类型：** API + UI
 - **PRD章节：** §4.2 / §15 F-03.2 / PRD v0.3 §4.2
-- **数据前提：** 销售账号登录，有效预测周期，当前在填报窗口内
-- **API端点：**
+- **数据前提：** 销售账号登录，有效预测周期（`GET /api/forecast-periods`获取ID），当前在填报窗口内
+- **API端点（实测验证）：**
   ```
-  POST /api/forecast/save-draft
+  POST /api/forecast/records
   Body: {
-    "forecastPeriodId": "xxx",
-    "customerId": "xxx",
-    "invoiceCompanyId": "xxx",
-    "productId": "xxx",
-    "records": [
-      { "year": 2026, "month": 7, "orderAmount": 100000, "invoiceAmount": 80000, "orderQty": 10, "invoiceQty": 8 },
-      { "year": 2026, "month": 8, "orderAmount": 120000, "invoiceAmount": 90000, "orderQty": 12, "invoiceQty": 9 }
-    ]
+    "forecastPeriodId": "33b23e63-904b-4f7d-87d4-dced4e68260d",
+    "customerId": "c00001-0000-0000-0000-000000000001",
+    "invoiceCompanyId": "i00001-0000-0000-0000-000000000001",
+    "productId": "PA001-0000-0000-0000-000000000001",
+    "year": 2026,
+    "month": 8,
+    "orderQty": 50.0,
+    "orderAmount": 25000.0,
+    "invoiceQty": 0.0,
+    "invoiceAmount": 0.0,
+    "status": "Draft"
   }
   ```
+- **⚠️ 必填字段：** `forecastPeriodId`、`customerId`、`invoiceCompanyId`、`productId`、`year`、`month`、`orderQty`、`orderAmount`、`invoiceQty`、`invoiceAmount`、`status`
+- **⚠️ BUG已知：** `GET /api/invoice-companies` 返回404，InvoiceCompany查找端点缺失。有效值需从已有记录反推：`i00001-0000-0000-0000-000000000001`
 - **UI验收标准（F-03.2）：**
   - 表单列：月份 | 订单数量 | 订单金额 | 开票数量 | 开票金额 | 单价（只读）
   - 订单金额 ÷ 订单数量 = 单价（自动计算，只读显示）
@@ -1085,9 +1090,9 @@ UI验收标准  ：页面元素、字段值、颜色标签（引用PRD §15插�
 
 | 测试任务 | 对应TC | 测试内容 | PRD章节 | 状态 |
 |---------|--------|---------|---------|------|
-| Q-001 | TC-0101~0103 | 登录认证+路由守卫 | §9/§15 F-11 | 🔄待执行 |
-| Q-002 | TC-0801~0804 | Dashboard API+Auth | §4.1/§15 F-01 | 🔄待执行 |
-| Q-003 | TC-0201~0204 | 预测周期CRUD+列表 | §3.2/§15 F-02 | 🔄待执行 |
+| Q-001 | TC-0101~0103 | 登录认证+路由守卫 | §9/§15 F-11 | ✅PASS |
+| Q-002 | TC-0201~0204 | 预测周期CRUD+列表 | §3.2/§15 F-02 | ⚠️TC-0204超时(已执行) |
+| Q-003 | TC-0301~0304 | 预测记录CRUD | §4.2/§15 F-03 | ✅PASS |
 | Q-004 | TC-0304~0305 | 保存草稿+提交审批API | §4.2/§15 F-03 | 🔄待执行 |
 | Q-005 | TC-0307/0501~0503 | 数据权限隔离+品牌过滤 | §5/§15 F-03 | 🔄待执行 |
 | Q-006 | TC-0306/0705 | 产品5级联动+产品数据 | §10/§15 F-06 | 🔄待执行 |
