@@ -1,0 +1,155 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="700" viewBox="0 0 1100 700">
+  <!-- ===== LEGEND ===== -->
+  <text x="860" y="28" fill="white" font-size="10" font-weight="700">图例</text>
+  <rect x="860" y="38" width="14" height="9" rx="2" fill="rgba(8,51,68,0.6)" stroke="#22d3ee" stroke-width="1.2"/>
+  <text x="880" y="46" fill="#94a3b8" font-size="8">操作节点</text>
+  <rect x="860" y="54" width="14" height="9" rx="2" fill="rgba(6,78,59,0.6)" stroke="#34d399" stroke-width="1.2"/>
+  <text x="880" y="62" fill="#94a3b8" font-size="8">审批节点</text>
+  <rect x="860" y="70" width="14" height="9" rx="2" fill="rgba(120,53,15,0.5)" stroke="#fbbf24" stroke-width="1.2"/>
+  <text x="880" y="78" fill="#94a3b8" font-size="8">延期窗口</text>
+  <rect x="860" y="86" width="14" height="9" rx="2" fill="rgba(76,29,149,0.6)" stroke="#a78bfa" stroke-width="1.2"/>
+  <text x="880" y="94" fill="#94a3b8" font-size="8">终态</text>
+  <rect x="860" y="102" width="14" height="9" rx="2" fill="rgba(136,19,55,0.5)" stroke="#fb7185" stroke-width="1.2"/>
+  <text x="880" y="110" fill="#94a3b8" font-size="8">驳回路径</text>
+  <line x1="860" y1="122" x2="876" y2="122" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="880" y="125" fill="#94a3b8" font-size="8">正常流转</text>
+  <line x1="860" y1="138" x2="876" y2="138" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow-rose)"/>
+  <text x="880" y="141" fill="#94a3b8" font-size="8">驳回/退回</text>
+
+  <!-- ===== 填报窗口约束（顶部金条） ===== -->
+  <rect x="40" y="30" width="1020" height="32" rx="6" fill="rgba(120,53,15,0.35)" stroke="#fbbf24" stroke-width="1.2" stroke-dasharray="6,3"/>
+  <text x="60" y="50" fill="#fbbf24" font-size="10" font-weight="600">📅 填报窗口（FillTimeStart ~ FillTimeEnd）</text>
+  <text x="360" y="50" fill="#94a3b8" font-size="9">所有销售可提交草稿 / 提交新预测</text>
+  <text x="580" y="50" fill="#94a3b8" font-size="9">FillTimeEnd 截止 → 新提交锁定</text>
+  <text x="780" y="50" fill="#fbbf24" font-size="9">延期窗口（ExtensionStart~End）→ 仅白名单用户可补提交</text>
+
+  <!-- ===== 销售节点 ===== -->
+  <rect x="60" y="110" width="130" height="50" rx="6" fill="rgba(8,51,68,0.6)" stroke="#22d3ee" stroke-width="1.5"/>
+  <text x="125" y="130" fill="white" font-size="11" font-weight="600" text-anchor="middle">👤 销售</text>
+  <text x="125" y="146" fill="#94a3b8" font-size="9" text-anchor="middle">han@ahno-tool.com</text>
+
+  <!-- Arrow: 销售 → 草稿 -->
+  <line x1="190" y1="135" x2="235" y2="135" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="212" y="128" fill="#94a3b8" font-size="8" text-anchor="middle">保存草稿</text>
+
+  <!-- 草稿节点 -->
+  <rect x="238" y="110" width="110" height="50" rx="6" fill="rgba(30,41,59,0.6)" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="293" y="130" fill="white" font-size="11" font-weight="600" text-anchor="middle">📝 草稿</text>
+  <text x="293" y="146" fill="#94a3b8" font-size="9" text-anchor="middle">DRAFT · 可编辑</text>
+
+  <!-- Arrow: 草稿 → 提交 -->
+  <line x1="348" y1="135" x2="393" y2="135" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="370" y="128" fill="#22d3ee" font-size="8" text-anchor="middle">提交审批</text>
+
+  <!-- ===== 直线经理节点 ===== -->
+  <rect x="396" y="80" width="140" height="58" rx="6" fill="rgba(6,78,59,0.6)" stroke="#34d399" stroke-width="1.5"/>
+  <text x="466" y="100" fill="white" font-size="11" font-weight="600" text-anchor="middle">👔 直线经理</text>
+  <text x="466" y="116" fill="#94a3b8" font-size="9" text-anchor="middle">李长春 · li@ahno</text>
+  <text x="466" y="130" fill="#34d399" font-size="8" text-anchor="middle">approve / reject / adjust</text>
+
+  <!-- ===== 区域总监节点 ===== -->
+  <rect x="396" y="175" width="140" height="58" rx="6" fill="rgba(6,78,59,0.6)" stroke="#34d399" stroke-width="1.5"/>
+  <text x="466" y="195" fill="white" font-size="11" font-weight="600" text-anchor="middle">📊 区域总监</text>
+  <text x="466" y="211" fill="#94a3b8" font-size="9" text-anchor="middle">杨依柱（暂缺账号）</text>
+  <text x="466" y="225" fill="#34d399" font-size="8" text-anchor="middle">approve / reject / adjust</text>
+
+  <!-- Arrow: 直线经理 → 区域总监 -->
+  <line x1="536" y1="135" x2="578" y2="135" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+  <text x="557" y="128" fill="#34d399" font-size="8" text-anchor="middle">通过</text>
+  <!-- Arrow: 区域总监 → CEO -->
+  <line x1="536" y1="204" x2="578" y2="204" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+  <text x="557" y="197" fill="#34d399" font-size="8" text-anchor="middle">通过</text>
+
+  <!-- ===== CEO / 最终审批人 ===== -->
+  <rect x="581" y="115" width="140" height="72" rx="6" fill="rgba(136,19,55,0.6)" stroke="#fb7185" stroke-width="1.5"/>
+  <text x="651" y="137" fill="white" font-size="11" font-weight="600" text-anchor="middle">🏢 CEO 最终审批</text>
+  <text x="651" y="154" fill="#94a3b8" font-size="9" text-anchor="middle">Frank Tao · frank.tao@sandvik</text>
+  <text x="651" y="170" fill="#fb7185" font-size="8" text-anchor="middle">仅 approve/reject/adjust</text>
+  <text x="651" y="182" fill="#fb7185" font-size="8" text-anchor="middle">不可修改明细</text>
+
+  <!-- Arrow: CEO → 已完成 -->
+  <line x1="721" y1="151" x2="768" y2="151" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="744" y="144" fill="#a78b8a" font-size="8" text-anchor="middle">完成</text>
+
+  <!-- ===== 已完成终态 ===== -->
+  <rect x="771" y="115" width="130" height="72" rx="8" fill="rgba(76,29,149,0.6)" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="836" y="137" fill="white" font-size="11" font-weight="600" text-anchor="middle">✅ 审批完成</text>
+  <text x="836" y="154" fill="#94a3b8" font-size="9" text-anchor="middle">FORECAST_APPROVED</text>
+  <text x="836" y="168" fill="#a78bfa" font-size="8" text-anchor="middle">邮件通知已触发</text>
+  <text x="836" y="180" fill="#a78bfa" font-size="8" text-anchor="middle">写入EmailQueue</text>
+
+  <!-- ===== 驳回路径 ===== -->
+  <!-- 直线经理驳回 → 销售 -->
+  <path d="M 466 138 L 466 250 Q 466 270 125 270 Q 105 270 105 155 Q 105 145 125 145" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow-rose)"/>
+  <text x="310" y="265" fill="#fb7185" font-size="8" text-anchor="middle">驳回（退回至销售，可编辑重新提交）</text>
+
+  <!-- 区域总监驳回 → 直线经理 -->
+  <path d="M 466 207 L 466 260 Q 466 280 466 280 L 300 280 Q 250 280 250 165 Q 250 150 280 150" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <line x1="280" y1="150" x2="250" y2="150" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow-rose)"/>
+  <text x="350" y="278" fill="#fb7185" font-size="8" text-anchor="middle">驳回退回</text>
+
+  <!-- CEO驳回 → 直线经理 -->
+  <path d="M 651 187 L 651 300 Q 651 320 466 320 Q 400 320 400 138" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <line x1="400" y1="138" x2="466" y2="138" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow-rose)"/>
+  <text x="530" y="318" fill="#fb7185" font-size="8" text-anchor="middle">驳回退回</text>
+
+  <!-- ===== 调整动作 ===== -->
+  <rect x="396" y="300" width="160" height="44" rx="6" fill="rgba(251,191,36,0.15)" stroke="#fbbf24" stroke-width="1.2" stroke-dasharray="5,3"/>
+  <text x="476" y="316" fill="#fbbf24" font-size="9" font-weight="600" text-anchor="middle">⚡ 调整动作（Adjust）</text>
+  <text x="476" y="332" fill="#94a3b8" font-size="8" text-anchor="middle">退回 + 填写4个总量值 + 备注</text>
+
+  <!-- Arrow: 调整 → 直线经理（再次审批） -->
+  <line x1="396" y1="322" x2="396" y2="138" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4,3"/>
+  <line x1="396" y1="138" x2="396" y2="115" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-amber)"/>
+  <text x="340" y="230" fill="#fbbf24" font-size="8" text-anchor="middle">调整后退回</text>
+
+  <!-- ===== 延期窗口说明 ===== -->
+  <rect x="40" y="390" width="1020" height="70" rx="8" fill="rgba(120,53,15,0.2)" stroke="#fbbf24" stroke-width="1" stroke-dasharray="6,3"/>
+  <text x="60" y="412" fill="#fbbf24" font-size="10" font-weight="600">🕐 延期窗口 — 白名单机制（Extension Window）</text>
+  <text x="60" y="430" fill="#94a3b8" font-size="9">FillTimeEnd 截止后，普通销售无法提交新预测。但 Admin 可在「预测周期管理」中设置 Extension 人员白名单。</text>
+  <text x="60" y="448" fill="#94a3b8" font-size="9">白名单用户在 ExtensionEnd 之前仍可提交新预测；白名单外用户则完全锁定，无法提交也无法看到提交按钮。</text>
+
+  <!-- ===== 邮件通知触发点 ===== -->
+  <rect x="40" y="480" width="1020" height="100" rx="8" fill="rgba(6,78,59,0.15)" stroke="#34d399" stroke-width="1" stroke-dasharray="5,3"/>
+  <text x="60" y="502" fill="#34d399" font-size="10" font-weight="600">📧 邮件通知触发点（EmailQueue 异步队列）</text>
+  <!-- Trigger points -->
+  <rect x="80" y="515" width="130" height="50" rx="5" fill="rgba(6,78,59,0.4)" stroke="#34d399" stroke-width="1.2"/>
+  <text x="145" y="535" fill="white" font-size="9" text-anchor="middle">销售提交</text>
+  <text x="145" y="550" fill="#94a3b8" font-size="8" text-anchor="middle">SUBMIT</text>
+
+  <line x1="210" y1="540" x2="240" y2="540" stroke="#34d399" stroke-width="1.2" marker-end="url(#arrow-green)"/>
+
+  <rect x="243" y="515" width="130" height="50" rx="5" fill="rgba(6,78,59,0.4)" stroke="#34d399" stroke-width="1.2"/>
+  <text x="308" y="535" fill="white" font-size="9" text-anchor="middle">直线经理审批</text>
+  <text x="308" y="550" fill="#94a3b8" font-size="8" text-anchor="middle">APPROVE / REJECT</text>
+
+  <line x1="373" y1="540" x2="403" y2="540" stroke="#34d399" stroke-width="1.2" marker-end="url(#arrow-green)"/>
+
+  <rect x="406" y="515" width="130" height="50" rx="5" fill="rgba(6,78,59,0.4)" stroke="#34d399" stroke-width="1.2"/>
+  <text x="471" y="535" fill="white" font-size="9" text-anchor="middle">区域总监审批</text>
+  <text x="471" y="550" fill="#94a3b8" font-size="8" text-anchor="middle">APPROVE / REJECT</text>
+
+  <line x1="536" y1="540" x2="566" y2="540" stroke="#34d399" stroke-width="1.2" marker-end="url(#arrow-green)"/>
+
+  <rect x="569" y="515" width="130" height="50" rx="5" fill="rgba(136,19,55,0.4)" stroke="#fb7185" stroke-width="1.2"/>
+  <text x="634" y="535" fill="white" font-size="9" text-anchor="middle">CEO 最终审批</text>
+  <text x="634" y="550" fill="#94a3b8" font-size="8" text-anchor="middle">APPROVE → 完成</text>
+
+  <line x1="699" y1="540" x2="729" y2="540" stroke="#a78bfa" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <rect x="732" y="515" width="160" height="50" rx="5" fill="rgba(76,29,149,0.4)" stroke="#a78bfa" stroke-width="1.2"/>
+  <text x="812" y="535" fill="white" font-size="9" text-anchor="middle">EmailQueue 队列表</text>
+  <text x="812" y="550" fill="#94a3b8" font-size="8" text-anchor="middle">异步写入 · 定时服务推送</text>
+
+  <line x1="892" y1="540" x2="922" y2="540" stroke="#a78bfa" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <rect x="925" y="515" width="130" height="50" rx="5" fill="rgba(30,41,59,0.6)" stroke="#94a3b8" stroke-width="1.2"/>
+  <text x="990" y="535" fill="white" font-size="9" text-anchor="middle">邮件发送</text>
+  <text x="990" y="550" fill="#94a3b8" font-size="8" text-anchor="middle">SMTP / SendGrid</text>
+
+  <!-- ===== 自动推进说明 ===== -->
+  <rect x="40" y="610" width="1020" height="50" rx="6" fill="rgba(251,191,36,0.1)" stroke="#fbbf24" stroke-width="1" stroke-dasharray="5,3"/>
+  <text x="60" y="632" fill="#fbbf24" font-size="9" font-weight="600">⚡ 自动推进规则</text>
+  <text x="60" y="650" fill="#94a3b8" font-size="8.5">直线经理审批通过 → 自动推至区域总监 → 继续向上流转。若某级审批人在OrgNode中不存在（人员离职），自动跳过该级继续推进。</text>
+
+</svg>

@@ -18,6 +18,7 @@ public class SandvikDbContext : DbContext
     public DbSet<OrgNode> OrgNodes => Set<OrgNode>();
     public DbSet<ApprovalRequest> ApprovalRequests => Set<ApprovalRequest>();
     public DbSet<ApprovalHistory> ApprovalHistories => Set<ApprovalHistory>();
+    public DbSet<ApprovalRequestHistory> ApprovalRequestHistories => Set<ApprovalRequestHistory>();
     public DbSet<LoginLog> LoginLogs => Set<LoginLog>();
     public DbSet<OpLog> OpLogs => Set<OpLog>();
     public DbSet<EmailQueueItem> EmailQueueItems => Set<EmailQueueItem>();
@@ -118,6 +119,20 @@ public class SandvikDbContext : DbContext
             e.Property(h => h.AdjustInvoiceQty).HasColumnName("adjust_invoice_qty").HasPrecision(18, 2);
             e.Property(h => h.CreatedAt).HasColumnName("created_at");
             e.Property(h => h.ToLevel).HasColumnName("to_level").HasMaxLength(50);
+        });
+        modelBuilder.Entity<ApprovalRequestHistory>(e =>
+        {
+            e.ToTable("approval_request_histories");
+            e.Property(h => h.Id).ValueGeneratedOnAdd();
+            e.Property(h => h.ApprovalRequestId);
+            e.Property(h => h.ActorEmail).HasMaxLength(255);
+            e.Property(h => h.Action).HasMaxLength(20);
+            e.Property(h => h.Comment).HasMaxLength(500);
+            e.Property(h => h.AdjustOrderAmount).HasPrecision(18, 2);
+            e.Property(h => h.AdjustInvoiceAmount).HasPrecision(18, 2);
+            e.Property(h => h.AdjustOrderQty);
+            e.Property(h => h.AdjustInvoiceQty);
+            e.Property(h => h.CreatedAt);
         });
         modelBuilder.Entity<MessageTemplate>(e =>
         {

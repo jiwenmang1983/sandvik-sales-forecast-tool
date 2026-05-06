@@ -353,6 +353,7 @@ import {
 } from '../utils/workflow.js'
 import { fetchOrgChart } from '../utils/orgApi.js'
 import { getApprovalHistory, adjustForecast } from '../api/approval.js'
+import request from '../api/axios.js'
 
 // 邮件发送：前端演示用 mock，统一发到 Mark 的邮箱，标题区分角色
 // 后端实现时改为 API 调用真实发送
@@ -702,18 +703,60 @@ const logEmail = (to, subject, success, msg) => {
 }
 
 // ==================== Actions ====================
-const viewDetail = (item) => {
+const viewDetail = async (item) => {
+  if (!item?.id) return
+  currentItem.value = item
+  showDetail.value = true
   try {
-    if (!item) return
-    currentItem.value = item
-    currentRecord.value = item._record || (item.id ? getApprovalRecord(item.id) : null)
-    emailLogs.value = []
-    showDetail.value = true
+    const res = await request.get(`/approvals/${item.id}`)
+    const data = (res.data || res)
+    const approval = data.approval || data
+    currentRecord.value = {
+      id: approval.id,
+      fcName: approval.periodFcName || approval.fcName || item.fcName,
+      status: approval.status,
+      currentLevel: approval.currentNodeLevel ? parseInt(approval.currentNodeLevel) : 1,
+      submitterEmail: approval.submitterEmail,
+      submitterName: approval.submitterName,
+      currentApproverEmail: approval.currentApproverEmail,
+      approvalChain: buildApprovalChain(approval)
+    }
+    await loadHistory()
   } catch (err) {
-    console.warn('[Approval] viewDetail failed:', err)
-    message.error('加载详情失败')
-    showDetail.value = false
+    console.warn('[Approval] load detail failed:', err)
+    // fallback to mock record
+    currentRecord.value = item._record || (item.id ? getApprovalRecord(item.id) : null)
   }
+}
+
+const buildApprovalChain = (data) => {
+  const status = data.status
+  const level = data.currentNodeLevel ? parseInt(data.currentNodeLevel) : 1
+  const approverEmail = data.currentApproverEmail || ''
+  if (status === 'Pending' || status === 'PendingReview') {
+    return [
+      { statusName: '提交', approverEmail: data.submitterEmail },
+      { statusName: '审批中', approverEmail: approverEmail },
+      { statusName: '完成', approverEmail: '' }
+    ]
+  } else if (status === 'Approved') {
+    return [
+      { statusName: '提交', approverEmail: data.submitterEmail },
+      { statusName: '通过', approverEmail: approverEmail },
+      { statusName: '完成', approverEmail: '' }
+    ]
+  } else if (status === 'Rejected') {
+    return [
+      { statusName: '提交', approverEmail: data.submitterEmail },
+      { statusName: '退回', approverEmail: approverEmail },
+      { statusName: '完成', approverEmail: '' }
+    ]
+  }
+  return [
+    { statusName: '提交', approverEmail: data.submitterEmail },
+    { statusName: '审批中', approverEmail: approverEmail },
+    { statusName: '完成', approverEmail: '' }
+  ]
 }
 
 const backToList = () => {
@@ -751,10 +794,19 @@ const loadHistory = async () => {
   loadingHistory.value = true
   approvalHistory.value = []
   try {
-    const res = await getApprovalHistory(currentItem.value.id)
-    if (res.success && res.data) {
-      approvalHistory.value = res.data
-    }
+    const res = await request.get(`/approvals/${currentItem.value.id}/history`)
+    const list = res.data || res || []
+    approvalHistory.value = list.map(h => ({
+      id: h.id,
+      action: h.action,
+      operatorName: h.actorEmail,
+      operatedAt: h.createdAt,
+      comments: h.comment,
+      adjustOrderAmount: h.adjustOrderAmount,
+      adjustInvoiceAmount: h.adjustInvoiceAmount,
+      adjustOrderQty: h.adjustOrderQty,
+      adjustInvoiceQty: h.adjustInvoiceQty
+    }))
   } catch {
     // silent fail — stays empty
   } finally {
@@ -820,40 +872,18 @@ const handleSubmit = async () => {
 
 // 审批通过
 const handlePass = async () => {
-  if (!currentRecord.value) return
-  const rec = currentRecord.value
-  const result = approveStep(rec.id, currentUserEmail.value)
-  if (result.success) {
-    syncRecordStatus()
-    currentRecord.value = getApprovalRecord(rec.id)
-    const updated = currentRecord.value
-
-    if (result.isFinal) {
-      // 发邮件通知提交人
-      const r = await mockSendEmail({
-        to: updated.submitterEmail,
-        subject: `【完成】${updated.period}`,
-        text: `您的销售预测已完成全部审批流程！\n预测周期：${updated.period}\n金额：¥${updated.forecastData?.orderAmount?.toLocaleString()}\n状态：已通过`
-      })
-      logEmail(updated.submitterEmail, `【完成】${updated.period}`, r.success, r.message)
-      message.success('🎉 预测已完成全部审批流程！')
+  if (!currentItem.value) return
+  try {
+    const res = await request.post(`/approvals/${currentItem.value.id}/approve`, { comment: '同意' })
+    if (res.success || res.code === 0 || res.code === 200) {
+      message.success('✅ 审批通过')
+      currentItem.value.status = 'Approved'
+      await loadHistory()
     } else {
-      // 发邮件通知下一级审批人
-      const nextStep = updated.approvalChain[updated.currentLevel - 1]
-      if (nextStep?.approverEmail) {
-        const r = await mockSendEmail({
-          to: nextStep.approverEmail,
-          subject: `【待审批】${updated.period}`,
-          text: `您有一笔销售预测待审批，请及时处理。\n提交人：${updated.submitterName}\n预测周期：${updated.period}\n金额：¥${updated.forecastData?.orderAmount?.toLocaleString()}`
-        })
-        logEmail(nextStep.approverEmail, `【待审批】${updated.period}`, r.success, r.message)
-      }
-      message.success(`✅ 已通过，当前等待 ${result.nextApprover} 审批`)
+      message.error(res.message || '操作失败')
     }
-    activeDetailTab.value = 'history'
-    await loadHistory()
-  } else {
-    message.error(result.message)
+  } catch {
+    message.error('操作失败')
   }
 }
 
@@ -867,28 +897,20 @@ const confirmReject = async () => {
     message.error('请填写退回原因')
     return
   }
-  if (!currentRecord.value) return
-  const rec = currentRecord.value
-  const result = rejectStep(rec.id, currentUserEmail.value, rejectReason.value)
-  if (result.success) {
-    syncRecordStatus()
-    currentRecord.value = getApprovalRecord(rec.id)
-
-    // 通知提交人被退回
-    const r = await mockSendEmail({
-      to: currentRecord.value.submitterEmail,
-      subject: `【退回】${currentRecord.value.period}`,
-      text: `您的销售预测已被退回，请修改后重新提交。\n原因：${rejectReason.value}`
-    })
-    logEmail(currentRecord.value.submitterEmail, `【退回】${currentRecord.value.period}`, r.success, r.message)
-
-    message.success('🔙 已退回给提交人')
-    showRejectModal.value = false
-    rejectReason.value = ''
-    activeDetailTab.value = 'history'
-    await loadHistory()
-  } else {
-    message.error(result.message)
+  if (!currentItem.value) return
+  try {
+    const res = await request.post(`/approvals/${currentItem.value.id}/reject`, { comment: rejectReason.value })
+    if (res.success || res.code === 0 || res.code === 200) {
+      message.success('🔙 已退回')
+      currentItem.value.status = 'Rejected'
+      showRejectModal.value = false
+      rejectReason.value = ''
+      await loadHistory()
+    } else {
+      message.error(res.message || '操作失败')
+    }
+  } catch {
+    message.error('操作失败')
   }
 }
 

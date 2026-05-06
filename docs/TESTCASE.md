@@ -578,34 +578,34 @@ UI验收标准  ：页面元素、字段值、颜色标签
 
 #### TC-1004 GET /api/user-invoice-permissions 用户开票权限查询
 - **测试类型：** API
-- **WBS任务：** H-060（🔴待代码）
+- **WBS任务：** H-060（✅已完成，Q-060 6/6 PASS）
 - **PRD章节：** §F- (§6)10
 - **数据前提：** 用户登录
 - **API端点：** `GET /api/user-invoice-permissions?userId=xxx`
 - **预期结果：** HTTP 200，返回该用户授权的开票公司列表（含公司名称+权限类型）
-- **执行状态：** ⏭️待H-060代码完成
+- **执行状态：** ✅ PASS（Q-060）
 
 ---
 
 #### TC-1005 POST /api/user-invoice-permissions 分配开票权限
 - **测试类型：** API
-- **WBS任务：** H-060（🔴待代码）
+- **WBS任务：** H-060（✅已完成，Q-060 6/6 PASS）
 - **数据前提：** SYS_ADMIN登录
 - **API端点：**
   ```
   POST /api/user-invoice-permissions
-  Body: { "userId": 1, "invoiceCompanyId": 5, "permissionType": "CAN_INVOICE" }
+  Body: { "userId": "GUID", "invoiceCompanyId": "IC001", "permissionType": "VIEW_SUBMIT" }
   ```
 - **预期结果：** HTTP 201，权限记录创建成功
-- **执行状态：** ⏭️待代码完成
+- **执行状态：** ✅ PASS（Q-060）
 
 ---
 
 #### TC-1006 PUT /api/user-invoice-permissions/{id} 修改权限
 - **测试类型：** API
-- **WBS任务：** H-060（🔴待代码）
+- **WBS任务：** H-060（✅已完成，Q-060 6/6 PASS）
 - **预期结果：** HTTP 200，权限类型或关联公司更新
-- **执行状态：** ⏭️待代码完成
+- **执行状态：** ✅ PASS（Q-060）
 
 ---
 
@@ -613,7 +613,7 @@ UI验收标准  ：页面元素、字段值、颜色标签
 - **测试类型：** E2E
 - **WBS任务：** H-061（🔴待代码）
 - **PRD章节：** §F- (§6)10
-- **执行状态：** ⏭️待H-060代码完成
+- **执行状态：** ⏭️待H-061代码完成
 
 ---
 

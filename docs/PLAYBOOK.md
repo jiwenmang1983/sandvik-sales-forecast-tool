@@ -265,19 +265,11 @@ CCS profile：minimax-ai（主要），minimax-openai
 
 ### 4.1 调用方式
 
-```bash
-hermes -p slh-bot chat -q "执行测试脚本 /tmp/qNNN_test.py，只回复Python输出。"
-```
+> ⚠️ 禁止使用 `hermes -p slh-bot chat -q` —— 该命令会同步阻塞直到 slh-bot TUI 退出，在无人值守场景下永远卡死。
+>
+> 正确方式：用 tmux 分离运行 Python 脚本（见 4.2 段2）。
 
-
-| 参数           | 作用                   |
-| ------------ | -------------------- |
-| `-p slh-bot` | 指定小Q的 Hermes Profile |
-| `chat`       | 聊天模式（非任务模式）          |
-| `-q "..."`   | 内联任务描述               |
-
-
-> ⚠️ 警告：`-q` 参数内容会被当前 shell 先展开，脚本内容必须写到文件里，不能直接写进 -q 参数。
+小Q 是独立的 Hermes Profile（`slh-bot`），但**不通过 hermes 命令调用**，而是通过 tmux 分离运行测试脚本。
 
 ### 4.2 任务委派三段式（每次必须完整）
 
@@ -289,15 +281,31 @@ hermes -p slh-bot chat -q "执行测试脚本 /tmp/qNNN_test.py，只回复Pytho
   → 脚本内部 urllib 登录获取 token，不依赖外部文件
   → 脚本最后打印 PASS/FAIL 摘要
 
-段2 — 派发到 slh-bot
-  → hermes -p slh-bot chat -q "执行测试脚本 /tmp/q<NNN>_test.py，只回复Python输出。"
-  → 等待 slh-bot 执行完成
+段2 — 用 tmux 分离方式派发（小Q无 TUI/无阻塞）
+
+```bash
+# 2.1 启动分离的 tmux session 运行脚本，输出重定向到结果文件
+tmux new -d -s q<NNN> "python3 /tmp/q<NNN>_test.py 2>&1 | tee /tmp/q<NNN>_result.txt"
+
+# 2.2 立即返回，不等待（无阻塞）
+# 查看进度（非必须）：
+tmux capture-pane -t q<NNN> -p | tail -20
+
+# 2.3 等待结果（轮询检查）：
+while ! tail -1 /tmp/q<NNN>_result.txt | grep -qE 'PASS|FAIL|ERROR'; do
+  sleep 5
+done
+cat /tmp/q<NNN>_result.txt
+```
+
+> ⚠️ 禁止使用 `hermes -p slh-bot chat -q` —— 该命令会同步阻塞直到 slh-bot TUI 退出，在无人值守场景下永远卡死。
 
 段3 — 解析结果并更新文档
-  → 解析 tail -20 输出判断 PASS/FAIL
+  → 解析 `/tmp/q<NNN>_result.txt` 末尾判断 PASS/FAIL
   → TESTCASE.md Q-XXX 状态更新
   → ISSUE_LOG.md 新增 Bug 记录（如有）
   → 有变更立即更新，不等 Mark 提醒
+  → tmux session 手动清理：`tmux kill-session -t q<NNN>`（或等自然退出）
 ```
 
 **三段式要点：**
@@ -438,8 +446,8 @@ print('Q-NNN COMPLETE')
 
 **已知约束：**
 - Feishu WebSocket 独占：同一时间只能有一个 bot 连接
-- slh-bot 持有 WebSocket，slh-bot 就是测试执行者
-- 所有测试任务走 `hermes -p slh-bot chat -q`（不用 xiaoq profile）
+- slh-bot 持有 WebSocket（小Q的 Hermes Profile）
+- 所有测试任务通过 tmux 分离运行 Python 脚本，**禁止用 `hermes -p slh-bot chat -q`**（会卡死）
 
 **密码发现流程（重要）：**
 > TESTCASE.md 中的账号密码**可能与运行时不一致**，必须通过源码确认。

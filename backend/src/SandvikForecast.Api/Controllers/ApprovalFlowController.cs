@@ -11,7 +11,7 @@ using System.Text.Json;
 namespace SandvikForecast.Api.Controllers;
 
 [ApiController]
-[Route("api/approval-flow")]
+[Route("api/approvals")]
 [Authorize]
 public class ApprovalFlowController : ControllerBase
 {
@@ -60,7 +60,7 @@ public class ApprovalFlowController : ControllerBase
         }
     }
 
-    [HttpGet("my")]
+    [HttpGet("submitted")]
     public async Task<ActionResult> GetMyApprovals()
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -90,13 +90,89 @@ public class ApprovalFlowController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// 获取等待当前用户审批的预测请求
+    /// </summary>
+    [HttpGet("pending")]
+    public async Task<ActionResult> GetPendingApprovalsForMe()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userEmail = User.FindFirst(ClaimTypes.Email)?.Value
+            ?? _db.Users.Where(u => u.Id == userId).Select(u => u.Email).FirstOrDefault();
+        if (string.IsNullOrEmpty(userEmail))
+            return Unauthorized(new { success = false, message = "User not authenticated" });
+
+        try
+        {
+            var pending = await _db.ApprovalRequests
+                .Where(a => a.Status == "Pending" && a.CurrentApproverEmail == userEmail && !a.IsDeleted)
+                .OrderByDescending(a => a.Id)
+                .Select(a => new {
+                    a.Id,
+                    a.ForecastPeriodId,
+                    a.UserId,
+                    a.Status,
+                    a.CurrentNodeLevel,
+                    a.CurrentApproverEmail,
+                    a.CreatedAt,
+                    PeriodFcName = _db.ForecastPeriods.Where(p => p.Id == a.ForecastPeriodId).Select(p => p.FcName).FirstOrDefault(),
+                    PeriodYearMonth = _db.ForecastPeriods.Where(p => p.Id == a.ForecastPeriodId).Select(p => p.PeriodStartYearMonth).FirstOrDefault(),
+                    SubmitterName = _db.Users.Where(u => u.Id == a.UserId).Select(u => u.DisplayName).FirstOrDefault(),
+                    SubmitterEmail = _db.Users.Where(u => u.Id == a.UserId).Select(u => u.Email).FirstOrDefault(),
+                })
+                .ToListAsync();
+
+            return Ok(new { success = true, data = pending, total = pending.Count });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { success = false, message = ex.Message });
+        }
+    }
+
+    [HttpGet("{id}/history")]
+    public async Task<IActionResult> GetRequestHistory(int id)
+    {
+        var histories = await _db.ApprovalRequestHistories
+            .Where(h => h.ApprovalRequestId == id)
+            .OrderBy(h => h.CreatedAt)
+            .Select(h => new {
+                h.Id,
+                h.ActorEmail,
+                h.Action,
+                h.Comment,
+                h.AdjustOrderAmount,
+                h.AdjustInvoiceAmount,
+                h.AdjustOrderQty,
+                h.AdjustInvoiceQty,
+                h.CreatedAt
+            })
+            .ToListAsync();
+        return Ok(new { code = 0, data = histories });
+    }
     [HttpGet("{id}")]
     public async Task<ActionResult> GetApprovalDetail(int id)
     {
-        var approval = await _db.ApprovalRequests
-            .FirstOrDefaultAsync(a => a.Id == id);
+        var detail = await _db.ApprovalRequests
+            .Where(a => a.Id == id)
+            .Select(a => new {
+                a.Id,
+                a.ForecastPeriodId,
+                a.UserId,
+                a.Status,
+                a.CurrentNodeLevel,
+                a.CurrentApproverEmail,
+                a.Comments,
+                a.CreatedAt,
+                PeriodFcName = _db.ForecastPeriods.Where(p => p.Id == a.ForecastPeriodId).Select(p => p.FcName).FirstOrDefault(),
+                PeriodFillTimeStart = _db.ForecastPeriods.Where(p => p.Id == a.ForecastPeriodId).Select(p => p.FillTimeStart).FirstOrDefault(),
+                PeriodFillTimeEnd = _db.ForecastPeriods.Where(p => p.Id == a.ForecastPeriodId).Select(p => p.FillTimeEnd).FirstOrDefault(),
+                SubmitterName = _db.Users.Where(u => u.Id == a.UserId).Select(u => u.DisplayName).FirstOrDefault(),
+                SubmitterEmail = _db.Users.Where(u => u.Id == a.UserId).Select(u => u.Email).FirstOrDefault(),
+            })
+            .FirstOrDefaultAsync();
 
-        if (approval == null)
+        if (detail == null)
             return NotFound(new { success = false, message = "Approval request not found" });
 
         var histories = await _db.ApprovalHistories
@@ -104,7 +180,81 @@ public class ApprovalFlowController : ControllerBase
             .OrderBy(h => h.OperatedAt)
             .ToListAsync();
 
-        return Ok(new { success = true, data = new { approval, histories } });
+        return Ok(new { success = true, data = new { approval = detail, histories } });
+    }
+
+    /// <summary>
+    /// 审批通过
+    /// </summary>
+    [HttpPost("{id}/approve")]
+    public async Task<ActionResult> ApproveRequest(int id, [FromBody] ApprovalActionRequestSimple req)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userEmail = User.FindFirst(ClaimTypes.Email)?.Value
+            ?? _db.Users.Where(u => u.Id == userId).Select(u => u.Email).FirstOrDefault();
+        if (string.IsNullOrEmpty(userEmail))
+            return Unauthorized(new { success = false, message = "User not authenticated" });
+
+        var approval = await _db.ApprovalRequests.FirstOrDefaultAsync(a => a.Id == id && !a.IsDeleted);
+        if (approval == null)
+            return NotFound(new { success = false, message = "Approval request not found" });
+        if (approval.Status != "Pending")
+            return BadRequest(new { success = false, message = "Request is not pending" });
+        if (approval.CurrentApproverEmail != userEmail)
+            return Forbid();
+
+        approval.Status = "Approved";
+        approval.Comments = req.Comment;
+
+        _db.ApprovalRequestHistories.Add(new ApprovalRequestHistory
+        {
+            ApprovalRequestId = id,
+            ActorEmail = userEmail,
+            Action = "Approve",
+            Comment = req.Comment ?? "同意",
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await _db.SaveChangesAsync();
+
+        return Ok(new { success = true, message = "Approved" });
+    }
+
+    /// <summary>
+    /// 审批驳回
+    /// </summary>
+    [HttpPost("{id}/reject")]
+    public async Task<ActionResult> RejectRequest(int id, [FromBody] ApprovalActionRequestSimple req)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userEmail = User.FindFirst(ClaimTypes.Email)?.Value
+            ?? _db.Users.Where(u => u.Id == userId).Select(u => u.Email).FirstOrDefault();
+        if (string.IsNullOrEmpty(userEmail))
+            return Unauthorized(new { success = false, message = "User not authenticated" });
+
+        var approval = await _db.ApprovalRequests.FirstOrDefaultAsync(a => a.Id == id && !a.IsDeleted);
+        if (approval == null)
+            return NotFound(new { success = false, message = "Approval request not found" });
+        if (approval.Status != "Pending")
+            return BadRequest(new { success = false, message = "Request is not pending" });
+        if (approval.CurrentApproverEmail != userEmail)
+            return Forbid();
+
+        approval.Status = "Rejected";
+        approval.Comments = req.Comment;
+
+        _db.ApprovalRequestHistories.Add(new ApprovalRequestHistory
+        {
+            ApprovalRequestId = id,
+            ActorEmail = userEmail,
+            Action = "Reject",
+            Comment = req.Comment,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await _db.SaveChangesAsync();
+
+        return Ok(new { success = true, message = "Rejected" });
     }
 
     [HttpGet("history/{id}")]
@@ -711,7 +861,8 @@ public class ApprovalFlowController : ControllerBase
 }
 
 public record StartApprovalRequest(string ForecastPeriodId, string? RegionId = null);
-public record ApprovalActionRequest(int ApprovalRequestId, string? Comments = null);
 public record AdjustApprovalRequest(int ApprovalRequestId, string? Comments = null,
     decimal? AdjustOrderAmount = null, decimal? AdjustInvoiceAmount = null,
     decimal? AdjustOrderQty = null, decimal? AdjustInvoiceQty = null);
+public record ApprovalActionRequest(int ApprovalRequestId, string? Comments = null);
+public record ApprovalActionRequestSimple(string? Comment);

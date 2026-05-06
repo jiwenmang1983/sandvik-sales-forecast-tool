@@ -264,6 +264,11 @@ public class ForecastController : ControllerBase
         return result;
     }
 
+    /// <summary>
+    /// Create a new forecast record (幂等创建).
+    /// If a record with the same ForecastPeriodId + CustomerId + ProductId already exists, returns 409.
+    /// Otherwise creates a new record with status "Draft".
+    /// </summary>
     [HttpPost("records")]
     public async Task<ActionResult> CreateRecord([FromBody] CreateRecordRequest req)
     {
@@ -708,6 +713,11 @@ public class ForecastController : ControllerBase
         return Ok(new { success = true, importedCount = imported });
     }
 
+    /// <summary>
+    /// Save draft records (插入或更新).
+    /// Upsert semantics: if record exists (same ForecastPeriodId + CustomerId + ProductId + Year + Month), updates quantities;
+    /// otherwise creates a new record with status "Draft".
+    /// </summary>
     [HttpPost("save-draft")]
     public async Task<ActionResult> SaveDraft([FromBody] SaveDraftRequest req)
     {
@@ -796,6 +806,10 @@ public class ForecastController : ControllerBase
             var now = DateTime.UtcNow;
             var fillTimeEnded = now > period.FillTimeEnd;
             var extensionActive = period.ExtensionEnd.HasValue && now < period.ExtensionEnd.Value;
+            if (fillTimeEnded && !extensionActive)
+            {
+                return BadRequest(new { success = false, message = "Submission deadline passed" });
+            }
             if (fillTimeEnded && extensionActive)
             {
                 List<string> extUsers;
@@ -814,25 +828,40 @@ public class ForecastController : ControllerBase
         }
         await _db.SaveChangesAsync();
 
-        // Queue email notification to approver
+        // H-063: 创建审批请求记录
+        OrgNode? parentNode = null;
         var submitter = await _db.Users.FirstOrDefaultAsync(u => u.Id == userIdClaim && u.IsActive);
         if (submitter != null && !string.IsNullOrEmpty(submitter.Email))
         {
             var orgNode = await _db.OrgNodes
                 .Where(o => o.Email == submitter.Email && o.Status == "Active")
                 .FirstOrDefaultAsync();
-
             if (orgNode != null && orgNode.ParentId.HasValue)
             {
-                var parentNode = await _db.OrgNodes.FindAsync(orgNode.ParentId.Value);
-                if (parentNode != null && !string.IsNullOrEmpty(parentNode.Email))
-                {
-                    var periodFcName = period?.FcName ?? req.PeriodId;
-                    var submitterName = submitter.DisplayName ?? submitter.UserName ?? userIdClaim;
-                    var submittedDate = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
+                parentNode = await _db.OrgNodes.FindAsync(orgNode.ParentId.Value);
+            }
+        }
 
-                    var subject = $"预测提交待审批 - {periodFcName}";
-                    var body = $@"您好，
+        var approvalRequest = new ApprovalRequest
+        {
+            ForecastPeriodId = req.PeriodId,
+            UserId = userIdClaim,
+            Status = "Pending",
+            CurrentApproverEmail = parentNode?.Email,
+            CurrentNodeLevel = parentNode?.Role
+        };
+        _db.ApprovalRequests.Add(approvalRequest);
+        await _db.SaveChangesAsync();
+
+        // Queue email notification to approver
+        if (submitter != null && !string.IsNullOrEmpty(submitter.Email) && parentNode != null && !string.IsNullOrEmpty(parentNode.Email))
+        {
+            var periodFcName = period?.FcName ?? req.PeriodId;
+            var submitterName = submitter.DisplayName ?? submitter.UserName ?? userIdClaim;
+            var submittedDate = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
+
+            var subject = $"预测提交待审批 - {periodFcName}";
+            var body = $@"您好，
 
 {submitterName} 已提交预测数据，等待您的审批。
 
@@ -844,25 +873,77 @@ public class ForecastController : ControllerBase
 
 此邮件由系统自动发送，请勿回复。";
 
-                    var templateVars = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string>
-                    {
-                        { "ForecastPeriodName", periodFcName },
-                        { "SubmitterName", submitterName },
-                        { "SubmittedDate", submittedDate }
-                    });
+            var templateVars = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string>
+            {
+                { "ForecastPeriodName", periodFcName },
+                { "SubmitterName", submitterName },
+                { "SubmittedDate", submittedDate }
+            });
 
-                    await _emailQueueService.QueueEmailAsync(
-                        parentNode.Email,
-                        null,
-                        subject,
-                        body,
-                        null,
-                        templateVars);
-                }
-            }
+            await _emailQueueService.QueueEmailAsync(
+                parentNode.Email,
+                null,
+                subject,
+                body,
+                null,
+                templateVars);
         }
 
         return Ok(new { success = true, submittedCount = periodRecords.Count });
+    }
+
+    [HttpPost("copy-previous-period")]
+    public async Task<ActionResult> CopyPreviousPeriod([FromBody] CopyPreviousPeriodRequest req)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(new { success = false, message = "User not authenticated" });
+
+        // Find all Draft/Submitted records from the source period
+        var sourceRecords = await _db.ForecastRecords
+            .Where(r => r.ForecastPeriodId == req.FromPeriodId && !r.IsDeleted
+                && (r.Status == "Draft" || r.Status == "Submitted"))
+            .ToListAsync();
+
+        // Brand filter: only copy records belonging to the user's brand
+        var dbUser = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+        var userBrand = dbUser?.Brand ?? "Sandvik";
+        var brandCustomerIds = _db.Customers
+            .Where(c => c.Brand == userBrand)
+            .Select(c => c.Id)
+            .ToHashSet();
+        sourceRecords = sourceRecords.Where(r => brandCustomerIds.Contains(r.CustomerId)).ToList();
+
+        int copied = 0;
+        foreach (var src in sourceRecords)
+        {
+            // Skip if the same CustomerId + ProductId already exists in the target period
+            var exists = await _db.ForecastRecords
+                .AnyAsync(r => r.ForecastPeriodId == req.ToPeriodId
+                    && r.CustomerId == src.CustomerId && r.ProductId == src.ProductId && !r.IsDeleted);
+            if (exists) continue;
+
+            var newRecord = new ForecastRecord
+            {
+                ForecastPeriodId = req.ToPeriodId,
+                CustomerId = src.CustomerId,
+                InvoiceCompanyId = src.InvoiceCompanyId,
+                ProductId = src.ProductId,
+                Year = src.Year,
+                Month = src.Month,
+                OrderQty = src.OrderQty,
+                OrderAmount = src.OrderAmount,
+                InvoiceQty = src.InvoiceQty,
+                InvoiceAmount = src.InvoiceAmount,
+                CreatedByUserId = userId,
+                Status = "Draft"
+            };
+            _db.ForecastRecords.Add(newRecord);
+            copied++;
+        }
+
+        await _db.SaveChangesAsync();
+        return Ok(new { success = true, copiedCount = copied });
     }
 }
 
@@ -872,3 +953,4 @@ public record ImportRecordRequest(string ForecastPeriodId, string CustomerId, st
 public record SaveDraftRequest(string PeriodId, List<SaveDraftRecord> Records);
 public record SaveDraftRecord(string CustomerId, string InvoiceCompanyId, string ProductId, int Year, int Month, decimal orderQty, decimal orderAmount, decimal invoiceQty, decimal invoiceAmount);
 public record SubmitRequest(string PeriodId);
+public record CopyPreviousPeriodRequest(string FromPeriodId, string ToPeriodId);
