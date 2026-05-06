@@ -1,4 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
+import CustomerList from '../views/CustomerList.vue'
 import Login from '../views/Login.vue'
 import MicrosoftCallback from '../views/MicrosoftCallback.vue'
 import Dashboard from '../views/Dashboard.vue'
@@ -31,11 +32,12 @@ const routes = [
       { path: 'approval', name: 'Approval', component: Approval },
       { path: 'analysis', name: 'Analysis', component: Dashboard },
       { path: 'org', name: 'Org', component: OrgChart },
+      { path: 'customers', name: 'Customers', component: CustomerList },
+      { path: 'customer-list', name: 'CustomerList', component: CustomerList },
       {
-        path: 'customers',
-        name: 'Customers',
-        component: BaseData,
-        meta: { baseDataTab: 'customer' }
+        path: 'customer-management',
+        name: 'CustomerManagement',
+        component: CustomerList
       },
       {
         path: 'products',
