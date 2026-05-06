@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SandvikForecast.Api.DTOs;
+using SandvikForecast.Core.Entities;
 using SandvikForecast.Core.Interfaces;
 using SandvikForecast.Infrastructure.Repositories;
 
@@ -101,9 +102,63 @@ public class ProductHierarchyController : ControllerBase
             return StatusCode(500, ApiResponse<IEnumerable<ProductHierarchyDto>>.Fail("搜索产品失败：" + ex.Message));
         }
     }
+
+    /// <summary>
+    /// Create a new product hierarchy node with auto-generated ProductCode
+    /// POST /api/products
+    /// </summary>
+    [HttpPost]
+    public async Task<ActionResult<ApiResponse<ProductHierarchyDto>>> Create([FromBody] CreateProductHierarchyDto dto)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(dto.ProductName))
+                return BadRequest(ApiResponse<ProductHierarchyDto>.Fail("ProductName不能为空"));
+
+            var productCode = await _repository.GenerateProductCodeAsync();
+
+            var product = new ProductHierarchy
+            {
+                ProductLevel = dto.ProductLevel,
+                ParentId = dto.ParentId,
+                ProductCode = productCode,
+                ProductName = dto.ProductName,
+                SortOrder = dto.SortOrder,
+                IsActive = dto.IsActive
+            };
+
+            await _repository.AddAsync(product);
+
+            var result = new ProductHierarchyDto(
+                product.Id,
+                product.ProductCode,
+                product.ProductName,
+                product.ProductLevel,
+                product.ParentId
+            );
+
+            return Created($"/api/products/{product.Id}", ApiResponse<ProductHierarchyDto>.Ok(result));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating product");
+            return StatusCode(500, ApiResponse<ProductHierarchyDto>.Fail("创建产品失败：" + ex.Message));
+        }
+    }
 }
 
 /// <summary>
 /// DTO for product hierarchy data
 /// </summary>
 public record ProductHierarchyDto(string Id, string ProductCode, string ProductName, int ProductLevel, string? ParentId);
+
+/// <summary>
+/// DTO for creating a new product hierarchy node
+/// </summary>
+public record CreateProductHierarchyDto(
+    int ProductLevel,
+    string? ParentId = null,
+    string? ProductName = null,
+    int SortOrder = 0,
+    bool IsActive = true
+);

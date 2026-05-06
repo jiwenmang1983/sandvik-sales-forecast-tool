@@ -65,4 +65,30 @@ public class ProductHierarchyRepository : Repository<ProductHierarchy>
             .OrderBy(p => p.SortOrder)
             .ThenBy(p => p.ProductCode);
     }
+
+    /// <summary>
+    /// Auto-generate product code: PROD-{yyyyMMdd}-{NNNN}, reset daily
+    /// </summary>
+    public async Task<string> GenerateProductCodeAsync()
+    {
+        var today = DateTime.UtcNow.ToString("yyyyMMdd");
+        var prefix = $"PROD-{today}-";
+
+        var todayProducts = await _dbSet
+            .Where(p => p.ProductCode.StartsWith(prefix) && !p.IsDeleted)
+            .Select(p => p.ProductCode)
+            .ToListAsync();
+
+        int maxSeq = 0;
+        foreach (var code in todayProducts)
+        {
+            var parts = code.Split('-');
+            if (parts.Length == 3 && int.TryParse(parts[2], out int seq))
+            {
+                if (seq > maxSeq) maxSeq = seq;
+            }
+        }
+
+        return $"{prefix}{(maxSeq + 1):D4}";
+    }
 }
