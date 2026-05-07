@@ -383,25 +383,84 @@ tmux kill-session -t cc-sandvik
 
 ## 四、小Q 协作规范
 
-### 4.1 调用方式
+### 4.1 两种调用模式
 
-> ⚠️ 禁止使用 `hermes -p slh-bot chat -q` —— 该命令会同步阻塞直到 slh-bot TUI 退出，在无人值守场景下永远卡死。
->
-> 正确方式：用 tmux 分离运行 Python 脚本（见 4.2 段2）。
+小Q（`slh-bot`）有两种调用模式，适用不同场景：
 
-小Q 是独立的 Hermes Profile（`slh-bot`），但**不通过 hermes 命令调用**，而是通过 tmux 分离运行测试脚本。
+| 模式 | 命令 | 上下文保持 | 适用场景 |
+|------|------|----------|---------|
+| **对话模式**（本节） | `hermes -p slh-bot chat -q "..." --resume SESSION_ID` | ✅ SQLite session 续接 | 需要 LLM 推理的复杂测试分析 |
+| **脚本模式**（§4.2） | `tmux new -d -s q<NNN> "python3 /tmp/q_test.py"` | N/A | 标准 API 测试，无需 LLM 参与 |
 
-### 4.2 任务委派三段式（每次必须完整）
+> ⚠️ **不再禁止 `hermes -p slh-bot chat -q`** —— 实测验证：`-q` 是 blocking 调用，会返回结果，不会"永远卡死"。之前的警告是基于错误假设。
+
+### 4.2 对话模式（session resume）
+
+适用场景：需要小Q 做复杂推理、多步骤分析、或中途交互的测试任务。
+
+**Step 1：发起第一次对话，捕获 session ID**
+
+```bash
+RESULT=$(hermes -p slh-bot chat \
+  -q "执行以下测试分析：...（完整任务描述）..." \
+  --max-turns 10 2>&1)
+echo "$RESULT"
+
+# 从输出中提取 session ID：
+SESSION_ID=$(echo "$RESULT" | grep "^Session:" | awk '{print $2}')
+# 例如：20260507_233415_e1c9cd
+```
+
+**Step 2：续接同一 session 继续对话**
+
+```bash
+# 后续多轮对话，用 --resume 保持上下文
+RESULT=$(hermes -p slh-bot chat \
+  -q "TC-0302 失败了，分析原因：..." \
+  --resume "$SESSION_ID" \
+  --max-turns 10 2>&1)
+echo "$RESULT"
+```
+
+**解析结果（过滤 TUI chrome）：**
+
+```bash
+# 提取纯文本回复（去掉 TUI 边框/颜色码）
+echo "$RESULT" | grep -v "^╭\|^│\|^╰\|^─\|^ ⚕\|^$" | grep -v "^Session:\|^Duration:\|^Messages:\|^⚠\|^Resume this" | head -50
+```
+
+**判断对话状态：**
+
+| 输出关键词 | 含义 | 操作 |
+|-----------|------|------|
+| `⚠ Iteration budget reached` | 达到 max-turns，上下文可能截断 | 下次提高 `--max-turns` |
+| `Session: xxx` | 对话正常完成 | 提取回复内容 |
+| `↻ Resumed session` | 上下文续接成功 | ✅ 正常 |
+| `No previous session` | session ID 无效或已过期 | 重新发起新对话 |
+
+**与 tmux 交互模式的对比：**
+
+| | 对话模式（本节） | tmux send-keys 交互 |
+|---|---|---|
+| 上下文保持 | ✅ SQLite session resume | ✅ 同一 tmux session |
+| 响应解析 | ✅ 相对干净（grep 过滤） | ⚠️ TUI chrome 难以提取 |
+| 实时可见 | ❌ 只能等完成 | ✅ capture-pane 可看中间态 |
+| 命令注入 | N/A | ⚠️ 发送太快会粘合 |
+| 推荐场景 | **首选**，复杂推理/分析 | 备选，LLM 推理过程中需要中途干预 |
+
+### 4.3 脚本模式（API 测试首选）
+
+适用场景：标准化的 API 测试用例（TC-XXXX），不需要 LLM 推理，脚本内部完成认证+测试+断言。
+
+**任务委派三段式（每次必须完整）：**
 
 ```
-【强制】每次向小Q委派测试任务，必须完整执行以下三段：
-
 段1 — 写脚本到文件
   → 小P 写 Python 测试脚本到 /tmp/q<NNN>_test.py
   → 脚本内部 urllib 登录获取 token，不依赖外部文件
   → 脚本最后打印 PASS/FAIL 摘要
 
-段2 — 用 tmux 分离方式派发（小Q无 TUI/无阻塞）
+段2 — tmux 分离运行
 
 ```bash
 # 2.1 启动分离的 tmux session 运行脚本，输出重定向到结果文件
@@ -418,22 +477,19 @@ done
 cat /tmp/q<NNN>_result.txt
 ```
 
-> ⚠️ 禁止使用 `hermes -p slh-bot chat -q` —— 该命令会同步阻塞直到 slh-bot TUI 退出，在无人值守场景下永远卡死。
-
 段3 — 解析结果并更新文档
   → 解析 `/tmp/q<NNN>_result.txt` 末尾判断 PASS/FAIL
   → TESTCASE.md Q-XXX 状态更新
   → ISSUE_LOG.md 新增 Bug 记录（如有）
   → 有变更立即更新，不等 Mark 提醒
   → tmux session 手动清理：`tmux kill-session -t q<NNN>`（或等自然退出）
-```
 
 **三段式要点：**
 - 脚本文件名固定格式：`/tmp/q<NNN>_test.py`（Q-XXX 任务编号）
 - 脚本内部管 token（`Password123`），不写 token 到文件
 - 结果判断：解析 Python print 输出，不依赖 slh-bot 的 Hermes TUI banner
 
-### 4.3 测试类型与标准
+### 4.4 测试类型与标准
 
 按测试类型不同，验收标准也不同：
 
@@ -476,7 +532,7 @@ Q-FW1（路由探测）→ Q-FW2（DB写入）→ Q-FW3（软删除）→ Q-001~
 前端变更后 → Q-UI1（Playwright TC-01~TC-07）→ Q-XXX（如有 API 联动变更）
 ```
 
-### 4.4 标准脚本模板
+### 4.5 标准脚本模板
 
 ```python
 import urllib.request, json
@@ -518,7 +574,7 @@ print('TC-XXXX: PASS|FAIL ...')
 print('Q-NNN COMPLETE')
 ```
 
-### 4.5 小Q 完成标准
+### 4.6 小Q 完成标准
 
 **按测试类型分类：**
 
@@ -546,7 +602,7 @@ print('Q-NNN COMPLETE')
 
 > ⚠️ **DB Migration 是最后一道防线**：API `dotnet build` 通过不代表 DB 层可用。Q-FW2 必须实际写入 DB 验证，不只是 API 返回成功。
 
-### 4.6 当前小Q配置
+### 4.7 当前小Q配置
 
 **Profile：** `slh-bot`（Feishu WebSocket 独占，同一时间只能有一个 bot 连接）
 
@@ -567,7 +623,7 @@ print('Q-NNN COMPLETE')
 **已知约束：**
 - Feishu WebSocket 独占：同一时间只能有一个 bot 连接
 - slh-bot 持有 WebSocket（小Q的 Hermes Profile）
-- 所有测试任务通过 tmux 分离运行 Python 脚本，**禁止用 `hermes -p slh-bot chat -q`**（会卡死）
+- 所有测试任务推荐用脚本模式（§4.3）或对话模式（§4.2）
 
 **密码发现流程（重要）：**
 > TESTCASE.md 中的账号密码**可能与运行时不一致**，必须通过源码确认。
@@ -575,7 +631,7 @@ print('Q-NNN COMPLETE')
 > 来源：`SeedController.cs` 的 `ResetUsers()` 方法
 > 当认证失败时，调用 `GET /api/seed/reset-users` 重置密码
 
-### 4.7 浏览器页面交互测试（E2E）
+### 4.8 浏览器页面交互测试（E2E）
 
 > 前端 Playwright E2E 测试是独立体系，与小Q的 API 测试互补。页面测试验证 UI 行为（表单提交、路由跳转、组件状态），API 测试验证数据层。两者都必须通过。
 
