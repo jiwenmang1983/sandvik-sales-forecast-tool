@@ -429,6 +429,10 @@ Mark（吉文）
 
 ### 4.2 对话模式（session resume）
 
+**前提：** 小Q调用必须带 `--resume SESSION_ID`，否则每次是新 session，无上下文积累。
+
+**Session 管理：** 追踪文件 `docs/SESSION_TRACKER.md`
+
 适用场景：需要小Q 做复杂推理、多步骤分析、或中途交互的测试任务。
 
 **Step 1：发起第一次对话，捕获 session ID**
