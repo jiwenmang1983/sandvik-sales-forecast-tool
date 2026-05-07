@@ -399,16 +399,16 @@ tmux kill-session -t cc-sandvik
 ```
 Mark（吉文）
   └── 飞书 DM → Hermes（小P，我）
-                       ├── tmux send-keys → CC（cc-sandvik，编码开发）
-                       │                   必须 tmux 隔离（CC 有授权弹窗）
+                       ├── tmux send-keys → CC（cc-sandvik）
+                       │                   全程同一 tmux session，上下文不中断
                        │
                        ├── hermes -p slh-bot chat -q → 小Q（slh-bot）
-                       │                   不需要 tmux 隔离
-                       │                   两条调用路径：
-                       │                     ① 对话模式（§4.2）→ LLM 推理分析
-                       │                     ② 脚本模式（§4.3）→ python3 直接跑
+                       │   --resume SESSION_ID   ← 必须带，续接 SQLite session 上下文
+                       │   两条路径：
+                       │     ① 对话模式（§4.2）→ LLM 推理分析
+                       │     ② 脚本模式（§4.3）→ python3 直接跑
                        │
-                       └── CC 和小Q 并行执行，互不等待
+                       └── CC 和小Q 并行，互不等待
 ```
 
 **通讯原则：**
@@ -425,6 +425,7 @@ Mark（吉文）
 - CC 和小Q 并行执行，互不等待
 - Hermes 发完指令后继续处理 Mark 的其他消息，不需要等 slh-bot 返回
 - Hermes 可用 `&` 将 `hermes -p slh-bot chat -q` 变成后台进程，同时调度多个 agent
+- **小Q调用必须带 `--resume SESSION_ID`**：不带则每次是新 session，无上下文；带则续接 SQLite session 上下文
 
 ### 4.2 对话模式（session resume）
 
