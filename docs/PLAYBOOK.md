@@ -271,112 +271,113 @@ CCS profile：minimax-ai（主要），minimax-openai
 | 一次性（§3.1） | `claude -p '...'` | ❌ 每次全新 | ❌ | 简单明确的任务 |
 | **tmux 交互（本节）** | `tmux new-session ... && claude` | ✅ 全程保持 | ✅ | 复杂/多轮/授权场景 |
 
-**3.7.1 启动连续会话**
+---
+
+**3.7.1 启动与权限确认**
 
 ```bash
-# 清理旧会话（如有）
-tmux kill-session -t cc-session 2>/dev/null || true
-
-# 创建命名 tmux 会话
-tmux new-session -d -s cc-session -x 120 -y 30
-
-# 启动 Claude Code（交互模式，非 --print）
-tmux send-keys -t cc-session \
-  'ANTHROPIC_API_KEY="sk-cp-..." ANTHROPIC_BASE_URL="https://api.minimaxi.com/anthropic" claude --dangerously-skip-permissions --model MiniMax-M2.7' \
+# 1. 清理并启动命名 tmux 会话
+tmux kill-session -t cc-sandvik 2>/dev/null; sleep 1
+tmux new-session -d -s cc-sandvik
+tmux send-keys -t cc-sandvik \
+  'cd /mnt/d/Git/SandvikForecastTool && ANTHROPIC_API_KEY="sk-cp-..." ANTHROPIC_BASE_URL="https://api.minimaxi.com/anthropic" claude --dangerously-skip-permissions --model MiniMax-M2.7' \
   Enter
 
-# 等待启动（约5s），处理 workspace 信任确认
-sleep 5
-tmux send-keys -t cc-session '1' Enter   # Yes, I trust this folder
-sleep 5
-tmux send-keys -t cc-session '1' Enter   # Yes, use this API key
+# 2. 等待 CC 启动（约8s）
 sleep 8
+
+# 3. 确认 workspace 信任（发 1 后立即 Enter）
+tmux send-keys -t cc-sandvik '1' Enter
+sleep 5
+
+# 4. 确认 bypass 权限状态（如果出现 ❯ 等待则再 Enter）
+tmux capture-pane -t cc-sandvik -p -S -5   # 查看状态
+# 若底部有 ❯ 等待提示：tmux send-keys -t cc-sandvik Enter
 ```
+
+> **实测注意：** `⏵⏵ bypass permissions on (shift+tab to cycle)` 只是状态行，不是阻塞提示。CC 加载完成后会在底部显示 ❯，此时可以直接发任务。如果 CC 在思考（Ideating/Thinking/Cooking），等它完成。
+
+---
 
 **3.7.2 发送任务**
 
 ```bash
-# 发送任务描述
-tmux send-keys -t cc-session '帮我实现 F-05 组织架构功能：...' Enter
-
-# 监控进度
-tmux capture-pane -t cc-session -p -S -60
-
-# 等待处理完成（底部出现 ❯ 即为等待输入状态）
+# 发送任务（发完立即继续做其他事，不用干等）
+tmux send-keys -t cc-sandvik '你的任务描述...' Enter
 ```
 
-**3.7.3 检测 CC 状态**
+**轮询进度（不等结果，继续并行工作）：**
 
 ```bash
-# 抓取 tmux 底部 10 行，判断状态
-tmux capture-pane -t cc-session -p -S -10 | cat
-
-# 判断逻辑：
-# - ❯ 出现在末尾，且有 "thinking" / "..." 等词    → CC 在等待输入（可响应或中断）
-# - ❯ 末尾，无特殊词                              → CC 空闲，可发新任务
-# - 无 ❯，有具体操作描述（Read/Search/Edit...）  → CC 正在执行工具
+tmux capture-pane -t cc-sandvik -p -S -10 | cat
 ```
 
-**3.7.4 实时反馈（授权/回答/中断）**
+**判断 CC 状态：**
+
+| 底部显示 | 含义 | 操作 |
+|---------|------|------|
+| `❯` + `Thinking`/`Ideating`/`Cooking` 等词 | CC 在思考 | 等待 |
+| `❯` 末尾，无特殊词 | CC 空闲，可发新任务 | ✅ 可发任务 |
+| `❯` + `esc to interrupt` | CC 长时间等待 | 可中断或发指令 |
+| `Agent(…)` + `Done (N tool uses)` | CC 刚完成一步 | 等待或看输出 |
+| `● 回复内容` | CC 产出了回复 | 看结果 |
+
+---
+
+**3.7.3 实时反馈与中断**
 
 ```bash
-# 场景A：CC 在等待，输入答案
-tmux send-keys -t cc-session '回答内容，比如目标文件路径或选择方案1' Enter
+# A. CC 在等输入 → 直接发答案
+tmux send-keys -t cc-sandvik '答案内容' Enter
 
-# 场景B：CC 长时间无响应，按 Ctrl+C 中断
-tmux send-keys -t cc-session C-c
+# B. CC 卡住（>2分钟无响应）→ Ctrl+C 中断后重发
+tmux send-keys -t cc-sandvik C-c
+sleep 2
+tmux send-keys -t cc-sandvik '重新描述任务' Enter
 
-# 场景C：强制终止会话
-tmux kill-session -t cc-session
+# C. CC 需要确认（如 "Do you want to create file? 1.Yes 2.No"）
+tmux send-keys -t cc-sandvik '1' Enter   # 同意
+
+# D. 出现 ? for shortcuts 提示 → 按 q 或 ESC 关掉
+tmux send-keys -t cc-sandvik 'q'
+sleep 1
+
+# E. 强制终止会话
+tmux kill-session -t cc-sandvik
 ```
 
-**3.7.5 会话 ID 与恢复（跨进程持久化）**
+---
 
-```bash
-# 获取当前 session ID（在 CC 里执行）
-tmux send-keys -t cc-session 'echo "SESSION_ID=$CLAUDE_CODE_SESSION_ID"' Enter
-sleep 3
-tmux capture-pane -t cc-session -p -S -5  # 找 SESSION_ID=xxx
+**3.7.4 响应时间基准（MiniMax-M2.7 实测）**
 
-# Kill 后恢复（--resume 保持完整上下文和 Memory）
-tmux new-session -d -s cc-session2 -x 120 -y 30
-tmux send-keys -t cc-session2 \
-  'ANTHROPIC_API_KEY="sk-cp-..." ANTHROPIC_BASE_URL="https://api.minimaxi.com/anthropic" claude --dangerously-skip-permissions --model MiniMax-M2.7 --resume <SESSION_ID>' \
-  Enter
-```
+| 任务类型 | 典型响应时间 |
+|---------|------------|
+| 简单问题（1+1、名字记忆） | 5-15s |
+| 文件搜索/读取（< 10个文件） | 15-30s |
+| 代码创建/修改（Controller、Service） | 60-180s |
+| CC 主动思考/规划 | 30-90s（等待 `❯` 出现） |
 
-**3.7.6 会话 ID 中转机制（生产级工作流）**
+> **等待策略：** 发任务后先等 30s 抓一次 pane 判断 CC 在做什么。如果在 Ideating/Thinking，继续等 60-90s；如果在执行工具，60s 后再看。不干等 90s 不看——用轮询。
 
-```
-/tmp/cc-session-<task_id>.json
-{
-  "task_id": "cc_f05",
-  "session_id": "3f27c234-a0f5-4e25-8d15-ecc18d024901",
-  "status": "running",
-  "last_update": "2026-05-07T19:45:00Z"
-}
-```
+---
 
-```
-流程：
-1. 启动会话 → 写 session_id 到 /tmp/cc-session-<task_id>.json
-2. 发任务 → tmux send-keys
-3. CC 提问 → Hermes 监听捕获 → 响应
-4. 任务完成 → 读 session_id → 下次 --resume 恢复
-5. 会话结束 → 写 {status: "done", commit_sha: "..."}
-```
-
-**3.7.7 与 §3.1 一次性模式的选用原则**
+**3.7.5 与 §3.1 一次性模式的选用原则**
 
 ```
 简单任务（1-3步，明确知道要什么）   → §3.1 一次性 claude -p
 复杂任务（需要分析、多次迭代）      → §3.7 tmux 交互
-中途需要授权/CC 提问               → §3.7 tmux 交互
-任务中途需换人接管（Hermes→Mark）  → §3.7 --resume session_id
-长时间运行（>30分钟）              → §3.7 tmux 交互
+中途需要授权/CC 主动提问           → §3.7 tmux 交互
+长时间运行（>2分钟）               → §3.7 tmux 交互
 ```
 
-> ⚠️ **--dangerously-skip-permissions 在交互模式下仅跳过文件操作确认，CC 主动提问（如"你想要哪个文件？"）仍会显示 ❯ 等待 Hermes 输入，此时 Hermes 必须响应。**
+---
+
+**3.7.6 已知限制与 workaround**
+
+1. **`--resume` session ID 不稳定**：MiniMax server 会在会话结束后清除 session，跨进程 `--resume` 通常失败。**tmux 会话本身是上下文保持的核心机制**，不依赖 `--resume`。
+2. **MiniMax API 429 限制**：4500单位/5小时窗口。Phase 1 开发期间注意用量，大任务前用 `curl` 先测 API 状态。
+3. **CC 长时间思考（>2分钟）**：通常是 CC 在规划或等待 API。用 Ctrl+C 中断，换更精准的指令重试。
+4. **`? for shortcuts` 覆盖层**：按 `q` 或 `ESC` 关闭，不阻塞主流程。
 
 ---
 
