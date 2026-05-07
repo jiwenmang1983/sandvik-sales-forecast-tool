@@ -429,9 +429,11 @@ Mark（吉文）
 
 ### 4.2 对话模式（session resume）
 
-**前提：** 小Q调用必须带 `--resume SESSION_ID`，否则每次是新 session，无上下文积累。
+**小Q前提：** 必须带 `--resume SESSION_ID`，否则每次新 session，无上下文积累。
 
 **Session 管理：** 追踪文件 `docs/SESSION_TRACKER.md`
+
+**CC：** 用 tmux session（`cc-sandvik`），不靠 session ID。上下文自动保持，死了才重建。
 
 适用场景：需要小Q 做复杂推理、多步骤分析、或中途交互的测试任务。
 
