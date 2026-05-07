@@ -372,87 +372,12 @@ tmux kill-session -t cc-sandvik
 
 ---
 
-**3.7.6 工具链升级方案：claude-squad（cs）**
-
-> claude-squad（cs）是社区成熟工具，基于 tmux 的多 Agent TUI 管理界面。
-> GitHub: https://github.com/smtg-ai/claude-squad | Stars: 7350
-
-**解决的问题：**
-- `--dangerously-skip-permissions` 在 tmux 交互模式下 bypass 权限不稳定的痛点
-- CS 自带 `autoyes`（`-y`）模式，自动处理所有授权确认
-- 多实例并行，每个实例独立 git worktree，完全隔离
-
-**架构：**
-```
-cs TUI（管理界面）
-  ├── tmux session: claudesquad_<instance1>  ← 实际跑 Claude Code
-  ├── tmux session: claudesquad_<instance2>
-  └── tmux session: claudesquad_<instance3>
-```
-
-**安装：**
-```bash
-# 下载 v1.0.17 Linux 二进制
-curl -fsSL "https://github.com/smtg-ai/claude-squad/releases/download/v1.0.17/claude-squad_1.0.17_linux_amd64.tar.gz" \
-  -o /tmp/claude-squad.tar.gz
-tar -xzf /tmp/claude-squad.tar.gz -C /tmp/
-cp /tmp/claude-squad ~/.local/bin/cs
-chmod +x ~/.local/bin/cs
-```
-
-**配置 API Key（必须）：**
-```bash
-# 创建 wrapper script（cs 的 Claude 调用需要带 API key）
-cat > ~/.local/bin/claude-wrap << 'EOF'
-#!/bin/bash
-export ANTHROPIC_API_KEY="sk-cp-..."      # MiniMax CN API Key
-export ANTHROPIC_BASE_URL="https://api.minimaxi.com/anthropic"
-exec /home/markji/.hermes/node/bin/claude "$@"
-EOF
-chmod +x ~/.local/bin/claude-wrap
-
-# 更新 cs config 使用 wrapper
-cat > ~/.claude-squad/config.json << 'EOF'
-{
-  "default_program": "/home/markji/.local/bin/claude-wrap",
-  "auto_yes": false,
-  "daemon_poll_interval": 1000,
-  "branch_prefix": "markji/"
-}
-EOF
-```
-
-**启动 CS（autoyes 模式）：**
-```bash
-tmux new-session -d -s cs-main -x 120 -y 30
-tmux send-keys -t cs-main 'cd /mnt/d/Git/SandvikForecastTool && ~/.local/bin/cs -y' Enter
-sleep 8
-tmux attach -t cs-main
-```
-
-**CS TUI 操作：**
-| 快捷键 | 操作 |
-|--------|------|
-| `n` | 新建空实例 |
-| `N` | 新建实例 + 直接输入 prompt |
-| `Enter` / `o` | attach 到选中实例的 terminal |
-| `Ctrl-Q` | detach 实例（返回 cs 主界面） |
-| `Tab` | 切换 Preview/Diff/Terminal pane |
-| `D` | 删除选中实例 |
-| `?` | 帮助 |
-
-**直接向实例发任务（Hermes 自动化方式）：**
-```bash
-# CS 为每个实例创建独立 tmux session，名称格式：claudesquad_<instance名>
-# 不通过 CS TUI，直接用 tmux send-keys 发任务
-tmux send-keys -t claudesquad_sft '任务描述' Enter
-sleep 30 && tmux capture-pane -t claudesquad_sft -p -S -10 | cat
-```
-
 **已知限制：**
-- CS 创建的实例是各自独立的 git worktree（基于当前分支），不是同一个 repo 的不同任务分支
-- CS autoyes 仅处理授权确认，API key 需通过 wrapper 配置（如上）
-- CS 的 `--acp --stdio` 机制对 MiniMax CN API 不适用（wrapper 里用的是标准 claude）
+1. **`--dangerously-skip-permissions` 对 Bash 命令授权不完全生效**：CC 在执行 Bash 命令时会弹出授权确认（路径访问、命令执行等），仍需手动按 `1` approve 一次。
+   - **Workaround**：首次 bypass 后选 `2" Yes, and allow..."` 授予宽泛权限，后续同项目任务不再弹窗。
+2. **MiniMax API 429 限制**：4500单位/5小时窗口。大任务前用 `curl` 先测 API 状态。
+3. **CC 长时间思考（>2分钟）**：通常是 CC 在规划或等待 API。用 Ctrl+C 中断，换更精准的指令重试。
+4. **`? for shortcuts` 覆盖层**：按 `q` 或 `ESC` 关闭，不阻塞主流程。
 
 ---
 
