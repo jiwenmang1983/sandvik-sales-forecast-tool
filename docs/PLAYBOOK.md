@@ -389,8 +389,8 @@ tmux kill-session -t cc-sandvik
 
 | 模式 | 命令 | 上下文保持 | 适用场景 |
 |------|------|----------|---------|
-| **对话模式**（本节） | `hermes -p slh-bot chat -q "..." --resume SESSION_ID` | ✅ SQLite session 续接 | 需要 LLM 推理的复杂测试分析 |
-| **脚本模式**（§4.2） | `tmux new -d -s q<NNN> "python3 /tmp/q_test.py"` | N/A | 标准 API 测试，无需 LLM 参与 |
+| **对话模式**（§4.4） | `hermes -p slh-bot chat -q "..." --resume SESSION_ID` | ✅ SQLite session 续接 | 需要 LLM 推理的复杂测试分析 |
+| **脚本模式**（§4.3） | `python3 /tmp/q_test.py` | N/A | 标准 API 测试，无需 LLM 参与 |
 
 > ⚠️ **不再禁止 `hermes -p slh-bot chat -q`** —— 实测验证：`-q` 是 blocking 调用，会返回结果，不会"永远卡死"。之前的警告是基于错误假设。
 
@@ -449,47 +449,65 @@ echo "$RESULT" | grep -v "^╭\|^│\|^╰\|^─\|^ ⚕\|^$" | grep -v "^Session
 | 推荐场景 | **首选**，复杂推理/分析 | 备选，LLM 推理过程中需要中途干预 |
 
 ### 4.3 脚本模式（API 测试首选）
+### 4.3 脚本模式（API 测试）
 
-适用场景：标准化的 API 测试用例（TC-XXXX），不需要 LLM 推理，脚本内部完成认证+测试+断言。
+适用场景：标准化的 API 测试用例（TC-XXXX），脚本内部完成认证+测试+断言。
 
-**任务委派三段式（每次必须完整）：**
+> **为什么不用 slh-bot 执行脚本？** slh-bot 在"执行脚本"这件事上只是哑巴执行器，不用到它的测试技能，没有价值增量。
+> 脚本直接 `python3` 跑，slh-bot 留给需要 LLM 推理的场景（§4.2）。
 
-```
-段1 — 写脚本到文件
-  → 小P 写 Python 测试脚本到 /tmp/q<NNN>_test.py
-  → 脚本内部 urllib 登录获取 token，不依赖外部文件
-  → 脚本最后打印 PASS/FAIL 摘要
-
-段2 — tmux 分离运行
+**执行方式（两行搞定）：**
 
 ```bash
-# 2.1 启动分离的 tmux session 运行脚本，输出重定向到结果文件
-tmux new -d -s q<NNN> "python3 /tmp/q<NNN>_test.py 2>&1 | tee /tmp/q<NNN>_result.txt"
+# 直接运行，不经过 slh-bot，不经过 tmux
+python3 /tmp/q<NNN>_test.py 2>&1 | tee /tmp/q<NNN>_result.txt
 
-# 2.2 立即返回，不等待（无阻塞）
-# 查看进度（非必须）：
-tmux capture-pane -t q<NNN> -p | tail -20
-
-# 2.3 等待结果（轮询检查）：
-while ! tail -1 /tmp/q<NNN>_result.txt | grep -qE 'PASS|FAIL|ERROR'; do
+# 轮询等待结果：
+while ! tail -1 /tmp/q<NNN>_result.txt | grep -qE 'PASS|FAIL|ERROR|Q-NNN COMPLETE'; do
   sleep 5
 done
 cat /tmp/q<NNN>_result.txt
 ```
 
-段3 — 解析结果并更新文档
-  → 解析 `/tmp/q<NNN>_result.txt` 末尾判断 PASS/FAIL
-  → TESTCASE.md Q-XXX 状态更新
-  → ISSUE_LOG.md 新增 Bug 记录（如有）
-  → 有变更立即更新，不等 Mark 提醒
-  → tmux session 手动清理：`tmux kill-session -t q<NNN>`（或等自然退出）
+**结果解析 + 文档更新（§4.3 段3）：**
 
-**三段式要点：**
-- 脚本文件名固定格式：`/tmp/q<NNN>_test.py`（Q-XXX 任务编号）
-- 脚本内部管 token（`Password123`），不写 token 到文件
-- 结果判断：解析 Python print 输出，不依赖 slh-bot 的 Hermes TUI banner
+```
+→ 解析 /tmp/q<NNN>_result.txt 末尾判断 PASS/FAIL
+→ TESTCASE.md Q-XXX 状态更新
+→ ISSUE_LOG.md 新增 Bug 记录（如有）
+→ 有变更立即更新，不等 Mark 提醒
+```
 
-### 4.4 测试类型与标准
+**脚本规范：**
+- 文件名：`/tmp/q<NNN>_test.py`（Q-XXX 任务编号）
+- 脚本内部获取 token（`Password123`），不写 token 到文件
+- 最后一行打印：`PASS` / `FAIL` / `Q-NNN COMPLETE`
+- API Base：`http://localhost:5000`
+
+### 4.4 小Q对话模式（LLM 分析）
+
+适用场景：需要 LLM 推理的测试分析、探索性测试、或测试失败后的根因分析。
+
+> **未来方向：** 不是让小Q执行脚本，而是让小Q**用专业测试技能自主测试**。
+> 目标：`hermes -p slh-bot chat -q "用 testing-api-tester 技能测试预测创建功能，输出结果到 /tmp/q001_result.json"`
+> slh-bot 调用 `testing-api-tester` 技能 → 自主规划测试用例 → 执行验证 → 写结果文件。
+> 此模式待实现（skill 层面需同步更新）。
+
+**当前可用方式（对话分析）：**
+
+```bash
+# Step 1：发分析任务，捕获 session ID
+RESULT=$(hermes -p slh-bot chat \
+  -q "分析 /tmp/q003_result.txt 中的测试失败原因，给出修复建议" \
+  --max-turns 5 2>&1)
+echo "$RESULT"
+SESSION_ID=$(echo "$RESULT" | grep "^Session:" | awk '{print $2}')
+
+# Step 2：续接继续
+hermes -p slh-bot chat -q "按上述修复建议验证" --resume "$SESSION_ID" --max-turns 5
+```
+
+### 4.5 测试类型与标准
 
 按测试类型不同，验收标准也不同：
 
@@ -532,7 +550,7 @@ Q-FW1（路由探测）→ Q-FW2（DB写入）→ Q-FW3（软删除）→ Q-001~
 前端变更后 → Q-UI1（Playwright TC-01~TC-07）→ Q-XXX（如有 API 联动变更）
 ```
 
-### 4.5 标准脚本模板
+### 4.6 标准脚本模板
 
 ```python
 import urllib.request, json
@@ -574,7 +592,7 @@ print('TC-XXXX: PASS|FAIL ...')
 print('Q-NNN COMPLETE')
 ```
 
-### 4.6 小Q 完成标准
+### 4.7 小Q完成标准
 
 **按测试类型分类：**
 
@@ -602,7 +620,7 @@ print('Q-NNN COMPLETE')
 
 > ⚠️ **DB Migration 是最后一道防线**：API `dotnet build` 通过不代表 DB 层可用。Q-FW2 必须实际写入 DB 验证，不只是 API 返回成功。
 
-### 4.7 当前小Q配置
+### 4.8 当前小Q配置
 
 **Profile：** `slh-bot`（Feishu WebSocket 独占，同一时间只能有一个 bot 连接）
 
@@ -623,7 +641,7 @@ print('Q-NNN COMPLETE')
 **已知约束：**
 - Feishu WebSocket 独占：同一时间只能有一个 bot 连接
 - slh-bot 持有 WebSocket（小Q的 Hermes Profile）
-- 所有测试任务推荐用脚本模式（§4.3）或对话模式（§4.2）
+- 所有测试任务推荐用脚本模式（§4.3）或对话模式（§4.4）
 
 **密码发现流程（重要）：**
 > TESTCASE.md 中的账号密码**可能与运行时不一致**，必须通过源码确认。
@@ -631,7 +649,7 @@ print('Q-NNN COMPLETE')
 > 来源：`SeedController.cs` 的 `ResetUsers()` 方法
 > 当认证失败时，调用 `GET /api/seed/reset-users` 重置密码
 
-### 4.8 浏览器页面交互测试（E2E）
+### 4.9 浏览器页面交互测试（E2E）
 
 > 前端 Playwright E2E 测试是独立体系，与小Q的 API 测试互补。页面测试验证 UI 行为（表单提交、路由跳转、组件状态），API 测试验证数据层。两者都必须通过。
 
