@@ -389,10 +389,42 @@ tmux kill-session -t cc-sandvik
 
 | 模式 | 命令 | 上下文保持 | 适用场景 |
 |------|------|----------|---------|
-| **对话模式**（§4.4） | `hermes -p slh-bot chat -q "..." --resume SESSION_ID` | ✅ SQLite session 续接 | 需要 LLM 推理的复杂测试分析 |
+| **对话模式**（§4.2） | `hermes -p slh-bot chat -q "..." --resume SESSION_ID` | ✅ SQLite session 续接 | 需要 LLM 推理的复杂测试分析 |
 | **脚本模式**（§4.3） | `python3 /tmp/q_test.py` | N/A | 标准 API 测试，无需 LLM 参与 |
 
-> ⚠️ **不再禁止 `hermes -p slh-bot chat -q`** —— 实测验证：`-q` 是 blocking 调用，会返回结果，不会"永远卡死"。之前的警告是基于错误假设。
+> ⚠️ **不再禁止 `hermes -p slh-bot chat -q`** —— 实测验证：`-q` 是 blocking 调用，会返回结果，不会"永远卡死"。blocking 指的是单个命令在 shell 层面等结果，但 Hermes 可用 `&` 并行发多个任务，不影响同时调度其他 agent。
+
+### 4.1.1 整体 Agent 通讯架构
+
+```
+Mark（吉文）
+  └── 飞书 DM → Hermes（小P，我）
+                       ├── tmux send-keys → CC（cc-sandvik，编码开发）
+                       │                   必须 tmux 隔离（CC 有授权弹窗）
+                       │
+                       ├── hermes -p slh-bot chat -q → 小Q（slh-bot）
+                       │                   不需要 tmux 隔离
+                       │                   两条调用路径：
+                       │                     ① 对话模式（§4.2）→ LLM 推理分析
+                       │                     ② 脚本模式（§4.3）→ python3 直接跑
+                       │
+                       └── CC 和小Q 并行执行，互不等待
+```
+
+**通讯原则：**
+
+| 通道 | 方式 | 隔离需求 | 原因 |
+|------|------|---------|------|
+| Mark ↔ Hermes | 飞书 DM | — | 唯一入口 |
+| Hermes ↔ CC | tmux send-keys / capture-pane | ✅ 必须 tmux | CC 有授权弹窗，需要隔离 |
+| Hermes ↔ 小Q | `hermes -p slh-bot chat -q` | ❌ 不需要 | slh-bot 无授权弹窗，blocking 不影响并行 |
+| CC ↔ 小Q | 无直接通道 | — | Hermes 居中转发 |
+
+**调度原则：**
+- Hermes 同时只调度一个任务给 CC，一个任务给小Q
+- CC 和小Q 并行执行，互不等待
+- Hermes 发完指令后继续处理 Mark 的其他消息，不需要等 slh-bot 返回
+- Hermes 可用 `&` 将 `hermes -p slh-bot chat -q` 变成后台进程，同时调度多个 agent
 
 ### 4.2 对话模式（session resume）
 
@@ -448,7 +480,6 @@ echo "$RESULT" | grep -v "^╭\|^│\|^╰\|^─\|^ ⚕\|^$" | grep -v "^Session
 | 命令注入 | N/A | ⚠️ 发送太快会粘合 |
 | 推荐场景 | **首选**，复杂推理/分析 | 备选，LLM 推理过程中需要中途干预 |
 
-### 4.3 脚本模式（API 测试首选）
 ### 4.3 脚本模式（API 测试）
 
 适用场景：标准化的 API 测试用例（TC-XXXX），脚本内部完成认证+测试+断言。
@@ -484,30 +515,7 @@ cat /tmp/q<NNN>_result.txt
 - 最后一行打印：`PASS` / `FAIL` / `Q-NNN COMPLETE`
 - API Base：`http://localhost:5000`
 
-### 4.4 小Q对话模式（LLM 分析）
-
-适用场景：需要 LLM 推理的测试分析、探索性测试、或测试失败后的根因分析。
-
-> **未来方向：** 不是让小Q执行脚本，而是让小Q**用专业测试技能自主测试**。
-> 目标：`hermes -p slh-bot chat -q "用 testing-api-tester 技能测试预测创建功能，输出结果到 /tmp/q001_result.json"`
-> slh-bot 调用 `testing-api-tester` 技能 → 自主规划测试用例 → 执行验证 → 写结果文件。
-> 此模式待实现（skill 层面需同步更新）。
-
-**当前可用方式（对话分析）：**
-
-```bash
-# Step 1：发分析任务，捕获 session ID
-RESULT=$(hermes -p slh-bot chat \
-  -q "分析 /tmp/q003_result.txt 中的测试失败原因，给出修复建议" \
-  --max-turns 5 2>&1)
-echo "$RESULT"
-SESSION_ID=$(echo "$RESULT" | grep "^Session:" | awk '{print $2}')
-
-# Step 2：续接继续
-hermes -p slh-bot chat -q "按上述修复建议验证" --resume "$SESSION_ID" --max-turns 5
-```
-
-### 4.5 测试类型与标准
+### 4.4 测试类型与标准
 
 按测试类型不同，验收标准也不同：
 
@@ -550,7 +558,7 @@ Q-FW1（路由探测）→ Q-FW2（DB写入）→ Q-FW3（软删除）→ Q-001~
 前端变更后 → Q-UI1（Playwright TC-01~TC-07）→ Q-XXX（如有 API 联动变更）
 ```
 
-### 4.6 标准脚本模板
+### 4.5 标准脚本模板
 
 ```python
 import urllib.request, json
@@ -592,7 +600,7 @@ print('TC-XXXX: PASS|FAIL ...')
 print('Q-NNN COMPLETE')
 ```
 
-### 4.7 小Q完成标准
+### 4.6 小Q完成标准
 
 **按测试类型分类：**
 
@@ -620,7 +628,7 @@ print('Q-NNN COMPLETE')
 
 > ⚠️ **DB Migration 是最后一道防线**：API `dotnet build` 通过不代表 DB 层可用。Q-FW2 必须实际写入 DB 验证，不只是 API 返回成功。
 
-### 4.8 当前小Q配置
+### 4.7 当前小Q配置
 
 **Profile：** `slh-bot`（Feishu WebSocket 独占，同一时间只能有一个 bot 连接）
 
@@ -641,7 +649,7 @@ print('Q-NNN COMPLETE')
 **已知约束：**
 - Feishu WebSocket 独占：同一时间只能有一个 bot 连接
 - slh-bot 持有 WebSocket（小Q的 Hermes Profile）
-- 所有测试任务推荐用脚本模式（§4.3）或对话模式（§4.4）
+- 所有测试任务推荐用脚本模式（§4.3）或对话模式（§4.2）
 
 **密码发现流程（重要）：**
 > TESTCASE.md 中的账号密码**可能与运行时不一致**，必须通过源码确认。
@@ -649,7 +657,7 @@ print('Q-NNN COMPLETE')
 > 来源：`SeedController.cs` 的 `ResetUsers()` 方法
 > 当认证失败时，调用 `GET /api/seed/reset-users` 重置密码
 
-### 4.9 浏览器页面交互测试（E2E）
+### 4.8 浏览器页面交互测试（E2E）
 
 > 前端 Playwright E2E 测试是独立体系，与小Q的 API 测试互补。页面测试验证 UI 行为（表单提交、路由跳转、组件状态），API 测试验证数据层。两者都必须通过。
 
