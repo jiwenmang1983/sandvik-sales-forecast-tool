@@ -27,3 +27,10 @@ public record UpdateUserInvoicePermissionRequest(
     DateTime? EffectiveFrom = null,
     DateTime? EffectiveTo = null
 );
+
+public record ReplaceUserInvoicePermissionsRequest(
+    List<string> InvoiceCompanyIds,
+    string PermissionType = "VIEW_SUBMIT",
+    DateTime? EffectiveFrom = null,
+    DateTime? EffectiveTo = null
+);

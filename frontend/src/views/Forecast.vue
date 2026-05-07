@@ -83,6 +83,19 @@
         </div>
       </a-card>
 
+      <!-- Copy Previous Period Dialog -->
+      <a-modal v-model:open="showCopyDialog" title="复制上期数据" @ok="confirmCopyPrevious" :confirmLoading="copying">
+        <p>选择来源周期（将数据复制到 <strong>{{ currentPeriod.period }}</strong>）：</p>
+        <a-select v-model:value="copySourcePeriodId" placeholder="请选择来源周期" style="width:100%">
+          <a-select-option v-for="p in availableSourcePeriods" :key="p.id" :value="p.id">
+            {{ p.fcName }} ({{ p.fillTime || '无时间信息' }})
+          </a-select-option>
+        </a-select>
+        <p style="margin-top:12px;color:#888;font-size:12px">
+          说明：只会复制草稿和审批中的数据，已完成的不会复制。相同客户+产品+月份的数据不会重复复制。
+        </p>
+      </a-modal>
+
       <!-- Filter Bar -->
       <a-card :bordered="false" class="filter-card">
         <div class="filter-bar">
@@ -258,6 +271,13 @@ const regionMaster = ['华东大区', '华南大区', '华北东北大区', '西
 const paOptions = ['刀具', '钻头', '铣刀', '量具', '夹具']
 const subpa1Options = ['标准刀具', '非标刀具', '普通钻头', '超硬钻头']
 const subpa2Options = ['2刃', '3刃', '4刃', '5刃以上']
+
+// Copy previous period dialog
+const showCopyDialog = ref(false)
+const copySourcePeriodId = ref('')
+const copying = ref(false)
+
+const availableSourcePeriods = computed(() => periods.value.filter(p => p.id !== currentPeriod.id))
 
 // Period list
 const periods = ref([])
@@ -476,7 +496,42 @@ const handleImport = (e) => {
 }
 
 const copyLastPeriod = () => {
-  message.info('复制上期数据功能（待实现）')
+  copySourcePeriodId.value = ''
+  showCopyDialog.value = true
+}
+
+const confirmCopyPrevious = async () => {
+  if (!copySourcePeriodId.value) {
+    message.error('请选择来源周期')
+    return
+  }
+  copying.value = true
+  try {
+    const token = localStorage.getItem('token')
+    const res = await fetch('/api/forecast/copy-previous-period', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token ? `Bearer ${token}` : ''
+      },
+      body: JSON.stringify({
+        fromPeriodId: copySourcePeriodId.value,
+        toPeriodId: currentPeriod.id
+      })
+    })
+    const json = await res.json()
+    if (json.success) {
+      message.success(`成功复制 ${json.copiedCount || 0} 条记录`)
+      showCopyDialog.value = false
+      loadForecastData(currentPeriod.id)
+    } else {
+      message.error(json.message || '复制失败')
+    }
+  } catch (err) {
+    message.error('复制失败：' + err.message)
+  } finally {
+    copying.value = false
+  }
 }
 
 const addNewRow = () => {

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SandvikForecast.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+45dcff99160251cd11948489d9637774cdc5c784")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+60056b40f3b96babd27a5c6146209a26d5bd4653")]
 [assembly: System.Reflection.AssemblyProductAttribute("SandvikForecast.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SandvikForecast.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -30,7 +30,7 @@ public class ApiStandardResponseFilter : IAsyncActionFilter
             {
                 Code = statusCode >= 400 ? statusCode : 0,
                 Data = data,
-                Message = statusCode >= 400 ? "error" : "success"
+                Message = ResolveWrapperMessage(objectResult, statusCode)
             };
 
             executedContext.Result = new ObjectResult(wrapped)
@@ -38,6 +38,36 @@ public class ApiStandardResponseFilter : IAsyncActionFilter
                 StatusCode = statusCode
             };
         }
+    }
+
+    /// <summary>
+    /// 优先使用 ApiResponse&lt;T&gt; 的 Message（如「登录成功」「用户名或密码错误」），避免前端只看到 error。
+    /// </summary>
+    private static string ResolveWrapperMessage(ObjectResult objectResult, int statusCode)
+    {
+        var value = objectResult.Value;
+        if (value == null)
+            return statusCode >= 400 ? "error" : "success";
+
+        var type = value.GetType();
+        var messageProp = type.GetProperty("Message") ?? type.GetProperty("message");
+        if (messageProp != null)
+        {
+            var msg = messageProp.GetValue(value)?.ToString();
+            if (!string.IsNullOrWhiteSpace(msg))
+                return msg!;
+        }
+
+        // 匿名类型：{ success, message }
+        var anonMsg = type.GetProperty("message");
+        if (anonMsg != null)
+        {
+            var m = anonMsg.GetValue(value)?.ToString();
+            if (!string.IsNullOrWhiteSpace(m))
+                return m!;
+        }
+
+        return statusCode >= 400 ? "error" : "success";
     }
 
     private static (int, object?) GetStatusCodeAndData(ObjectResult result)

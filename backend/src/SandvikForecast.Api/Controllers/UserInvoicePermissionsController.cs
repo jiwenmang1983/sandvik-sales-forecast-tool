@@ -16,7 +16,6 @@ public class UserInvoicePermissionsController : ControllerBase
 
     public UserInvoicePermissionsController(SandvikDbContext db) => _db = db;
 
-    // GET /api/user-invoice-permissions?userId=&invoiceCompanyId=
     [HttpGet]
     public async Task<ActionResult> GetAll([FromQuery] string? userId, [FromQuery] string? invoiceCompanyId)
     {
@@ -52,7 +51,6 @@ public class UserInvoicePermissionsController : ControllerBase
         return Ok(new { success = true, data = result });
     }
 
-    // GET /api/user-invoice-permissions/{id}
     [HttpGet("{id}")]
     public async Task<ActionResult> GetById(int id)
     {
@@ -64,32 +62,19 @@ public class UserInvoicePermissionsController : ControllerBase
         if (p == null)
             return NotFound(new { success = false, message = "Permission not found" });
 
-        return Ok(new
-        {
-            success = true,
-            data = new UserInvoicePermissionDto(
-                p.Id,
-                p.UserId,
-                p.User.DisplayName,
-                p.User.Email,
-                p.InvoiceCompanyId,
-                p.InvoiceCompany.CompanyName,
-                p.PermissionType.ToString(),
-                p.EffectiveFrom,
-                p.EffectiveTo,
-                p.GrantedBy,
-                p.CreatedAt
-            )
-        });
+        return Ok(new { success = true, data = new UserInvoicePermissionDto(
+            p.Id, p.UserId, p.User.DisplayName, p.User.Email,
+            p.InvoiceCompanyId, p.InvoiceCompany.CompanyName,
+            p.PermissionType.ToString(), p.EffectiveFrom, p.EffectiveTo,
+            p.GrantedBy, p.CreatedAt
+        )});
     }
 
-    // POST /api/user-invoice-permissions
     [HttpPost]
     public async Task<ActionResult> Create([FromBody] CreateUserInvoicePermissionRequest dto)
     {
         if (string.IsNullOrWhiteSpace(dto.UserId))
             return BadRequest(new { success = false, message = "UserId is required" });
-
         if (string.IsNullOrWhiteSpace(dto.InvoiceCompanyId))
             return BadRequest(new { success = false, message = "InvoiceCompanyId is required" });
 
@@ -104,11 +89,9 @@ public class UserInvoicePermissionsController : ControllerBase
         var exists = await _db.UserInvoiceCompanyPermissions
             .AnyAsync(p => p.UserId == dto.UserId && p.InvoiceCompanyId == dto.InvoiceCompanyId && p.RevokedAt == null);
         if (exists)
-            return Conflict(new { success = false, message = "Permission already exists for this user and company" });
+            return Conflict(new { success = false, message = "Permission already exists" });
 
-        if (!Enum.TryParse<InvoiceCompanyPermissionType>(dto.PermissionType, true, out var permType))
-            permType = InvoiceCompanyPermissionType.VIEW_SUBMIT;
-
+        var permType = Enum.TryParse<InvoiceCompanyPermissionType>(dto.PermissionType, true, out var pt) ? pt : InvoiceCompanyPermissionType.VIEW_SUBMIT;
         var grantedBy = User.Identity?.Name ?? string.Empty;
 
         var permission = new UserInvoiceCompanyPermission
@@ -125,30 +108,17 @@ public class UserInvoicePermissionsController : ControllerBase
         _db.UserInvoiceCompanyPermissions.Add(permission);
         await _db.SaveChangesAsync();
 
-        // reload with nav props for response
         await _db.Entry(permission).Reference(p => p.User).LoadAsync();
         await _db.Entry(permission).Reference(p => p.InvoiceCompany).LoadAsync();
 
-        return CreatedAtAction(nameof(GetById), new { id = permission.Id }, new
-        {
-            success = true,
-            data = new UserInvoicePermissionDto(
-                permission.Id,
-                permission.UserId,
-                permission.User.DisplayName,
-                permission.User.Email,
-                permission.InvoiceCompanyId,
-                permission.InvoiceCompany.CompanyName,
-                permission.PermissionType.ToString(),
-                permission.EffectiveFrom,
-                permission.EffectiveTo,
-                permission.GrantedBy,
-                permission.CreatedAt
-            )
-        });
+        return CreatedAtAction(nameof(GetById), new { id = permission.Id }, new { success = true, data = new UserInvoicePermissionDto(
+            permission.Id, permission.UserId, permission.User.DisplayName, permission.User.Email,
+            permission.InvoiceCompanyId, permission.InvoiceCompany.CompanyName,
+            permission.PermissionType.ToString(), permission.EffectiveFrom, permission.EffectiveTo,
+            permission.GrantedBy, permission.CreatedAt
+        )});
     }
 
-    // PUT /api/user-invoice-permissions/{id}
     [HttpPut("{id}")]
     public async Task<ActionResult> Update(int id, [FromBody] UpdateUserInvoicePermissionRequest dto)
     {
@@ -162,35 +132,19 @@ public class UserInvoicePermissionsController : ControllerBase
 
         if (!string.IsNullOrEmpty(dto.PermissionType) && Enum.TryParse<InvoiceCompanyPermissionType>(dto.PermissionType, true, out var permType))
             permission.PermissionType = permType;
-
-        if (dto.EffectiveFrom.HasValue)
-            permission.EffectiveFrom = dto.EffectiveFrom.Value;
-
-        if (dto.EffectiveTo.HasValue)
-            permission.EffectiveTo = dto.EffectiveTo.Value;
+        if (dto.EffectiveFrom.HasValue) permission.EffectiveFrom = dto.EffectiveFrom.Value;
+        if (dto.EffectiveTo.HasValue) permission.EffectiveTo = dto.EffectiveTo.Value;
 
         await _db.SaveChangesAsync();
 
-        return Ok(new
-        {
-            success = true,
-            data = new UserInvoicePermissionDto(
-                permission.Id,
-                permission.UserId,
-                permission.User.DisplayName,
-                permission.User.Email,
-                permission.InvoiceCompanyId,
-                permission.InvoiceCompany.CompanyName,
-                permission.PermissionType.ToString(),
-                permission.EffectiveFrom,
-                permission.EffectiveTo,
-                permission.GrantedBy,
-                permission.CreatedAt
-            )
-        });
+        return Ok(new { success = true, data = new UserInvoicePermissionDto(
+            permission.Id, permission.UserId, permission.User.DisplayName, permission.User.Email,
+            permission.InvoiceCompanyId, permission.InvoiceCompany.CompanyName,
+            permission.PermissionType.ToString(), permission.EffectiveFrom, permission.EffectiveTo,
+            permission.GrantedBy, permission.CreatedAt
+        )});
     }
 
-    // DELETE /api/user-invoice-permissions/{id}
     [HttpDelete("{id}")]
     public async Task<ActionResult> Delete(int id)
     {
@@ -204,5 +158,46 @@ public class UserInvoicePermissionsController : ControllerBase
         await _db.SaveChangesAsync();
 
         return Ok(new { success = true, message = "Permission revoked" });
+    }
+
+    // PUT /api/user-invoice-permissions/by-user/{userId}
+    // 批量替换用户的所有开票公司权限（替换而非逐个更新）
+    [HttpPut("by-user/{userId}")]
+    public async Task<ActionResult> ReplaceByUser(string userId, [FromBody] ReplaceUserInvoicePermissionsRequest dto)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+        if (user == null)
+            return BadRequest(new { success = false, message = "User not found or inactive" });
+
+        // 软删除该用户所有现有权限
+        var existing = await _db.UserInvoiceCompanyPermissions
+            .Where(p => p.UserId == userId && p.RevokedAt == null)
+            .ToListAsync();
+        foreach (var p in existing) p.RevokedAt = DateTime.UtcNow;
+
+        // 新增新的权限记录
+        if (dto.InvoiceCompanyIds != null)
+        {
+            var permType = Enum.TryParse<InvoiceCompanyPermissionType>(dto.PermissionType, true, out var pt) ? pt : InvoiceCompanyPermissionType.VIEW_SUBMIT;
+            foreach (var companyId in dto.InvoiceCompanyIds)
+            {
+                var company = await _db.InvoiceCompanies.FirstOrDefaultAsync(c => c.Id == companyId && !c.IsDeleted && c.IsActive);
+                if (company == null) continue;
+
+                _db.UserInvoiceCompanyPermissions.Add(new UserInvoiceCompanyPermission
+                {
+                    UserId = userId,
+                    InvoiceCompanyId = companyId,
+                    PermissionType = permType,
+                    EffectiveFrom = dto.EffectiveFrom ?? DateTime.UtcNow,
+                    EffectiveTo = dto.EffectiveTo,
+                    GrantedBy = User.Identity?.Name ?? string.Empty,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+        }
+
+        await _db.SaveChangesAsync();
+        return Ok(new { success = true, message = "权限已更新" });
     }
 }

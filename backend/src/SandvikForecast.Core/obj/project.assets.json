@@ -8,24 +8,26 @@
     "net8.0": []
   },
   "packageFolders": {
-    "/home/markji/.nuget/packages/": {}
+    "C:\\Users\\mark.ji\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/SandvikForecast.Core.csproj",
+      "projectUniqueName": "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Core\\SandvikForecast.Core.csproj",
       "projectName": "SandvikForecast.Core",
-      "projectPath": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/SandvikForecast.Core.csproj",
-      "packagesPath": "/home/markji/.nuget/packages/",
-      "outputPath": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/obj/",
+      "projectPath": "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Core\\SandvikForecast.Core.csproj",
+      "packagesPath": "C:\\Users\\mark.ji\\.nuget\\packages\\",
+      "outputPath": "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Core\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "/home/markji/.nuget/NuGet/NuGet.Config"
+        "C:\\Users\\mark.ji\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
       ],
       "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -49,17 +51,11 @@
           "net47",
           "net471",
           "net472",
-          "net48",
-          "net481"
+          "net48"
         ],
         "assetTargetFallback": true,
         "warn": true,
-        "frameworkReferences": {
-          "Microsoft.NETCore.App": {
-            "privateAssets": "all"
-          }
-        },
-        "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/8.0.126/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.301\\RuntimeIdentifierGraph.json"
       }
     }
   }

@@ -222,25 +222,19 @@ public class AuthController : ControllerBase
                 return Unauthorized(new { success = false, message = "无法从Microsoft账户获取邮箱信息" });
             }
 
-            // Find or create user by email
+// Find user by email - PRD §8: 首次SSO登录前，账号必须先建好，不自动创建
             var user = await _userRepo.GetByEmailAsync(email);
             if (user == null)
             {
-                // Create new user from Microsoft account
-                user = new User
-                {
-                    UserName = email.Split('@')[0],
-                    Email = email,
-                    DisplayName = name ?? email.Split('@')[0],
-                    PasswordHash = "", // No password for SSO users
-                    Role = "员工", // Default role
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-                await _userRepo.AddAsync(user);
-                await _dbContext.SaveChangesAsync();
-                _logger.LogInformation("Created new user from Microsoft SSO: {Email}", email);
+                _logger.LogWarning("SSO login attempted for non-existent user: {Email}", email);
+                return Unauthorized(new { success = false, message = "该账号未授权，请联系管理员创建账号后再登录" });
+            }
+
+            // PRD §4.4.1: 离职员工（is_active=false）不能登录
+            if (!user.IsActive)
+            {
+                _logger.LogWarning("SSO login attempted for inactive user: {Email}", email);
+                return Unauthorized(new { success = false, message = "账号已停用，请联系管理员" });
             }
 
             // Generate our own JWT token

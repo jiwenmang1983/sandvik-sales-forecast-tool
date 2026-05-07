@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import CustomerList from '../views/CustomerList.vue'
+import UserInvoicePermission from '../views/UserInvoicePermission.vue'
 import Login from '../views/Login.vue'
 import MicrosoftCallback from '../views/MicrosoftCallback.vue'
 import Dashboard from '../views/Dashboard.vue'
@@ -59,7 +60,8 @@ const routes = [
       { path: 'approval-flow', name: 'ApprovalFlow', component: ApprovalFlow },
       { path: 'template-management', name: 'TemplateManagement', component: TemplateManagement },
       { path: 'forecast-periods', name: 'ForecastPeriod', component: ForecastPeriod },
-      { path: 'email-queue', name: 'EmailQueue', component: EmailQueue }
+      { path: 'email-queue', name: 'EmailQueue', component: EmailQueue },
+      { path: 'user-invoice-permission', name: 'UserInvoicePermission', component: UserInvoicePermission }
     ]
   },
   {

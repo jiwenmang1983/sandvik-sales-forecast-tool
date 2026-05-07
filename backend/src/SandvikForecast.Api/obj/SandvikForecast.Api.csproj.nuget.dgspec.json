@@ -1,36 +1,38 @@
 {
   "format": 1,
   "restore": {
-    "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Api/SandvikForecast.Api.csproj": {}
+    "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Api\\SandvikForecast.Api.csproj": {}
   },
   "projects": {
-    "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Api/SandvikForecast.Api.csproj": {
+    "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Api\\SandvikForecast.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Api/SandvikForecast.Api.csproj",
+        "projectUniqueName": "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Api\\SandvikForecast.Api.csproj",
         "projectName": "SandvikForecast.Api",
-        "projectPath": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Api/SandvikForecast.Api.csproj",
-        "packagesPath": "/home/markji/.nuget/packages/",
-        "outputPath": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Api/obj/",
+        "projectPath": "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Api\\SandvikForecast.Api.csproj",
+        "packagesPath": "C:\\Users\\mark.ji\\.nuget\\packages\\",
+        "outputPath": "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Api\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/home/markji/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\mark.ji\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/SandvikForecast.Core.csproj": {
-                "projectPath": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/SandvikForecast.Core.csproj"
+              "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Core\\SandvikForecast.Core.csproj": {
+                "projectPath": "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Core\\SandvikForecast.Core.csproj"
               },
-              "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/SandvikForecast.Infrastructure.csproj": {
-                "projectPath": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/SandvikForecast.Infrastructure.csproj"
+              "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Infrastructure\\SandvikForecast.Infrastructure.csproj": {
+                "projectPath": "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Infrastructure\\SandvikForecast.Infrastructure.csproj"
               }
             }
           }
@@ -44,85 +46,38 @@
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
-          "dependencies": {
-            "ClosedXML": {
-              "target": "Package",
-              "version": "[0.102.3, )"
-            },
-            "MailKit": {
-              "target": "Package",
-              "version": "[4.3.0, )"
-            },
-            "Microsoft.AspNetCore.Authentication.JwtBearer": {
-              "target": "Package",
-              "version": "[8.0.0, )"
-            },
-            "Microsoft.EntityFrameworkCore.Design": {
-              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
-              "suppressParent": "All",
-              "target": "Package",
-              "version": "[8.0.0, )"
-            },
-            "Microsoft.Extensions.Caching.StackExchangeRedis": {
-              "target": "Package",
-              "version": "[8.0.0, )"
-            },
-            "Microsoft.Identity.Web": {
-              "target": "Package",
-              "version": "[4.9.0, )"
-            },
-            "Pomelo.EntityFrameworkCore.MySql": {
-              "target": "Package",
-              "version": "[8.0.3, )"
-            },
-            "Serilog.AspNetCore": {
-              "target": "Package",
-              "version": "[8.0.0, )"
-            },
-            "Swashbuckle.AspNetCore": {
-              "target": "Package",
-              "version": "[6.5.0, )"
-            }
-          },
           "imports": [
             "net461",
             "net462",
             "net47",
             "net471",
             "net472",
-            "net48",
-            "net481"
+            "net48"
           ],
           "assetTargetFallback": true,
           "warn": true,
-          "frameworkReferences": {
-            "Microsoft.AspNetCore.App": {
-              "privateAssets": "none"
-            },
-            "Microsoft.NETCore.App": {
-              "privateAssets": "all"
-            }
-          },
-          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/8.0.126/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.301\\RuntimeIdentifierGraph.json"
         }
       }
     },
-    "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/SandvikForecast.Core.csproj": {
+    "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Core\\SandvikForecast.Core.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/SandvikForecast.Core.csproj",
+        "projectUniqueName": "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Core\\SandvikForecast.Core.csproj",
         "projectName": "SandvikForecast.Core",
-        "projectPath": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/SandvikForecast.Core.csproj",
-        "packagesPath": "/home/markji/.nuget/packages/",
-        "outputPath": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/obj/",
+        "projectPath": "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Core\\SandvikForecast.Core.csproj",
+        "packagesPath": "C:\\Users\\mark.ji\\.nuget\\packages\\",
+        "outputPath": "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Core\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/home/markji/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\mark.ji\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -146,44 +101,40 @@
             "net47",
             "net471",
             "net472",
-            "net48",
-            "net481"
+            "net48"
           ],
           "assetTargetFallback": true,
           "warn": true,
-          "frameworkReferences": {
-            "Microsoft.NETCore.App": {
-              "privateAssets": "all"
-            }
-          },
-          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/8.0.126/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.301\\RuntimeIdentifierGraph.json"
         }
       }
     },
-    "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/SandvikForecast.Infrastructure.csproj": {
+    "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Infrastructure\\SandvikForecast.Infrastructure.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/SandvikForecast.Infrastructure.csproj",
+        "projectUniqueName": "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Infrastructure\\SandvikForecast.Infrastructure.csproj",
         "projectName": "SandvikForecast.Infrastructure",
-        "projectPath": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/SandvikForecast.Infrastructure.csproj",
-        "packagesPath": "/home/markji/.nuget/packages/",
-        "outputPath": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Infrastructure/obj/",
+        "projectPath": "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Infrastructure\\SandvikForecast.Infrastructure.csproj",
+        "packagesPath": "C:\\Users\\mark.ji\\.nuget\\packages\\",
+        "outputPath": "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Infrastructure\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/home/markji/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\mark.ji\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/SandvikForecast.Core.csproj": {
-                "projectPath": "/mnt/d/Git/SandvikForecastTool/backend/src/SandvikForecast.Core/SandvikForecast.Core.csproj"
+              "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Core\\SandvikForecast.Core.csproj": {
+                "projectPath": "D:\\Git\\SandvikForecastTool\\backend\\src\\SandvikForecast.Core\\SandvikForecast.Core.csproj"
               }
             }
           }
@@ -197,33 +148,17 @@
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
-          "dependencies": {
-            "Microsoft.Extensions.Caching.StackExchangeRedis": {
-              "target": "Package",
-              "version": "[8.0.0, )"
-            },
-            "Pomelo.EntityFrameworkCore.MySql": {
-              "target": "Package",
-              "version": "[8.0.3, )"
-            }
-          },
           "imports": [
             "net461",
             "net462",
             "net47",
             "net471",
             "net472",
-            "net48",
-            "net481"
+            "net48"
           ],
           "assetTargetFallback": true,
           "warn": true,
-          "frameworkReferences": {
-            "Microsoft.NETCore.App": {
-              "privateAssets": "all"
-            }
-          },
-          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/8.0.126/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.301\\RuntimeIdentifierGraph.json"
         }
       }
     }

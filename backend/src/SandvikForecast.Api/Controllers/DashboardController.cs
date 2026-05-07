@@ -245,19 +245,24 @@ public class DashboardController : ControllerBase
                 .Take(5)
                 .ToList();
 
-            var pendingTotal = records.Count(r => r.Status == "Submitted");
+            // pendingTotal: 查询当前用户作为审批人的待审批请求
+            var pendingTotal = await _db.ApprovalRequests
+                .CountAsync(r => r.CurrentApproverEmail == dbUser.Email && r.Status != "Approved");
 
             var pendingDirector = 0;
             if (role == "REGION_DIRECTOR" && !string.IsNullOrEmpty(userRegion))
             {
-                pendingDirector = records
-                    .Count(r => r.Status == "Submitted" && r.CustomerRegion == userRegion);
+                // pendingDirector: 该区域总监作为审批人的待审批请求（不含已批准的）
+                pendingDirector = await _db.ApprovalRequests
+                    .CountAsync(r => r.CurrentApproverEmail == dbUser.Email && r.Status != "Approved");
             }
 
             var pendingFinance = 0;
             if (role == "FINANCE_MANAGER")
             {
-                pendingFinance = records.Count(r => r.Status == "Submitted");
+                // pendingFinance: 财务经理查看所有待审批请求
+                pendingFinance = await _db.ApprovalRequests
+                    .CountAsync(r => r.Status != "Approved");
             }
 
             var dashboardData = new

@@ -134,12 +134,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { useAuthStore } from '../store/auth'
-import { login } from '../api/auth'
 
-const router = useRouter()
 const authStore = useAuthStore()
 
 // Always stay on login page - no redirect logic here
@@ -185,13 +182,10 @@ const testUserOptions = [
 const handleSandvikLogin = async () => {
   sandvikLoading.value = true
   try {
-    const result = await login('sandvik')
-    authStore.setAuth(result.token, result.user)
-    message.success('登录成功')
-    router.push('/dashboard')
+    // Redirect to backend Microsoft SSO endpoint
+    window.location.href = '/api/auth/microsoft?domain=sandvik'
   } catch (error) {
     message.error('登录失败，请重试')
-  } finally {
     sandvikLoading.value = false
   }
 }
@@ -199,13 +193,10 @@ const handleSandvikLogin = async () => {
 const handleAhnoLogin = async () => {
   ahnoLoading.value = true
   try {
-    const result = await login('ahno')
-    authStore.setAuth(result.token, result.user)
-    message.success('登录成功')
-    router.push('/dashboard')
+    // Redirect to backend Microsoft SSO endpoint
+    window.location.href = '/api/auth/microsoft?domain=ahno'
   } catch (error) {
     message.error('登录失败，请重试')
-  } finally {
     ahnoLoading.value = false
   }
 }
@@ -221,31 +212,76 @@ const handleMicrosoftLogin = async () => {
   }
 }
 
+/** 从 JWT 解析用户 Id（.NET ClaimTypes.NameIdentifier 在 Token 里多为长 URI 键名） */
+function getUserIdFromAccessToken(token) {
+  try {
+    const b64 = token.split('.')[1]
+    const json = JSON.parse(atob(b64.replace(/-/g, '+').replace(/_/g, '/')))
+    const idKey = Object.keys(json).find(k => /nameidentifier$/i.test(k) || k === 'sub')
+    return idKey ? String(json[idKey]) : ''
+  } catch {
+    return ''
+  }
+}
+
 const handleDevLogin = async () => {
   devLoading.value = true
   try {
-    // Real API login - validate email + password against backend
+    const deviceId = localStorage.getItem('deviceId') || (() => {
+      const id = 'dev_' + crypto.randomUUID()
+      localStorage.setItem('deviceId', id)
+      return id
+    })()
+
+    const payload = {
+      email: devEmail.value?.trim(),
+      password: devPassword.value ?? '',
+      deviceId,
+      deviceName: navigator.userAgent
+    }
+
     const response = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: devEmail.value, password: devPassword.value })
+      body: JSON.stringify(payload)
     })
-    const data = await response.json()
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || '登录失败')
+
+    const rawText = await response.text()
+    let data = {}
+    try {
+      data = rawText ? JSON.parse(rawText) : {}
+    } catch {
+      throw new Error(`服务器返回非 JSON（${response.status}）。请确认后端已启动且 Vite 代理 /api 指向正确。`)
     }
-    authStore.setAuth(data.data.token, {
-      id: '',
-      username: data.data.displayName,
-      email: devEmail.value,
-      name: data.data.displayName,
-      role: data.data.role,
-      avatar: devEmail.value.charAt(0).toUpperCase()
-    })
+
+    const code = Number(data.code)
+    const inner = data.data || {}
+    const token = inner.token ?? inner.Token
+    const refreshToken = inner.refreshToken ?? inner.RefreshToken
+    const displayName = inner.displayName ?? inner.DisplayName ?? payload.email
+    const role = inner.role ?? inner.Role ?? 'SALES'
+
+    const isSuccess = response.ok && code === 0 && token
+    if (!isSuccess) {
+      throw new Error(data.message || inner?.message || '登录失败')
+    }
+
+    const userId = getUserIdFromAccessToken(token)
+    authStore.setAuth(token, {
+      id: userId,
+      username: displayName,
+      email: payload.email,
+      name: displayName,
+      role,
+      avatar: (payload.email || 'U').charAt(0).toUpperCase()
+    }, refreshToken)
+
     message.success('登录成功')
-    router.push('/dashboard')
+    // Hash 模式：整页跳转到 #/dashboard 最稳（避免 router 与地址栏不同步、或其它模块用错误路径清会话）
+    window.location.replace(`${window.location.origin}/#/dashboard`)
   } catch (error) {
-    message.error(error.message || '登录失败，请检查邮箱和密码')
+    console.error('[DEV LOGIN]', error)
+    message.error(error?.message || '登录失败，请检查邮箱和密码（种子用户需密码 Password123，可调用 POST /api/seed/reset-users）')
   } finally {
     devLoading.value = false
   }

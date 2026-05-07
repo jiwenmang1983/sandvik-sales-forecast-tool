@@ -26,7 +26,7 @@
               <span class="filter-label">PA产品线</span>
               <a-select v-model:value="filterPa" style="width:120px" placeholder="全部" allow-clear>
                 <a-select-option value="">全部</a-select-option>
-                <a-select-option v-for="pa in paList" :key="pa" :value="pa">{{ pa }}</a-select-option>
+                <a-select-option v-for="pa in paOptions" :key="pa.value" :value="pa.value">{{ pa.label }}</a-select-option>
               </a-select>
             </div>
             <a-button size="small" @click="resetFilters">🔄 重置</a-button>
@@ -174,24 +174,54 @@
       </div>
       <div class="form-row" v-if="currentModule === 'productLibrary'">
         <div class="form-group">
-          <label class="form-label">PA</label>
-          <a-select v-model:value="formData.pa" placeholder="选择PA">
-            <a-select-option v-for="pa in paList" :key="pa" :value="pa">{{ pa }}</a-select-option>
+          <label class="form-label">PA（产品大类）<span style="color:#ff4d4f">*</span></label>
+          <a-select v-model:value="formData.pa" placeholder="选择PA" @change="onPaChange">
+            <a-select-option v-for="pa in paOptions" :key="pa.value" :value="pa.value">{{ pa.label }}</a-select-option>
           </a-select>
         </div>
         <div class="form-group">
           <label class="form-label">Sub PA-1</label>
-          <a-input v-model:value="formData.subpa1" placeholder="Sub PA-1" />
+          <a-select v-model:value="formData.subpa1" placeholder="选择Sub PA-1" :disabled="!formData.pa" @change="onSubpa1Change">
+            <a-select-option v-for="s in subpa1Options" :key="s.value" :value="s.value">{{ s.label }}</a-select-option>
+          </a-select>
         </div>
       </div>
       <div class="form-row" v-if="currentModule === 'productLibrary'">
         <div class="form-group">
           <label class="form-label">Sub PA-2</label>
-          <a-input v-model:value="formData.subpa2" placeholder="Sub PA-2" />
+          <a-select v-model:value="formData.subpa2" placeholder="选择Sub PA-2" :disabled="!formData.subpa1" @change="onSubpa2Change">
+            <a-select-option v-for="s in subpa2Options" :key="s.value" :value="s.value">{{ s.label }}</a-select-option>
+          </a-select>
         </div>
         <div class="form-group">
-          <label class="form-label">Sub PA-3（产品名称）</label>
-          <a-input v-model:value="formData.subpa3" placeholder="Sub PA-3" />
+          <label class="form-label">Sub PA-3</label>
+          <a-select v-model:value="formData.subpa3" placeholder="选择Sub PA-3" :disabled="!formData.subpa2" @change="onSubpa3Change">
+            <a-select-option v-for="s in subpa3Options" :key="s.value" :value="s.value">{{ s.label }}</a-select-option>
+          </a-select>
+        </div>
+      </div>
+      <div class="form-row" v-if="currentModule === 'productLibrary'">
+        <div class="form-group">
+          <label class="form-label">Sub PA-4（型号）<span style="color:#ff4d4f">*</span></label>
+          <a-select
+            v-model:value="formData.subpa4"
+            placeholder="输入搜索型号"
+            :disabled="!formData.subpa3"
+            show-search
+            :options="productSearchResults"
+            @search="onSubPa4Search"
+            @change="onSubPa4Change"
+            :default-active-first-option="false"
+            filter-option={false}
+            not-found-content="暂无匹配型号"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">状态</label>
+          <a-select v-model:value="formData.status">
+            <a-select-option value="active">激活</a-select-option>
+            <a-select-option value="inactive">停用</a-select-option>
+          </a-select>
         </div>
       </div>
       <div class="form-row" v-if="currentModule === 'customer'">
@@ -290,10 +320,18 @@ const loading = ref(false)
 
 const formData = reactive({
   name: '', code: '', status: 'active', type: '', contact: '', phone: '', email: '',
-  pa: '', subpa1: '', subpa2: '', subpa3: '', performance: '', director: '', region: '', invoices: []
+  pa: '', subpa1: '', subpa2: '', subpa3: '', subpa4: '', performance: '', director: '', region: '', invoices: []
 })
 
-const paList = ['刀具', '钻头', '铣刀', '量具', '夹具']
+const paOptions = ref([])
+const subpa1Options = ref([])
+const subpa2Options = ref([])
+const subpa3Options = ref([])
+const subpa4Options = ref([])
+const productSearchResults = ref([])
+
+let searchTimer = null
+
 const regionList = ['华东大区', '华南大区', '华北东北大区', '西南大区']
 
 const modalTitle = computed(() => ({
@@ -393,11 +431,22 @@ const getAuthHeader = () => {
 const fetchProducts = async () => {
   try {
     loading.value = true
-    const res = await fetch(`${API_BASE}/products?status=${filterStatus.value}&pa=${filterPa.value}&keyword=${keyword.value}`, {
-      headers: { ...getAuthHeader() }
+    const params = new URLSearchParams()
+    if (filterStatus.value) params.append('status', filterStatus.value)
+    if (keyword.value) params.append('keyword', keyword.value)
+    const res = await fetch(`/api/products?${params.toString()}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` }
     })
     const data = await res.json()
-    if (data.success) products.value = data.data || []
+    if (data.success) {
+      products.value = (data.data || []).map(p => ({
+        ...p,
+        id: p.id?.toString(),
+        sku: p.productCode,
+        name: p.productName,
+        status: p.isActive ? 'active' : 'inactive'
+      }))
+    }
   } catch (e) {
     message.error('获取产品数据失败')
   } finally {
@@ -450,6 +499,74 @@ const fetchSalesPersons = async () => {
   }
 }
 
+const loadPaOptions = async () => {
+  try {
+    const res = await fetch('/api/products/levels/1', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` }
+    })
+    const data = await res.json()
+    if (data.success) {
+      paOptions.value = (data.data || []).map(p => ({ label: p.productName, value: p.id }))
+    }
+  } catch (e) { console.error('加载PA失败', e) }
+}
+
+const loadProductChildren = async (parentId, targetRef) => {
+  if (!parentId) { targetRef.value = []; return }
+  try {
+    const res = await fetch(`/api/products/levels/${parentId}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` }
+    })
+    const data = await res.json()
+    if (data.success) {
+      targetRef.value = (data.data || []).map(p => ({ label: p.productName, value: p.id }))
+    }
+  } catch (e) { console.error('加载子级产品失败', e) }
+}
+
+const onPaChange = () => {
+  loadProductChildren(formData.pa, subpa1Options)
+  formData.subpa1 = ''; formData.subpa2 = ''; formData.subpa3 = ''; formData.subpa4 = ''
+  subpa2Options.value = []; subpa3Options.value = []; subpa4Options.value = []
+}
+
+const onSubpa1Change = () => {
+  loadProductChildren(formData.subpa1, subpa2Options)
+  formData.subpa2 = ''; formData.subpa3 = ''; formData.subpa4 = ''
+  subpa3Options.value = []; subpa4Options.value = []
+}
+
+const onSubpa2Change = () => {
+  loadProductChildren(formData.subpa2, subpa3Options)
+  formData.subpa3 = ''; formData.subpa4 = ''
+  subpa4Options.value = []
+}
+
+const onSubpa3Change = () => {
+  loadProductChildren(formData.subpa3, subpa4Options)
+  formData.subpa4 = ''
+}
+
+const onSubPa4Search = (keyword) => {
+  if (!keyword || keyword.length < 1) { productSearchResults.value = []; return }
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(`/api/products/search?keyword=${encodeURIComponent(keyword)}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` }
+      })
+      const data = await res.json()
+      if (data.success) {
+        productSearchResults.value = (data.data || [])
+          .filter(p => p.productLevel === 5)
+          .map(p => ({ label: `${p.productName} (${p.productCode})`, value: p.id }))
+      }
+    } catch (e) { console.error('搜索产品失败', e) }
+  }, 300)
+}
+
+const onSubPa4Change = (val) => { formData.subpa4 = val }
+
 const handleExport = (module) => {
   message.info('导出功能开发中')
 }
@@ -480,7 +597,7 @@ const editItem = (module, record) => {
 const deleteItem = async (module, record) => {
   try {
     let endpoint = ''
-    if (module === 'productLibrary') endpoint = `${API_BASE}/products/${record.id}`
+    if (module === 'productLibrary') endpoint = `/api/products/${record.id}`
     else if (module === 'customer') endpoint = `${API_BASE}/customers/${record.id}`
     
     if (endpoint) {
@@ -510,15 +627,17 @@ const saveForm = async () => {
     let body = {}
     
     if (currentModule.value === 'productLibrary') {
-      endpoint = `${API_BASE}/products`
+      endpoint = '/api/products'
       if (editingId.value) {
-        endpoint = `${API_BASE}/products/${editingId.value}`
+        endpoint = `${endpoint}/${editingId.value}`
         method = 'PUT'
       }
-      body = { 
-        code: formData.code || formData.sku, 
-        name: formData.subpa3 || formData.name, 
-        productLevel: 4,
+      const parentId = formData.subpa4 || formData.subpa3 || formData.subpa2 || formData.subpa1
+      const productLevel = formData.subpa4 ? 5 : (formData.subpa3 ? 4 : (formData.subpa2 ? 3 : (formData.subpa1 ? 2 : 1)))
+      body = {
+        name: formData.name,
+        productLevel: productLevel,
+        parentId: parentId || null,
         isActive: formData.status === 'active'
       }
     } else if (currentModule.value === 'customer') {
@@ -562,7 +681,10 @@ const saveForm = async () => {
 }
 
 const fetchData = () => {
-  if (activeTab.value === 'productLibrary') fetchProducts()
+  if (activeTab.value === 'productLibrary') {
+    loadPaOptions()
+    fetchProducts()
+  }
   else if (activeTab.value === 'customer') fetchCustomers()
   else if (activeTab.value === 'regionMapping') fetchRegions()
   else if (activeTab.value === 'salesPerson') fetchSalesPersons()
@@ -571,7 +693,14 @@ const fetchData = () => {
 watch(
   () => route.meta?.baseDataTab,
   (tab) => {
-    if (tab) fetchData()
+    if (tab) {
+      if (tab === 'productLibrary') {
+        loadPaOptions()
+        fetchProducts()
+      } else {
+        fetchData()
+      }
+    }
   },
   { immediate: true }
 )

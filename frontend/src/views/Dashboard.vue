@@ -230,8 +230,12 @@ const fetchDashboardData = async () => {
       }
     })
     const result = await response.json()
-    
-    if (result.success) {
+    const ok =
+      response.ok &&
+      (result.success === true || Number(result.code) === 0) &&
+      result.data != null
+
+    if (ok) {
       const data = result.data
       
       // Update dashboard data
